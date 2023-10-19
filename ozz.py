@@ -11,8 +11,13 @@ from streamlit_extras.add_vertical_space import add_vertical_space
 import openai
 from bokeh.models.widgets import Button
 from bokeh.models import CustomJS
+import os
+from dotenv import load_dotenv
+from utils.main_utils import ozz_master_root
 
-# st.set_page_config(page_title="ozz")
+load_dotenv(ozz_master_root())
+
+openai.api_key = os.environ.get("ozz_api_key")
 
 st.set_page_config(
     page_title="ozz",
@@ -28,20 +33,6 @@ st.set_page_config(
 
 st.title("Ozz, Your Learning Walk Guide")
 def main():
-    # Sidebar contents
-    # with st.sidebar:
-    #     st.title('🤗💬 HugChat App')
-    #     st.markdown('''
-    #     ## About
-    #     This app is an LLM-powered chatbot built using:
-    #     - [Streamlit](https://streamlit.io/)
-    #     - [HugChat](https://github.com/Soulter/hugging-chat-api)
-    #     - [OpenAssistant/oasst-sft-6-llama-30b-xor](https://huggingface.co/OpenAssistant/oasst-sft-6-llama-30b-xor) LLM model
-        
-    #     💡 Note: No API key required!
-    #     ''')
-    #     add_vertical_space(5)
-    #     st.write('Made with ❤️ by [Data Professor](https://youtube.com/dataprofessor)')
 
     # Generate empty lists for generated and past.
     ## generated stores AI generated responses
@@ -87,7 +78,6 @@ def main():
 
 
 # be sure to end each prompt string with a comma.
-openai.api_key = "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"
 
 example_user_prompts = [
     "echo Hello World!",

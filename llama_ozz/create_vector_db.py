@@ -10,7 +10,7 @@ import pandas as pd
 DATA_PATH="data/"
 DB_FAISS_PATH = "vectorstores/db_fiass/"
 
-def create_vector_db(filename = "ozz/ozz/Learning walks data.txt'", save=True):
+def create_vector_db(filename = '/Users/stefanstapinski/ENV/ozz/ozz/ozz/Learning walks data.txt', save=True):
     # Handle File types
     # documents = []
     df = pd.read_csv(filename)

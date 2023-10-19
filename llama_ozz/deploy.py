@@ -4,7 +4,7 @@ from langchain.vectorstores import FAISS
 from langchain.llms import CTransformers
 from langchain.chains import RetrievalQA
 import chainlit as cl
-
+from datetime import datetime
 DB_FAISS_PATH = "vectorstores/db_fiass/"
 
 custom_prompt_template='''Use the following pieces of information to answer the users question. 
@@ -48,9 +48,9 @@ def retrieval_qa_chain(llm,prompt,db):
   )
  return qa_chain
 
-def qa_bot():
- embeddings=HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2',
-  model_kwargs={'device':'cpu'})
+def qa_bot(embeddings):
+#  embeddings=HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2',
+#   model_kwargs={'device':'cpu'})
  db = FAISS.load_local(DB_FAISS_PATH,embeddings)
  llm=load_llm()
  qa_prompt=set_custom_prompt()
@@ -58,13 +58,14 @@ def qa_bot():
  return qa 
 
 
-def final_result(query):
-#  s = datetime.now()
-#  query = "tell me about 1 of the learning walks in 5 sentences to a 5 year old. Please also provide a helpful tip for the walk for the kid to have fun"
- qa_result=qa_bot()
+embeddings=HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2', model_kwargs={'device':'cpu'})
+def final_result(query, embeddings):
+ s = datetime.now()
+ query = "Tell me about the rain walk in detail. Provide a step by step process on how to experience the walk and what I will learn on the walk. Please also create questions a 7 year old should ask their parents what they have learned about the walk"
+ qa_result=qa_bot(embeddings)
  response=qa_result({'query':query})
-#  e = datetime.now()
-#  print((e-s).total_seconds())
+ e = datetime.now()
+ print((e-s).total_seconds())
  return response 
 
 ## chainlit here

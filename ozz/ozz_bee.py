@@ -18,7 +18,7 @@ import re
 import pickle
 from io import StringIO
 
-# import docx
+import docx
 import os
 import time
 
@@ -26,54 +26,22 @@ import openai
 from transformers import GPT2TokenizerFast
 import ipdb
 import argparse
-# import streamlit as st
+from dotenv import load_dotenv
+from utils.main_utils import ozz_master_root, ReadPickleData
+
+load_dotenv(ozz_master_root())
+
+openai.api_key = os.environ.get("ozz_api_key")
 
 # score text generation
 # However, you can use metrics like BLEU, METEOR, ROUGE, CIDEr etc to evaluate the quality of generated text.
 # They are widely used to evaluate the quality of machine-generated text against the reference text.
 # You can use these metrics to compare the generated text with the reference text and get a score, but keep in mind that these metrics are not perfect, and the scores they provide are not always reliable indicators of text quality.
-def ReadPickleData(pickle_file):
-    # Check the file's size and modification time
-    prev_size = os.stat(pickle_file).st_size
-    prev_mtime = os.stat(pickle_file).st_mtime
-    stop = 0
-    e = None
-    while True:
-        # Get the current size and modification time of the file
-        curr_size = os.stat(pickle_file).st_size
-        curr_mtime = os.stat(pickle_file).st_mtime
 
-        # Check if the size or modification time has changed
-        if curr_size != prev_size or curr_mtime != prev_mtime:
-            pass
-            # print(f"{pickle_file} is currently being written to")
-            # logging.info(f'{pickle_file} is currently being written to')
-        else:
-            try:
-                with open(pickle_file, "rb") as f:
-                    return pickle.load(f)
-            except Exception as e:
-                print('pkl read error: ', os.path.basename(pickle_file), e, stop)
-                # logging.error(f'{e} error is pickle load')
-                if stop > 10:
-                    print("CRITICAL read pickle failed ", e)
-                    # logging.critical(f'{e} error is pickle load')
-                    # send_email(subject='CRITICAL Read Pickle Break')
-                    return ''
-                stop += 1
-                time.sleep(0.033)
-
-        # Update the previous size and modification time
-        prev_size = curr_size
-        prev_mtime = curr_mtime
-
-        # Wait a short amount of time before checking again
-        time.sleep(0.033)
 
 
 try:
     def send_ozz_call(query):
-        openai.api_key = "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"
         csv_main = 'ozz/Learning walks data.txt'
         vector_pickle = 'ozz/Learning walks embeddings.pickle'
 
