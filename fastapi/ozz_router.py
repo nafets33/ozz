@@ -40,8 +40,8 @@ def load_ozz_voice(api_key=Body(...), text=Body(...), self_image=Body(...)):
 
 
         # update reponse to self   !!! well we are not using class methods so self doesn't work we just simply need to return response as functional based prototyping
-        # text[-1].update({'resp': resp})
-        text[-1] = response
+        text[-1].update({'resp': response})
+        # text[-1] = response
 
         return text
 
