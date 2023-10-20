@@ -23,8 +23,9 @@ def llm_assistant_response(message,conversation_history):
 
 
 # call_llm=True # goal is to set it to False and figure action/response using local phrases as required
-def Scenarios(current_query : str , conversation_history : dict , first_ask=True, conv_history=False):
-    if first_ask == True:
+# Now we are only using llm when we don't have response to the query in greetings.json
+def Scenarios(current_query : str , conversation_history : list , first_ask=True, conv_history=False):
+    if first_ask:
         ''' Appending the prompt for system when user asks for first time (is this first ask?) 
         also with json coz if user again tries to ask something and doesn't found in json then it will go to llm
         so llm needs to be already have the json conversation to understand the next query asked by user '''
@@ -72,3 +73,8 @@ def Scenarios(current_query : str , conversation_history : dict , first_ask=True
             # Appending the response by llm
             conversation_history.clear() if not conv_history else conversation_history.append({"role": "assistant", "content": assistant_response})
             return assistant_response 
+
+# Testing the functions    
+# conversation_history = []
+# print(Scenarios('hello buddy',conversation_history))
+# print(conversation_history)
