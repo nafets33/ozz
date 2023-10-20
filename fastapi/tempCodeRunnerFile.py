@@ -1,3 +1,21 @@
+# This is just a file for testing codes in sandbox like a small piece of code u can use it as well
+
+
+
+#Conversation History to chat back and forth
+import json
+import openai
+import os
+import dotenv
+dotenv.load_dotenv('.env')
+conversation_history = []
+
+# Loading the json common phrases file and setting up the json file
+json_file = open('fastapi/greetings.json','r')
+common_phrases = json.load(json_file)
+text_obj = 'hello gpt'
+
+
 import json
 import os
 import openai
@@ -22,7 +40,7 @@ def llm_assistant_response(message,conversation_history):
         return assistant_reply
 
 
-# call_llm=True # goal is to set it to False and figure action/response using local phrases as required
+
 def Scenarios(current_query, conversation_history, first_ask=True, conv_history=False):
     if first_ask == True:
         ''' Appending the prompt for system when user asks for first time (is this first ask?) 
@@ -71,3 +89,26 @@ def Scenarios(current_query, conversation_history, first_ask=True, conv_history=
             # Appending the response by llm
             conversation_history.clear() if not conv_history else conversation_history.append({"role": "assistant", "content": assistant_response})
             return assistant_response 
+
+        
+        
+def handle_response(text):
+    # Kids or User question
+    # text_obj = text[-1]['user']
+
+    #Conversation History to chat back and forth
+    # conversation_history = []
+
+    # Call the Scenario Function
+    resp = Scenarios(text,conversation_history,first_ask=False,conv_history=True)
+    # print
+    # update reponse to self
+    # text[-1].update({'resp': resp})
+
+    with open('fastapi/conversation_history.json','w') as wri:
+        json.dump(conversation_history,wri)
+
+    return resp
+
+print(handle_response('hello dawg'))
+print(conversation_history)

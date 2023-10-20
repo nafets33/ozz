@@ -1,41 +1,47 @@
+from fastapi import status, Body
+import ipdb
+import openai
+from dotenv import load_dotenv
+import os
+import json
+from ozz_query import Scenarios
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 
+# setting up FastAPI
+router = FastAPI()
 
+# Loading the environment variables
+load_dotenv('.env')
 
 @router.post("/voiceGPT", status_code=status.HTTP_200_OK)
 def load_ozz_voice(api_key=Body(...), text=Body(...), self_image=Body(...)):
-    # print(kwargs)
+    # Test Queries with user and assistant and saving in conversation history as well as json file
     # text = [{'user': 'hey hootie tell me a story'}]
     # text = [  # future state
     #         {'user': 'hey hootie tell me a story', 'resp': 'what story would you like to hear'}, 
     #         {'user': 'could you make up a story?'}]
+
     ipdb.set_trace()
+
     def handle_response(text):
+        # Kids or User question
         text_obj = text[-1]['user']
 
-        # handle text_obj
-        # WORK take query/history of current question and attempt to handle reponse back ""
-        ## Scenarios 
+        #Conversation History to chat back and forth
+        conversation_history = []
 
-        call_llm=True # goal is to set it to False and figure action/response
-
-        def Scenarios(db_actions, self_image, current_query, first_ask=True, conv_history=False):
-            # is this first ask?
-            # saying hello, say hello based on whos talking? hoots or hootie, moody
-            # how are you...
-            # 
-            # if first_ask:
-            #     # based on question do we have similar listed type quetsion with response action?
-            #     if current_query is in db_actions.get('db_first_asks'):
-            #         text = db_actions.get('id')
-            #         self_image = db_actions.get('id')
-                
-            return True
-
-        # get final response
-        resp = 'what story would you like to hear?'
+        # Call the Scenario Function and get the response accordingly
+        response = Scenarios(text_obj,conversation_history,first_ask=True,conv_history=False)
         
-        # update reponse to self
-        text[-1].update({'resp': resp})
+        # For saving a chat history for current session in json file
+        with open('fastapi/conversation_history.json','w') as conversation_history_file:
+            json.dump(conversation_history,conversation_history_file)
+
+
+        # update reponse to self   !!! well we are not using class methods so self doesn't work we just simply need to return response as functional based prototyping
+        # text[-1].update({'resp': resp})
+        text[-1] = response
 
         return text
 
