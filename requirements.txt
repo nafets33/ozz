@@ -261,3 +261,6 @@ sentence_transformers
 faiss_cpu
 chainlit
 ctransformers
+elevenlabs
+SpeechRecognition
+psycopg2

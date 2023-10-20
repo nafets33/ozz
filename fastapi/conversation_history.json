@@ -1,0 +1,8 @@
+[
+  {
+    "role": "system",
+    "content": "You are a cute and smart assistant for kids."
+  },
+  { "role": "user", "content": "Hello" },
+  { "role": "assistant", "content": "Yes man what's up to you" }
+]
