@@ -51,6 +51,7 @@ def Scenarios(current_query, conversation_history, first_ask=True, conv_history=
             conversation_history.clear() if not conv_history else conversation_history.append({"role": "assistant", "content": assistant_response})
             return assistant_response 
 
+    # This is the case when first_ask is already done or user already have asked a query with llm 
     else:
         # For first we will always check if anything user asked is like common phrases and present in our local json file then give response to that particular query
         for query, response in common_phrases.items():
