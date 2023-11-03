@@ -4,8 +4,12 @@ from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from langchain.vectorstores.faiss import FAISS
 from dotenv import load_dotenv
+import os
+import openai
 
 load_dotenv('.env')
+openai.api_key = os.getenv('OPENAI_API_KEY')
+
 
 
 # Function to fetch the answers from FAISS vector db 
@@ -21,3 +25,31 @@ def Retriever(query : str, persist_directory : str):
 
     result = qa_chain({"query": query})
     return result
+
+
+def MergeIndexes(db_locations : list, new_location : str = None):
+    embeddings = OpenAIEmbeddings()
+    """taking first database for merging all the databases
+        so that we can return a single database after merging"""
+    
+
+    dbPrimary = FAISS.load_local(db_locations[0],embeddings=embeddings)
+    for db_location in db_locations:
+        if db_location == db_locations[0]:
+            # if again we got first database then we skip it as we already have marked it as primary
+            continue
+        dbSecondary = FAISS.load_local(db_location,embeddings=embeddings)
+        dbPrimary.merge_from(dbSecondary)
+
+    # Return the merged database or we can store it as new db name as well 
+    # dbPrimary.save_local(new_location)  Location where we have to save the merged database  
+    return dbPrimary.docstore._dict
+
+
+# Testing purpose
+if __name__ == '__main__':
+    ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
+    PERSIST_PATH = f"{ROOT_PATH}/STORAGE"
+    PERSIST_PATH_list = [PERSIST_PATH+"/db1",PERSIST_PATH+"/db2"]
+    print(MergeIndexes(PERSIST_PATH_list))
+    # print(PERSIST_PATH_list)

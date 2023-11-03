@@ -3,7 +3,10 @@ from langchain.vectorstores.faiss import FAISS
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.document_loaders import  UnstructuredMarkdownLoader, UnstructuredWordDocumentLoader, PyPDFLoader, PythonLoader, CSVLoader, TextLoader, UnstructuredHTMLLoader, UnstructuredExcelLoader
 import os
+from dotenv import load_dotenv
 
+load_dotenv('.env')
+os.environ['OPENAI_API_KEY'] = os.getenv('OPENAI_API_KEY')
 
 # Function to load all the files with there respective extension
 def LoadMultipleFiles(files):
