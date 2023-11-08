@@ -17,19 +17,22 @@ load_dotenv('.env')
 @router.post("/voiceGPT", status_code=status.HTTP_200_OK)
 def load_ozz_voice(api_key=Body(...), text=Body(...), self_image=Body(...)):
     # Test Queries with user and assistant and saving in conversation history as well as json file
-    # text = [{'user': 'hey hootie tell me a story'}]
+    # text = [{"role": "system", "content": "You are a cute and smart assistant for kids."},
+    #         {'role':'user','content': 'hey hootie tell me a story'}]
     # text = [  # future state
-    #         {'user': 'hey hootie tell me a story', 'resp': 'what story would you like to hear'}, 
-    #         {'user': 'could you make up a story?'}]
+    #         {"role": "system", "content": "You are a cute and smart assistant for kids."},
+    #         {'role':'user', 'content': 'hey hootie tell me a story'}, {'role':'assistant','content': 'what story would you like to hear'}, 
+    #         {'role':'user','content': 'any kind of kid related'}
+    #        ]
 
     ipdb.set_trace()
 
-    def handle_response(text):
+    def handle_response(text : str):
         # Kids or User question
         text_obj = text[-1]['user']
 
         #Conversation History to chat back and forth
-        conversation_history = []
+        conversation_history : list = []
 
         # Call the Scenario Function and get the response accordingly
         response = Scenarios(text_obj,conversation_history,first_ask=True,conv_history=False)
@@ -39,9 +42,10 @@ def load_ozz_voice(api_key=Body(...), text=Body(...), self_image=Body(...)):
             json.dump(conversation_history,conversation_history_file)
 
 
-        # update reponse to self   !!! well we are not using class methods so self doesn't work we just simply need to return response as functional based prototyping
+        # update reponse to self   !!! well we are not using class methods so self doesn't work we just simply need to return response 
+        # as functional based prototyping but if you have rest of the code then it will work according to the code
         text[-1].update({'resp': response})
-        # text[-1] = response
+        # text[-1] = response  # for normal response return without class
 
         return text
 
