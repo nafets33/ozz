@@ -42,14 +42,15 @@ def MergeIndexes(db_locations : list, new_location : str = None):
         dbPrimary.merge_from(dbSecondary)
 
     # Return the merged database or we can store it as new db name as well 
-    # dbPrimary.save_local(new_location)  Location where we have to save the merged database  
-    return dbPrimary.docstore._dict
+    dbPrimary.save_local(new_location)  # Location where we have to save the merged database  
+    # return dbPrimary.docstore._dict    # For priting the output
+    return dbPrimary    # Will return a vector object
 
 
 # Testing purpose
 if __name__ == '__main__':
     ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
     PERSIST_PATH = f"{ROOT_PATH}/STORAGE"
-    PERSIST_PATH_list = [PERSIST_PATH+"/db1",PERSIST_PATH+"/db2"]
-    print(MergeIndexes(PERSIST_PATH_list))
+    PERSIST_PATH_list = [PERSIST_PATH+"/db1",PERSIST_PATH+"/db2",PERSIST_PATH+"/ozz.py",PERSIST_PATH+"/README.md",PERSIST_PATH+"/llama_ozz_app.py"]
+    print(MergeIndexes(PERSIST_PATH_list,PERSIST_PATH+"/newDB"))
     # print(PERSIST_PATH_list)

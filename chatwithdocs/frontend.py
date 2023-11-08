@@ -13,6 +13,7 @@ st.title('QA-ChatBot')
 with st.sidebar:
     files = st.sidebar.file_uploader('Upload your files',type=['PDF','CSV','MD','DOCX','DOC','XLSX','PY','HTML'],accept_multiple_files=True)
     
+
     # Store all the files
     if not os.path.exists(DATA_PATH):
             os.mkdir(DATA_PATH)
@@ -22,15 +23,19 @@ with st.sidebar:
         if file is not None:
             with open(os.path.join(DATA_PATH, file.name), 'wb') as f:
                 f.write(file.read())
-            # st.write(f"Saved {file.name}")
 
-    # Training the files or creating embeddings and storing in vector db
-    if files is not None:
+
+    # Store the selected files
+    selected_files = st.sidebar.multiselect('Select files to train', [file.name for file in files])
+
+    # Training the selected files and creating embeddings
+    if selected_files:
         if st.sidebar.button('Train'):
             with st.sidebar.status("Training Model..."):
-                load_files = Directory(DATA_PATH)
-                chunks = CreateChunks(load_files)
-                embeddings = CreateEmbeddings(chunks,PERSIST_PATH)
+                for file_name in selected_files:
+                    load_files = Directory(DATA_PATH)
+                    chunks = CreateChunks(load_files)
+                    embeddings = CreateEmbeddings(chunks, os.path.join(PERSIST_PATH, file_name))
 
 
 # Show all the uploaded files
@@ -38,7 +43,7 @@ file_names = [name for name in os.listdir(DATA_PATH) if os.path.isfile(os.path.j
 if not file_names:
     st.write('You have no files uploaded.')
 else:
-    selected_file = st.sidebar.selectbox(label="Uploaded Files", options=file_names)
+    selected_chat_file = st.sidebar.selectbox(label="Select Files to Chat", options=file_names)
 
 # Chat Interface
 query = st.chat_input(placeholder="Enter your query")
@@ -50,7 +55,7 @@ if query is not None:
     try:
         if query:
             with st.spinner("Searching..."):
-                response = Retriever(query, PERSIST_PATH)
+                response = Retriever(query, os.path.join(PERSIST_PATH,selected_chat_file))
 
         with st.chat_message('ai'):
             query = response["query"]
