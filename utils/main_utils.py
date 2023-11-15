@@ -8,6 +8,11 @@ from elevenlabs import Voice, VoiceSettings, generate
 from elevenlabs import generate, stream
 from elevenlabs import save
 import pickle
+import psycopg2
+
+from youtubesearchpython import *
+import streamlit as st
+import os
 
 load_dotenv()
 set_api_key(os.environ.get("api_elevenlabs"))
@@ -35,7 +40,9 @@ def ReadPickleData(pickle_file):
         else:
             try:
                 with open(pickle_file, "rb") as f:
-                    return pickle.load(f)
+                    pf = pickle.load(f)
+                    pf['source'] = pickle_file
+                    return pf
             except Exception as e:
                 print('pkl read error: ', os.path.basename(pickle_file), e, stop)
                 # logging.error(f'{e} error is pickle load')
@@ -53,6 +60,34 @@ def ReadPickleData(pickle_file):
 
         # Wait a short amount of time before checking again
         time.sleep(0.033)
+
+def search_youtube():
+    channelsSearch = ChannelsSearch('NoCopyrightSounds', limit = 10, region = 'US')
+
+    print(channelsSearch.result())
+
+    video = Video.get('https://www.youtube.com/watch?v=z0GKGpObgPY', mode = ResultMode.json, get_upload_date=True)
+    print(video)
+    videoInfo = Video.getInfo('https://youtu.be/z0GKGpObgPY', mode = ResultMode.json)
+    print(videoInfo)
+    videoFormats = Video.getFormats('z0GKGpObgPY')
+    print(videoFormats)
+
+
+
+    channel_id = "UC_aEa8K-EOJ3D6gOs7HcyNg"
+    playlist = Playlist(playlist_from_channel_id(channel_id))
+
+    print(f'Videos Retrieved: {len(playlist.videos)}')
+
+    while playlist.hasMoreVideos:
+        print('Getting more videos...')
+        playlist.getNextVideos()
+        print(f'Videos Retrieved: {len(playlist.videos)}')
+
+    print('Found all the videos.')
+
+
 
 def base_content():
     def content_type(name, url, tags):
@@ -183,7 +218,6 @@ def conversational_phrases(your_name, Hobby, Interest, Location, City, Place):
             )
 
 
-import psycopg2
 
 # Connect to the PostgreSQL database
 conn = psycopg2.connect(
