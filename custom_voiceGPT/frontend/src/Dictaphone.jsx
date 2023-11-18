@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from "react"
 import { useSpeechRecognition } from "react-speech-recognition"
 
-const Dictaphone = ({ commands }) => {
+let timer
+
+const Dictaphone = ({
+  commands,
+  myFunc,
+  listenAfterRelpy,
+  noResponseTime = 1,
+  show_conversation = true,
+}) => {
   const [transcribing, setTranscribing] = useState(true)
   const [clearTranscriptOnListen, setClearTranscriptOnListen] = useState(true)
   const toggleTranscribing = () => setTranscribing(!transcribing)
@@ -15,15 +23,56 @@ const Dictaphone = ({ commands }) => {
     listening,
     browserSupportsSpeechRecognition,
     isMicrophoneAvailable,
-  } = useSpeechRecognition({ transcribing, clearTranscriptOnListen, commands })
+  } = useSpeechRecognition({ transcribing, clearTranscriptOnListen })
+  const [prevScript, setPrevScript] = useState("")
+
   useEffect(() => {
-    if (interimTranscript !== "") {
-      // console.log("Got interim result:", interimTranscript)
+    // console.log(
+    //   "Got interim result:",
+    //   interimTranscript.length,
+    //   interimTranscript
+    // )
+    // setPrevScript(interimTranscript)
+    // if (interimTranscript === "") {
+    //   console.log("prevScript :>> ", prevScript)
+    // }
+  }, [interimTranscript])
+
+  useEffect(() => {
+    if (finalTranscript != "") {
+      console.log("Got final result:", finalTranscript)
+      timer && clearTimeout(timer)
+      timer = setTimeout(() => {
+        setPrevScript(finalTranscript)
+        // keyword trigger
+        for (let i = 0; i < commands.length; i++) {
+          const { keywords, api_body } = commands[i]
+          for (let j = 0; j < keywords.length; j++) {
+            const keyword = new RegExp(keywords[j], "i")
+            const isKeywordFound = finalTranscript.search(keyword) != -1
+
+            if (isKeywordFound) {
+              myFunc(finalTranscript, commands[i], 1)
+              resetTranscript()
+              return
+            }
+          }
+        }
+        if (listenAfterRelpy) {
+          myFunc(finalTranscript, { api_body: { keyword: "" } }, 3)
+          resetTranscript()
+          return
+        }
+        //waiting for keyword
+        console.log("waiting for keyword")
+        resetTranscript()
+      }, noResponseTime * 1000)
     }
-    if (finalTranscript !== "") {
-      // console.log("Got final result:", finalTranscript)
+    if (finalTranscript != "" && !listenAfterRelpy) {
+      setPrevScript(finalTranscript)
+      resetTranscript()
     }
-  }, [interimTranscript, finalTranscript])
+  }, [finalTranscript, listenAfterRelpy, commands])
 
   if (!browserSupportsSpeechRecognition) {
     return <span>No browser support</span>
@@ -34,19 +83,17 @@ const Dictaphone = ({ commands }) => {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column" }}>
-      <span>All you said: {transcript}</span>
-      <span>listening: {listening ? "on" : "off"}</span>
-      {/* <span>transcribing: {transcribing ? "on" : "off"}</span> */}
-      {/* <span>
-        clearTranscriptOnListen: {clearTranscriptOnListen ? "on" : "off"}
-      </span> */}
-      {/* <button onClick={resetTranscript}>Reset</button>
-      <button onClick={toggleTranscribing}>Toggle transcribing</button> */}
-      {/* <button onClick={toggleClearTranscriptOnListen}>
-        Toggle clearTranscriptOnListen
-      </button> */}
-    </div>
+    <>
+      {show_conversation && (
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <span>you said: {prevScript}</span>
+          <span>listening: {listening ? "on" : "off"}</span>
+          <span>
+            clearTranscriptOnListen: {clearTranscriptOnListen ? "on" : "off"}
+          </span>
+        </div>
+      )}
+    </>
   )
 }
 
