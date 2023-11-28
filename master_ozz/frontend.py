@@ -1,14 +1,17 @@
 import streamlit as st
 import os
-from constants import DATA_PATH, PERSIST_PATH
-from ingest import Directory, CreateChunks, CreateEmbeddings
-from generate_answers import Retriever
+# from constants import DATA_PATH, PERSITS_PATH
+# from ingest import Directory, CreateChunks, CreateEmbeddings
+# from generate_answers import Retriever
 
-
+from master_ozz.utils import Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
 
 st.set_page_config(page_title="QA-ChatBot")
 st.title('QA-ChatBot')
 
+constants = init_constants()
+DATA_PATH = constants.get('DATA_PATH')
+PERSIST_PATH = constants.get('PERSITS_PATH')
 
 with st.sidebar:
     files = st.sidebar.file_uploader('Upload your files',type=['PDF','CSV','MD','DOCX','DOC','XLSX','PY','HTML'],accept_multiple_files=True)

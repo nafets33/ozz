@@ -7,6 +7,10 @@ import json
 from ozz_query import Scenarios
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from utils import ozz_master_root
+
+main_root = ozz_master_root()  # os.getcwd()
+load_dotenv(os.path.join(main_root, ".env"))
 
 # setting up FastAPI
 router = FastAPI()
@@ -25,17 +29,19 @@ def load_ozz_voice(api_key=Body(...), text=Body(...), self_image=Body(...)):
     #         {'role':'user','content': 'any kind of kid related'}
     #        ]
 
-    ipdb.set_trace()
 
     def handle_response(text : str):
+        ipdb.set_trace()
         # Kids or User question
         text_obj = text[-1]['user']
 
         #Conversation History to chat back and forth
-        conversation_history : list = []
+        conversation_history : list = [] if len(text_obj) <= 1 else text_obj
+
+        first_ask = True if len(conversation_history) == 0 else False
 
         # Call the Scenario Function and get the response accordingly
-        response = Scenarios(text_obj,conversation_history,first_ask=True,conv_history=False)
+        response = Scenarios(text_obj,conversation_history, first_ask=first_ask, conv_history=False)
         
         # For saving a chat history for current session in json file
         with open('fastapi/conversation_history.json','w') as conversation_history_file:

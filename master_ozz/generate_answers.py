@@ -7,8 +7,10 @@ from dotenv import load_dotenv
 import os
 import openai
 
-load_dotenv('.env')
-openai.api_key = os.getenv('OPENAI_API_KEY')
+from master_ozz.utils import ozz_master_root, save_audio, generate_audio
+load_dotenv(os.path.join(ozz_master_root(),'.env'))
+
+openai.api_key = os.environ.get('OPENAI_API_KEY')
 
 
 

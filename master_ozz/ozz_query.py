@@ -29,7 +29,7 @@ def Scenarios(current_query : str , conversation_history : list , first_ask=True
         ''' Appending the prompt for system when user asks for first time (is this first ask?) 
         also with json coz if user again tries to ask something and doesn't found in json then it will go to llm
         so llm needs to be already have the json conversation to understand the next query asked by user '''
-
+        
         conversation_history.append({"role": "system", "content": "You are a cute and smart assistant for kids."})
 
         # For first we will always check if anything user asked is like common phrases and present in our local json file then give response to that particular query

@@ -219,65 +219,65 @@ def conversational_phrases(your_name, Hobby, Interest, Location, City, Place):
 
 
 
-# Connect to the PostgreSQL database
-conn = psycopg2.connect(
-    dbname="ozz_db",
-    user="stefanstapinski",
-    password="ozz",
-    host="localhost",
-    port=5432,
-)
+# # Connect to the PostgreSQL database
+# conn = psycopg2.connect(
+#     dbname="ozz_db",
+#     user="stefanstapinski",
+#     password="ozz",
+#     host="localhost",
+#     port=5432,
+# )
 
-# Open the audio file
-with open("your_audio_file.mp3", "rb") as audio_file:
-    audio_data = audio_file.read()
+# # Open the audio file
+# with open("your_audio_file.mp3", "rb") as audio_file:
+#     audio_data = audio_file.read()
 
-# Insert the audio data into the database
-cursor = conn.cursor()
-cursor.execute("INSERT INTO audio_files (audio_data) VALUES (%s)", (audio_data,))
-conn.commit()
+# # Insert the audio data into the database
+# cursor = conn.cursor()
+# cursor.execute("INSERT INTO audio_files (audio_data) VALUES (%s)", (audio_data,))
+# conn.commit()
 
-# Close the cursor and connection
-cursor.close()
-conn.close()
+# # Close the cursor and connection
+# cursor.close()
+# conn.close()
 
 
-# Database connection parameters
-db_params = {
-    "host": "localhost",
-    "database": "ozz_db",
-    "user": "stefanstapinski",
-    "password": "ozz",
-    "port": 5432
-}
+# # Database connection parameters
+# db_params = {
+#     "host": "localhost",
+#     "database": "ozz_db",
+#     "user": "stefanstapinski",
+#     "password": "ozz",
+#     "port": 5432
+# }
 
-# SQL statement to create the audio files table
-create_table_sql = """
-CREATE TABLE audio_files (
-    id serial PRIMARY KEY,
-    title varchar(100),
-    audio_data bytea
-);
-"""
+# # SQL statement to create the audio files table
+# create_table_sql = """
+# CREATE TABLE audio_files (
+#     id serial PRIMARY KEY,
+#     title varchar(100),
+#     audio_data bytea
+# );
+# """
 
-try:
-    # Connect to the database
-    conn = psycopg2.connect(**db_params)
+# try:
+#     # Connect to the database
+#     conn = psycopg2.connect(**db_params)
 
-    # Create a cursor object
-    cursor = conn.cursor()
+#     # Create a cursor object
+#     cursor = conn.cursor()
 
-    # Execute the SQL statement to create the table
-    cursor.execute(create_table_sql)
+#     # Execute the SQL statement to create the table
+#     cursor.execute(create_table_sql)
 
-    # Commit the changes
-    conn.commit()
+#     # Commit the changes
+#     conn.commit()
 
-    # Close the cursor and connection
-    cursor.close()
-    conn.close()
+#     # Close the cursor and connection
+#     cursor.close()
+#     conn.close()
 
-    print("Table 'audio_files' created successfully.")
+#     print("Table 'audio_files' created successfully.")
 
-except psycopg2.Error as e:
-    print("Error creating table:", e)
+# except psycopg2.Error as e:
+#     print("Error creating table:", e)

@@ -11,6 +11,7 @@ from elevenlabs import Voice, VoiceSettings, generate
 from elevenlabs import generate, stream
 from custom_button import cust_Button
 from streamlit_player import st_player
+from utils.main_utils import ozz_master_root
 
 load_dotenv()
 
