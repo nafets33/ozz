@@ -8,6 +8,10 @@ from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from starlette.responses import RedirectResponse
 from starlette.requests import Request
 
+# from fastapi import APIRouter
+# router = APIRouter() 
+app = FastAPI()
+
 import os
 main_root = ozz_master_root()  # os.getcwd()
 load_dotenv(os.path.join(main_root, ".env"))
@@ -15,7 +19,6 @@ load_dotenv(os.path.join(main_root, ".env"))
 
 origins = []
 
-app = FastAPI()
 
 app.include_router(ozz_router.router)
 
@@ -70,4 +73,4 @@ if __name__ == '__main__':
     # ip_address = get_ip_address()
     # print("IP Address:", ip_address)
     ip_address = "127.0.0.1"
-    uvicorn.run(app, host=ip_address, port=8500) # '10.3.144.157'
+    uvicorn.run(app, host=ip_address, port=8000) # '10.3.144.157'

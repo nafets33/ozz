@@ -13,17 +13,10 @@ ip_address, streamlit_ip = return_app_ip()
 
 # sac_menu_buttons('Account')
 
-# Add Streamlit widgets to define the parameters for the CustomSlider
-
-st.title("Testing Streamlit custom components")
-
-
 set_streamlit_page_config_once()
-ip_address, streamlit_ip = return_app_ip()
-
+ip_address, streamlit_ip = return_app_ip("http://localhost:8501")
+print(ip_address)
 # sac_menu_buttons('Account')
-
-st.title("Testing Streamlit custom components")
 
 # Add Streamlit widgets to define the parameters for the CustomSlider
 
@@ -32,6 +25,7 @@ to = to_builder.build()
 # if st.session_state['username'] not in users_allowed_queen_email
 custom_voiceGPT(
     api=f"{st.session_state['ip_address']}/api/data/voiceGPT",
+    api_key=os.environ.get('ozz_key'),
     self_image="hoots.png",
     width=150,
     height=200,

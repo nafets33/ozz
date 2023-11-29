@@ -53,8 +53,8 @@ def ozz_master_root(info='\ozz\ozz'):
     script_path = os.path.abspath(__file__)
     return os.path.dirname(os.path.dirname(script_path)) # \pollen\pollen
 
-set_api_key(os.environ.get("api_elevenlabs"))
 load_dotenv(os.path.join(ozz_master_root(),'.env'))
+set_api_key(os.environ.get("api_elevenlabs"))
 
 
 def init_constants():
@@ -283,7 +283,7 @@ def set_streamlit_page_config_once():
         main_root = ozz_master_root()
 
         jpg_root = os.path.join(main_root, "misc")
-        queenbee = os.path.join(jpg_root, "bee.png")
+        queenbee = os.path.join(jpg_root, "woots_jumps_once.gif")
         page_icon = Image.open(queenbee)
         st.set_page_config(
             page_title="QuantQueen",
@@ -366,7 +366,7 @@ def return_app_ip(streamlit_ip="http://localhost:8502"):
         ip_address = "https://api.quantqueen.com"
         streamlit_ip = ip_address
     else:
-        ip_address = "http://127.0.0.1:8500"
+        ip_address = "http://127.0.0.1:8000"
 
     st.session_state['ip_address'] = ip_address
     st.session_state['streamlit_ip'] = streamlit_ip

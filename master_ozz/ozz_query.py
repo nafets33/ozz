@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv('.env')
 
 # Loading the json common phrases file and setting up the json file
-json_file = open('fastapi/greetings.json','r')
+json_file = open('master_ozz/greetings.json','r')
 common_phrases = json.load(json_file)
 
 # Setting up the llm for conversation with conversation history
