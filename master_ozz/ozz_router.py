@@ -47,11 +47,11 @@ def load_ozz_voice(api_key=Body(...), text=Body(...), self_image=Body(...)):
         self_image = 'hootsAndHootie.png'
 
         return self_image
-    def handle_audio(response, new_audio=True, filename='temp_audio.mp3'):
+    def handle_audio(response, new_audio=True, filename='temp_audio.mp3', audio_dir='/Users/stefanstapinski/ENV/ozz/ozz/custom_voiceGPT/frontend/build/'):
         if new_audio:
             audio = generate_audio(query=response)
-            save_audio(filename, audio)
-        
+            save_audio(os.path.join(audio_dir, filename), audio)
+            # print("Audio Saved ", filename)
         return filename
 
     def handle_response(text : str):
@@ -94,8 +94,16 @@ def load_ozz_voice(api_key=Body(...), text=Body(...), self_image=Body(...)):
     resp = handle_response(text)
     text = resp.get('text')
     audio_file = resp.get('audio_file')
+
+
+    # print(text)
+    print(self_image)
+    print(audio_file)
     
-    json_data = {'text': text, 'audio_path': audio_file, 'page_direct': None, 'self_image': self_image}
+    page_direct= None # 'http://localhost:8501/heart'
+    listen_after_reply = False
+    
+    json_data = {'text': text, 'audio_path': audio_file, 'page_direct': page_direct, 'self_image': self_image, 'listen_after_reply': listen_after_reply}
 
 
     return JSONResponse(content=json_data)

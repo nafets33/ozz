@@ -151,6 +151,7 @@ def save_audio(filename, audio):
         audio=audio,               # Audio bytes (returned by generate)
         filename=filename               # Filename to save audio to (e.g. "audio.wav")
     )
+    return True
 
 def generate_audio(query="Hello Story Time Anyone?", voice='Mimi', use_speaker_boost=True, settings_vars={'stability': .71, 'similarity_boost': .5, 'style': 0.0}):
     # 'Mimi', #'Charlotte', 'Fin'
