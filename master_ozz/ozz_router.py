@@ -7,7 +7,7 @@ import json
 
 from fastapi.responses import JSONResponse
 from master_ozz.ozz_query import Scenarios
-from master_ozz.utils import ozz_master_root
+from master_ozz.utils import ozz_master_root, generate_audio, save_audio
 
 from fastapi import APIRouter
 router = APIRouter(
@@ -39,23 +39,46 @@ def load_ozz_voice(api_key=Body(...), text=Body(...), self_image=Body(...)):
     #         {'role':'user', 'content': 'hey hootie tell me a story'}, {'role':'assistant','content': 'what story would you like to hear'}, 
     #         {'role':'user','content': 'any kind of kid related'}
     #        ]
-    ipdb.set_trace()
+    # ipdb.set_trace()
+
+    # /Users/stefanstapinski/ENV/ozz/ozz/custom_voiceGPT/frontend/build/
+    def handle_image(text, self_image):
+        # based on LLM response handle image if needs to change
+        self_image = 'hootsAndHootie.png'
+
+        return self_image
+    def handle_audio(response, new_audio=True, filename='temp_audio.mp3'):
+        if new_audio:
+            audio = generate_audio(query=response)
+            save_audio(filename, audio)
+        
+        return filename
 
     def handle_response(text : str):
-        ipdb.set_trace()
         # Kids or User question
-        text_obj = text[-1]['user'] # user query 
+        # ipdb.set_trace()
+        text_obj = text[-1]['user'] # user query
+        
+        conversation_history_file_path = 'master_ozz/conversation_history.json'
+
+        # For saving a chat history for current session in json file
+        with open(conversation_history_file_path, 'r') as conversation_history_file:
+            conversation_history = json.load(conversation_history_file)
 
         #Conversation History to chat back and forth
-        conversation_history : list = [] if len(text) <= 1 else text
-
+        conversation_history : list = [] if len(text) <= 1 else conversation_history
+        conv_history = True # if len(conversation_history) > 0 else False
         first_ask = True if len(conversation_history) == 0 else False
+        print('f-ask', first_ask)
 
         # Call the Scenario Function and get the response accordingly
-        response = Scenarios(text_obj,conversation_history, first_ask=first_ask, conv_history=False)
+        response, conversation_history = Scenarios(text_obj,conversation_history, first_ask=first_ask, conv_history=conv_history)
         
+        # handle audio respon
+        audio_file = handle_audio(response, new_audio=True)
+
         # For saving a chat history for current session in json file
-        with open('fastapi/conversation_history.json','w') as conversation_history_file:
+        with open(conversation_history_file_path, 'w') as conversation_history_file:
             json.dump(conversation_history,conversation_history_file)
 
 
@@ -64,20 +87,13 @@ def load_ozz_voice(api_key=Body(...), text=Body(...), self_image=Body(...)):
         text[-1].update({'resp': response})
         # text[-1] = response  # for normal response return without class
 
-        return text
-
-    text = handle_response(text)
-    
-    def handle_image(text, self_image):
-        # based on LLM response handle image if needs to change
-        self_image = '/Users/stefanstapinski/ENV/pollen/pollen/custom_voiceGPT/frontend/build/hootsAndHootie.png'
-
-        return self_image
+        return {'text': text, 'audio_file': audio_file}
 
     self_image = handle_image(text, self_image)
     
-    # audio_file = 'pollen/db/audio_files/file1.mp4'
-    audio_file = '/Users/stefanstapinski/ENV/pollen/pollen/custom_voiceGPT/frontend/build/test_audio.mp3'
+    resp = handle_response(text)
+    text = resp.get('text')
+    audio_file = resp.get('audio_file')
     
     json_data = {'text': text, 'audio_path': audio_file, 'page_direct': None, 'self_image': self_image}
 
