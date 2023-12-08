@@ -1,53 +1,33 @@
 import streamlit as st
-import speech_recognition as sr
+# import speech_recognition as sr
 import time 
 from dotenv import load_dotenv
 import os
+import pickle
+import time
+from datetime import datetime
+import streamlit as st
+import pandas as pd
+import socket
+import ipdb
+
 from elevenlabs import set_api_key
 from elevenlabs import Voice, VoiceSettings, generate
 from elevenlabs import generate, stream
 from elevenlabs import save
-import pickle
-import psycopg2
-from PIL import Image
-
-import asyncio
-import os
-import pickle
-import sqlite3
-import sys
-import time
-from datetime import datetime
-import streamlit as st
-import hashlib
-import shutil
-import pandas as pd
-import aiohttp
-import pytz
-import socket
-import ipdb
-
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores.faiss import FAISS
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.document_loaders import  UnstructuredMarkdownLoader, UnstructuredWordDocumentLoader, PyPDFLoader, PythonLoader, CSVLoader, TextLoader, UnstructuredHTMLLoader, UnstructuredExcelLoader
-import os
-
-
 from langchain.chains import RetrievalQA
-from langchain.embeddings import OpenAIEmbeddings
 from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
-from langchain.vectorstores.faiss import FAISS
-from dotenv import load_dotenv
-import os
 import openai
 
+from PIL import Image
 
 from youtubesearchpython import *
-import streamlit as st
-import os
 
 def ozz_master_root(info='\ozz\ozz'):
     script_path = os.path.abspath(__file__)
@@ -360,8 +340,8 @@ def get_ip_address():
     ip_address = socket.gethostbyname(hostname)
     return ip_address
 
-def return_app_ip(streamlit_ip="http://localhost:8502"):
-    ip_address = get_ip_address()
+def return_app_ip(streamlit_ip="http://localhost:8502", ip_address="http://127.0.0.1:8000"):
+    # ip_address = get_ip_address()
     if ip_address == os.environ.get('gcp_ip'):
         # print("IP", ip_address, os.environ.get('gcp_ip'))
         ip_address = "https://api.quantqueen.com"
@@ -482,66 +462,3 @@ def MergeIndexes(db_locations : list, new_location : str = None):
     return dbPrimary.docstore._dict
 
 
-
-# # Connect to the PostgreSQL database
-# conn = psycopg2.connect(
-#     dbname="ozz_db",
-#     user="stefanstapinski",
-#     password="ozz",
-#     host="localhost",
-#     port=5432,
-# )
-
-# # Open the audio file
-# with open("your_audio_file.mp3", "rb") as audio_file:
-#     audio_data = audio_file.read()
-
-# # Insert the audio data into the database
-# cursor = conn.cursor()
-# cursor.execute("INSERT INTO audio_files (audio_data) VALUES (%s)", (audio_data,))
-# conn.commit()
-
-# # Close the cursor and connection
-# cursor.close()
-# conn.close()
-
-
-# # Database connection parameters
-# db_params = {
-#     "host": "localhost",
-#     "database": "ozz_db",
-#     "user": "stefanstapinski",
-#     "password": "ozz",
-#     "port": 5432
-# }
-
-# # SQL statement to create the audio files table
-# create_table_sql = """
-# CREATE TABLE audio_files (
-#     id serial PRIMARY KEY,
-#     title varchar(100),
-#     audio_data bytea
-# );
-# """
-
-# try:
-#     # Connect to the database
-#     conn = psycopg2.connect(**db_params)
-
-#     # Create a cursor object
-#     cursor = conn.cursor()
-
-#     # Execute the SQL statement to create the table
-#     cursor.execute(create_table_sql)
-
-#     # Commit the changes
-#     conn.commit()
-
-#     # Close the cursor and connection
-#     cursor.close()
-#     conn.close()
-
-#     print("Table 'audio_files' created successfully.")
-
-# except psycopg2.Error as e:
-#     print("Error creating table:", e)
