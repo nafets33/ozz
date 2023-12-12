@@ -10,6 +10,7 @@ import streamlit as st
 import pandas as pd
 import socket
 import ipdb
+import sys
 
 from elevenlabs import set_api_key
 from elevenlabs import Voice, VoiceSettings, generate
@@ -23,15 +24,29 @@ from langchain.document_loaders import  UnstructuredMarkdownLoader, Unstructured
 from langchain.chains import RetrievalQA
 from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
+
+from langchain.prompts import PromptTemplate
 import openai
+
 
 from PIL import Image
 
+from pydub import AudioSegment
+
 from youtubesearchpython import *
+
+def print_line_of_error(e='print_error_message'):
+    exc_type, exc_obj, exc_tb = sys.exc_info()
+    print(e, exc_type, exc_tb.tb_lineno)
+    return exc_type, exc_tb.tb_lineno
 
 def ozz_master_root(info='\ozz\ozz'):
     script_path = os.path.abspath(__file__)
     return os.path.dirname(os.path.dirname(script_path)) # \pollen\pollen
+
+def ozz_master_root_db(info='\ozz\ozz\ozz_db'):
+    script_path = os.path.abspath(__file__)
+    return os.path.join(os.path.dirname(os.path.dirname(script_path)), 'ozz_db')
 
 load_dotenv(os.path.join(ozz_master_root(),'.env'))
 set_api_key(os.environ.get("api_elevenlabs"))
@@ -86,6 +101,19 @@ def ReadPickleData(pickle_file):
         time.sleep(0.033)
 
 
+
+def append_audio(input_file1, input_file2, output_file):
+    # Load audio segments
+    audio_segment1 = AudioSegment.from_file(input_file1)
+    audio_segment2 = AudioSegment.from_file(input_file2)
+
+    # Concatenate audio segments
+    final_audio = audio_segment1 + audio_segment2
+
+    # Export the concatenated audio to a file
+    final_audio.export(output_file, format="mp4")  #
+
+
 def search_youtube():
     channelsSearch = ChannelsSearch('NoCopyrightSounds', limit = 10, region = 'US')
 
@@ -134,21 +162,25 @@ def save_audio(filename, audio):
     return True
 
 def generate_audio(query="Hello Story Time Anyone?", voice='Mimi', use_speaker_boost=True, settings_vars={'stability': .71, 'similarity_boost': .5, 'style': 0.0}):
-    # 'Mimi', #'Charlotte', 'Fin'
-    audio = generate(
-        text=query,
-        voice=voice, #'Charlotte', 'Fin'
-    )
+    try:
+        # 'Mimi', #'Charlotte', 'Fin'
+        audio = generate(
+            text=query,
+            voice=voice, #'Charlotte', 'Fin'
+        )
 
-    # audio = generate(
-    #     text="Hello! My name is Bella.",
-    #     voice=Voice(
-    #         voice_id='EXAVITQu4vr4xnSDxMaL',
-    #         settings=VoiceSettings(stability=0.71, similarity_boost=0.5, style=0.0, use_speaker_boost=True)
-    #     )
-    # )
+        # audio = generate(
+        #     text="Hello! My name is Bella.",
+        #     voice=Voice(
+        #         voice_id='EXAVITQu4vr4xnSDxMaL',
+        #         settings=VoiceSettings(stability=0.71, similarity_boost=0.5, style=0.0, use_speaker_boost=True)
+        #     )
+        # )
 
-    return audio
+        return audio
+    except Exception as e:
+        print_line_of_error(e)
+        return None
 
 def conversational_phrases(your_name, Hobby, Interest, Location, City, Place):
 
@@ -462,3 +494,35 @@ def MergeIndexes(db_locations : list, new_location : str = None):
     return dbPrimary.docstore._dict
 
 
+# def llm_response(query, chat_history):
+#     memory = ConversationBufferMemory(
+#                                         memory_key="chat_history",
+#                                         max_len=50,
+#                                         return_messages=True,
+#                                     )
+
+#     prompt_template = '''
+#     You are a Bioinformatics expert with immense knowledge and experience in the field. Your name is Dr. Fanni.
+#     Answer my questions based on your knowledge and our older conversation. Do not make up answers.
+#     If you do not know the answer to a question, just say "I don't know".
+
+#     Given the following conversation and a follow up question, answer the question.
+
+#     {chat_history}
+
+#     question: {question}
+#     '''
+
+#     PROMPT = PromptTemplate.from_template(
+#                 template=prompt_template
+#             )
+
+
+#     chain = ConversationalRetrievalChain.from_llm(
+#                                                     chat_model,
+#                                                     retriever,
+#                                                     memory=memory,
+#                                                     condense_question_prompt=PROMPT
+#                                                 )
+
+#     pp.pprint(chain({'question': q1, 'chat_history': memory.chat_memory.messages}))

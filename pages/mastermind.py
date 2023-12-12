@@ -26,9 +26,9 @@ to = to_builder.build()
 custom_voiceGPT(
     api=f"{st.session_state['ip_address']}/api/data/voiceGPT",
     api_key=os.environ.get('ozz_key'),
-    self_image="hoots.png",
-    width=150,
-    height=200,
+    self_image="hootsAndHootie.png",
+    width=350,
+    height=350,
     hello_audio="test_audio.mp3",
     face_recon=True,
     show_video=True,
