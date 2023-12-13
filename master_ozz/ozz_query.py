@@ -91,8 +91,18 @@ def Scenarios(current_query : str , conversation_history : list , first_ask=Fals
 
         return conversation_history
 
+    def find_audio(response):
+        # if response in audio db or 95% in audio db, return audio file
+        audio_found = False
+        return audio_found
+
     def handle_audio(response, audio_file=None, audio_dir='/Users/stefanstapinski/ENV/ozz/ozz/custom_voiceGPT/frontend/build/'):
         db_DB_audio = os.path.join(root_db, 'audio')
+        
+        # check is response already in audio db per character WORKERBEE
+        if not audio_file:
+            audio_file = find_audio(response)
+
         if audio_file: # if 
             source_file = os.path.join(db_DB_audio, audio_file)
             destination_directory = audio_dir
@@ -100,6 +110,7 @@ def Scenarios(current_query : str , conversation_history : list , first_ask=Fals
 
             return audio_file
         else:
+            
             audio_file = 'temp_audio.mp3'
             audio = generate_audio(query=response)
 
@@ -121,6 +132,9 @@ def Scenarios(current_query : str , conversation_history : list , first_ask=Fals
             story_asks = ["tell a story", "share a tale", "share a tail", "story please", "tell me a story", "tell the kids a story", "tell the story"]
             story_db = {'calendar_story_1.mp3': ['calendar story'],
                         'owl_story_1.mp3': ['owl story'],}
+            for k, v in story_db.items():
+                for tag in v:
+                    story_asks.append([f'tell me the {tag}', f'tell the {tag}', f'please tell {tag}'])
             
             if returning_question:
                 for audio_file, story_tags in story_db.items():
@@ -173,11 +187,13 @@ def Scenarios(current_query : str , conversation_history : list , first_ask=Fals
             # Appending the response from json file
             conversation_history.clear() if not conv_history else conversation_history.append({"role": "assistant", "content": response})
             ## find audio file to set to new_audio False
+            # return audio file
             audio_file = handle_audio(response, audio_file=audio_file) 
             return scenario_return(response, conversation_history, audio_file, session_state)
     
     # print("calling llm")
-    response = llm_assistant_response(current_query,conversation_history)
+    # are we asking LLM to find answer in db or reteriver?
+    response = llm_assistant_response(current_query, conversation_history)
 
     conversation_history.clear() if not conv_history else conversation_history.append({"role": "assistant", "content": response})
     audio_file = handle_audio(response=response, audio_file=audio_file)

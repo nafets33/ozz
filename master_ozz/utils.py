@@ -462,18 +462,20 @@ def CreateEmbeddings(textChunks :str ,persist_directory : str):
 
 # Function to fetch the answers from FAISS vector db 
 def Retriever(query : str, persist_directory : str):
-    embeddings = OpenAIEmbeddings()
-    # memory = ConversationBufferMemory()
-    # embeddings = HuggingFaceInstructEmbeddings(model_name=EMBEDDING_MODEL_NAME)
-    vectordb = FAISS.load_local(persist_directory,embeddings=embeddings)
-    retriever = vectordb.as_retriever(search_type="mmr", search_kwargs={"k": 3})
+    try:
+        embeddings = OpenAIEmbeddings()
+        # memory = ConversationBufferMemory()
+        # embeddings = HuggingFaceInstructEmbeddings(model_name=EMBEDDING_MODEL_NAME)
+        vectordb = FAISS.load_local(persist_directory,embeddings=embeddings)
+        retriever = vectordb.as_retriever(search_type="mmr", search_kwargs={"k": 3})
 
-    # For OpenAI ChatGPT Model
-    qa_chain = RetrievalQA.from_chain_type(llm=ChatOpenAI(model='gpt-3.5-turbo-16k',max_tokens=10000), chain_type='stuff', retriever=retriever, return_source_documents=True)
+        # For OpenAI ChatGPT Model
+        qa_chain = RetrievalQA.from_chain_type(llm=ChatOpenAI(model='gpt-3.5-turbo-16k',max_tokens=10000), chain_type='stuff', retriever=retriever, return_source_documents=True)
 
-    result = qa_chain({"query": query})
-    return result
-
+        result = qa_chain({"query": query})
+        return result
+    except Exception as e:
+        print_line_of_error(e)
 
 def MergeIndexes(db_locations : list, new_location : str = None):
     embeddings = OpenAIEmbeddings()
