@@ -4,8 +4,8 @@ from bs4 import BeautifulSoup
 
 from master_ozz.utils import print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
 
-st.set_page_config(page_title="QA-ChatBot")
-st.title('QA-ChatBot')
+st.set_page_config(page_title="Ozz")
+st.title('Ozz')
 
 constants = init_constants()
 DATA_PATH = constants.get('DATA_PATH')
@@ -94,6 +94,8 @@ else:
     selected_file = st.sidebar.selectbox(label="Uploaded Files", options=file_names)
 
 # Chat Interface
+db_names = os.listdir(PERSIST_PATH)
+db_name = st.selectbox("Select from predefined options:", db_names)
 query = st.chat_input(placeholder="Enter your query")
 if query is not None:
     with st.chat_message('user'):
@@ -103,7 +105,7 @@ if query is not None:
     try:
         if query:
             with st.spinner("Searching..."):
-                Retriever_db = os.path.join(PERSIST_PATH, "db1")
+                Retriever_db = os.path.join(PERSIST_PATH, db_name)
                 response = Retriever(query, Retriever_db)
 
         with st.chat_message('ai'):
