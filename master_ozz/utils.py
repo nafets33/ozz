@@ -1,5 +1,5 @@
 import streamlit as st
-# import speech_recognition as sr
+import speech_recognition as sr
 import time 
 from dotenv import load_dotenv
 import os
@@ -11,6 +11,7 @@ import pandas as pd
 import socket
 import ipdb
 import sys
+import json
 
 from elevenlabs import set_api_key
 from elevenlabs import Voice, VoiceSettings, generate
@@ -51,6 +52,10 @@ def ozz_master_root_db(info='\ozz\ozz\ozz_db'):
 load_dotenv(os.path.join(ozz_master_root(),'.env'))
 set_api_key(os.environ.get("api_elevenlabs"))
 
+ROOT_PATH = ozz_master_root()
+DATA_PATH = f"{ROOT_PATH}/DATA"
+PERSIST_PATH = f"{ROOT_PATH}/STORAGE"
+OZZ_DB = ozz_master_root_db()
 
 def init_constants():
     ROOT_PATH = ozz_master_root()
@@ -59,6 +64,36 @@ def init_constants():
 
     return {'DATA_PATH': DATA_PATH,
             'PERSIST_PATH':PERSIST_PATH,}
+
+def text_audio_fields(file_path, text, self_image=None):
+    if not self_image:
+        self_image = file_path.split("/")[-1].split(".")[0] # name of file without extension
+
+    return {'file_path': file_path, 
+            'text': text, 
+            'self_image': self_image}
+
+def init_text_audio_db():
+    text_audio_db = os.path.join(OZZ_DB, 'master_text_audio')
+    if os.path.exists(f'{text_audio_db}.pkl'):
+        master_text_audio = ReadPickleData(f'{text_audio_db}.pkl')
+        return master_text_audio
+    
+    audio_db = os.path.join(OZZ_DB, 'audio')
+    master_text_audio = []
+    for audio in os.listdir(audio_db):
+        try:
+            audio_source = os.path.join(audio_db, audio)
+            text = transcribe_audio_mp3(audio_source)
+            input_save = text_audio_fields(audio_source, text)
+            master_text_audio.append(input_save)
+        except Exception as e:
+            print_line_of_error(e)
+    
+    save_master_text_db(master_text_audio)
+
+    return master_text_audio
+
 
 def ReadPickleData(pickle_file):
     # Check the file's size and modification time
@@ -100,6 +135,46 @@ def ReadPickleData(pickle_file):
         # Wait a short amount of time before checking again
         time.sleep(0.033)
 
+
+def PickleData(pickle_file, data_to_store):
+    if pickle_file:
+        if len(data_to_store) > 0:
+            with open(pickle_file, "wb+") as dbfile:
+                pickle.dump(data_to_store, dbfile)
+        else:
+            return False
+    else:
+        return False
+
+    return True
+
+
+def transcribe_audio_mp3(audio_file_path):
+    recognizer = sr.Recognizer()
+
+    # Load the audio file using pydub
+    audio = AudioSegment.from_file(audio_file_path)
+
+    # Convert audio to a compatible format (16-bit PCM WAV)
+    audio = audio.set_frame_rate(16000).set_channels(1).set_sample_width(2)
+
+    # Export the audio to a temporary WAV file
+    temp_wav_file = "temp.wav"
+    audio.export(temp_wav_file, format="wav")
+
+    with sr.AudioFile(temp_wav_file) as source:
+        audio_data = recognizer.record(source)
+
+    # Transcribe the audio
+    try:
+        transcribed_text = recognizer.recognize_google(audio_data)
+        return transcribed_text
+    except sr.UnknownValueError:
+        print("Speech Recognition could not understand the audio")
+    except sr.RequestError as e:
+        print(f"Could not request results from Google Web Speech API; {e}")
+
+    return None
 
 
 def append_audio(input_file1, input_file2, output_file):
@@ -153,11 +228,32 @@ def base_content():
 
     return main_return
 
+def save_master_text_db(master_text_audio):
+    text_audio_db = os.path.join(OZZ_DB, 'master_text_audio')
+    PickleData(f'{text_audio_db}.pkl', {'master_text_audio': master_text_audio})
+    with open(f'{text_audio_db}.json', 'w') as file:
+        json.dump(master_text_audio, file)
+    
+    return True
 
-def save_audio(filename, audio):
+def save_audio(filename, audio, response, self_image=False):
+    ## all saving should happen at end of response return WORKERBEE
+    master_text_audio = init_text_audio_db().get('master_text_audio')
+    master_text_audio.append(text_audio_fields(filename, response, self_image))
+    save_master_text_db(master_text_audio)
+
+    # audio_db = os.path.join(OZZ_DB, 'audio')
+    # db_file_name = os.path.join(audio_db, filename.split("/")[-1])
     save(
         audio=audio,               # Audio bytes (returned by generate)
         filename=filename               # Filename to save audio to (e.g. "audio.wav")
+    )
+
+    local_build_file = 'temp_audio.mp3'
+    audio_dir='/Users/stefanstapinski/ENV/ozz/ozz/custom_voiceGPT/frontend/build/'
+    save(
+        audio=audio,               # Audio bytes (returned by generate)
+        filename=os.path.join(audio_dir, local_build_file)               # Filename to save audio to (e.g. "audio.wav")
     )
     return True
 
@@ -299,7 +395,7 @@ def set_streamlit_page_config_once():
         queenbee = os.path.join(jpg_root, "woots_jumps_once.gif")
         page_icon = Image.open(queenbee)
         st.set_page_config(
-            page_title="QuantQueen",
+            page_title="Ozz",
             page_icon=page_icon,
             layout="wide",
             initial_sidebar_state='collapsed',
@@ -461,18 +557,24 @@ def CreateEmbeddings(textChunks :str ,persist_directory : str):
 
 
 # Function to fetch the answers from FAISS vector db 
-def Retriever(query : str, persist_directory : str):
+def Retriever(query : str, persist_directory : str, search_kwards_num=3):
     try:
+        s = datetime.now()
+
         embeddings = OpenAIEmbeddings()
         # memory = ConversationBufferMemory()
         # embeddings = HuggingFaceInstructEmbeddings(model_name=EMBEDDING_MODEL_NAME)
         vectordb = FAISS.load_local(persist_directory,embeddings=embeddings)
-        retriever = vectordb.as_retriever(search_type="mmr", search_kwargs={"k": 3})
+        retriever = vectordb.as_retriever(search_type="mmr", search_kwargs={"k": search_kwards_num})
 
         # For OpenAI ChatGPT Model
         qa_chain = RetrievalQA.from_chain_type(llm=ChatOpenAI(model='gpt-3.5-turbo-16k',max_tokens=10000), chain_type='stuff', retriever=retriever, return_source_documents=True)
 
         result = qa_chain({"query": query})
+
+        print('retervier:', (datetime.now() - s).total_seconds())
+
+
         return result
     except Exception as e:
         print_line_of_error(e)
@@ -496,6 +598,18 @@ def MergeIndexes(db_locations : list, new_location : str = None):
     return dbPrimary.docstore._dict
 
 
+
+def sign_in_client_user():
+    if 'client_user' not in st.session_state:
+        st.info("Enter email to continue")
+        with st.form("Your Name, use Email"):
+            enter_name = st.text_input('email')
+            if st.form_submit_button('save'):
+                st.session_state['client_user'] = enter_name
+                st.rerun()
+        return False
+    else:
+        return True
 # def llm_response(query, chat_history):
 #     memory = ConversationBufferMemory(
 #                                         memory_key="chat_history",

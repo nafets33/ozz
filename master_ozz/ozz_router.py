@@ -30,7 +30,8 @@ def load_ozz_voice():
     return JSONResponse(content=json_data)
 
 @router.post("/voiceGPT", status_code=status.HTTP_200_OK)
-def load_ozz_voice(api_key=Body(...), text=Body(...), self_image=Body(...)):
+def load_ozz_voice(api_key=Body(...), text=Body(...), self_image=Body(...)): #, client_user=Body(...)):
+    # print(client_user)
     # Test Queries with user and assistant and saving in conversation history as well as json file
     # text = [{"role": "system", "content": "You are a cute and smart assistant for kids."},
     #         {'role':'user','content': 'hey hootie tell me a story'}]

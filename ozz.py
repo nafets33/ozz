@@ -2,9 +2,9 @@ import streamlit as st
 import os
 from bs4 import BeautifulSoup
 
-from master_ozz.utils import print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
+from master_ozz.utils import set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
 
-st.set_page_config(page_title="Ozz")
+set_streamlit_page_config_once()
 st.title('Ozz')
 
 constants = init_constants()
@@ -49,6 +49,9 @@ def clean_data(data):
 
 # cleaned_data_html = clean_data(html_data)
 # cleaned_data_text = clean_data(text_data)
+if not sign_in_client_user():
+    st.stop()
+
 
 with st.sidebar:
     files = st.sidebar.file_uploader('Upload your files',type=['PDF','CSV','MD','DOCX','DOC','XLSX','PY','HTML'],accept_multiple_files=True)
