@@ -1,4 +1,6 @@
 import streamlit as st
+import streamlit_antd_components as sac
+
 import speech_recognition as sr
 import time 
 from dotenv import load_dotenv
@@ -34,6 +36,13 @@ from PIL import Image
 
 from pydub import AudioSegment
 
+from custom_voiceGPT import custom_voiceGPT, VoiceGPT_options_builder
+
+from bs4 import BeautifulSoup
+import re
+from streamlit_extras.switch_page_button import switch_page
+
+
 from youtubesearchpython import *
 
 def print_line_of_error(e='print_error_message'):
@@ -65,18 +74,28 @@ def init_constants():
     return {'DATA_PATH': DATA_PATH,
             'PERSIST_PATH':PERSIST_PATH,}
 
-def text_audio_fields(file_path, text, self_image=None):
+def text_audio_fields(file_path, text, user_query=None, self_image=None):
     if not self_image:
         self_image = file_path.split("/")[-1].split(".")[0] # name of file without extension
 
     return {'file_path': file_path, 
             'text': text, 
-            'self_image': self_image}
+            'self_image': self_image,
+            'datetime': datetime.now(),
+            'user_query': user_query}
+
+def load_local_json(file_path):
+    with open(file_path, 'r') as filee:
+        data = json.load(filee)
+    
+    return data
 
 def init_text_audio_db():
     text_audio_db = os.path.join(OZZ_DB, 'master_text_audio')
-    if os.path.exists(f'{text_audio_db}.pkl'):
-        master_text_audio = ReadPickleData(f'{text_audio_db}.pkl')
+    file_path = f'{text_audio_db}.json'
+    if os.path.exists(file_path):
+        # master_text_audio = ReadPickleData(f'{text_audio_db}.pkl')
+        master_text_audio = load_local_json(file_path)
         return master_text_audio
     
     audio_db = os.path.join(OZZ_DB, 'audio')
@@ -236,10 +255,11 @@ def save_master_text_db(master_text_audio):
     
     return True
 
-def save_audio(filename, audio, response, self_image=False):
+def save_audio(filename, audio, response, user_query, self_image=False):
     ## all saving should happen at end of response return WORKERBEE
+    ipdb.set_trace()
     master_text_audio = init_text_audio_db().get('master_text_audio')
-    master_text_audio.append(text_audio_fields(filename, response, self_image))
+    master_text_audio.append(text_audio_fields(filename, response, user_query, self_image))
     save_master_text_db(master_text_audio)
 
     # audio_db = os.path.join(OZZ_DB, 'audio')
@@ -642,3 +662,95 @@ def sign_in_client_user():
 #                                                 )
 
 #     pp.pprint(chain({'question': q1, 'chat_history': memory.chat_memory.messages}))
+
+
+# TRAINING FUNCTIONS #
+
+def is_html(data):
+    # Use BeautifulSoup to check if the data is HTML
+    try:
+        soup = BeautifulSoup(data, 'html.parser')
+        return soup.html is not None
+    except:
+        return False
+
+def clean_html(html):
+    soup = BeautifulSoup(html, 'html.parser')
+    text_content = soup.get_text()
+    return text_content
+
+def clean_text(text):
+    # Remove non-alphanumeric characters and extra whitespaces
+    cleaned_text = re.sub(r'[^a-zA-Z0-9\s]', '', text)
+    cleaned_text = re.sub(' +', ' ', cleaned_text)  # Remove extra whitespaces
+    return cleaned_text
+
+def clean_data(data):
+    if is_html(data):
+        # If it's HTML, clean the HTML content first
+        cleaned_text = clean_html(data)
+        # Then, clean the text
+        cleaned_text = clean_text(cleaned_text)
+        return cleaned_text
+    else:
+        # If it's not HTML, just clean the text
+        return clean_text(data)
+
+
+
+def sac_menu_buttons(main='Ozz'):
+    if main=='Ozz':
+        sac_menu_buttons = sac.buttons([
+            sac.ButtonsItem(label='Ozz', icon='robot'),
+            sac.ButtonsItem(label='Lab', icon='backpack4-fill'),
+            # sac.ButtonsItem(label='Ozz', icon='wechat', href=f'{st.session_state["streamlit_ip"]}/ozz'),
+            sac.ButtonsItem(label='Client Models', disabled=True),
+            sac.ButtonsItem(label='Account', icon='share-fill'),
+        ], 
+        format_func='title', align='end', type='text')
+    elif main == 'Account':
+        sac_menu_buttons = sac.buttons([
+            sac.ButtonsItem(label='account', icon='key'),
+            sac.ButtonsItem(label='Ozz', icon='house'),
+            # sac.ButtonsItem(label='Log Out', icon='key'),
+        ], format_func='title', align='end', type='text')
+
+    return sac_menu_buttons
+
+def sac_menu_main(sac_menu):
+    if sac_menu == 'Lab':
+        switch_page('Lab')
+
+    if sac_menu == 'Ozz':
+        switch_page('Ozz')
+
+
+#### CHARACTERS ####
+def hoots_and_hootie(width=350, height=350, self_image="hootsAndHootie.png", face_recon=True, show_video=True,input_text=True,show_conversation=True, no_response_time=3):
+    to_builder = VoiceGPT_options_builder.create()
+    to = to_builder.build()
+    # if st.session_state['username'] not in users_allowed_queen_email
+    custom_voiceGPT(
+        api=f"{st.session_state['ip_address']}/api/data/voiceGPT",
+        api_key=os.environ.get('ozz_key'),
+        # client_user=client_user,
+        self_image=self_image,
+        width=width,
+        height=height,
+        hello_audio="test_audio.mp3",
+        face_recon=face_recon,
+        show_video=show_video,
+        input_text=input_text,
+        show_conversation=show_conversation,
+        no_response_time=no_response_time,
+        commands=[{
+            "keywords": ["hey Hoots"], # keywords are case insensitive
+            "api_body": {"keyword": "hey hoots"},
+        }, {
+            "keywords": ["bye Hoots", "bye Foods"],
+            "api_body": {"keyword": "bye hoots"},
+        }
+        ]
+    )
+
+    return True

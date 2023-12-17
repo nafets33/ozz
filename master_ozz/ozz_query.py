@@ -7,6 +7,8 @@ import string
 import pandas as pd
 from datetime import datetime
 import pytz
+import re
+
 
 est = pytz.timezone("US/Eastern")
 
@@ -26,7 +28,6 @@ PERSIST_PATH = constants.get('PERSITS_PATH')
 # Loading the json common phrases file and setting up the json file
 json_file = open('master_ozz/greetings.json','r')
 common_phrases = json.load(json_file)
-
 
 root_db = ozz_master_root_db()
 
@@ -151,7 +152,7 @@ def Scenarios(current_query : str , conversation_history : list , first_ask=Fals
 
         return audio_file
 
-    def handle_audio(response, audio_file=None, self_image=None, audio_dir='/Users/stefanstapinski/ENV/ozz/ozz/custom_voiceGPT/frontend/build/'):
+    def handle_audio(user_query, response, audio_file=None, self_image=None, audio_dir='/Users/stefanstapinski/ENV/ozz/ozz/custom_voiceGPT/frontend/build/'):
         s = datetime.now()
         
         master_text_audio = init_text_audio_db().get('master_text_audio')
@@ -181,7 +182,7 @@ def Scenarios(current_query : str , conversation_history : list , first_ask=Fals
 
             if audio:
                 filename = audio_file
-                save_audio(filename, audio, response, self_image)
+                save_audio(filename, audio, response, user_query, self_image)
             else:
                 audio_file = "techincal_errors.mp3"
                 source_file = os.path.join(db_DB_audio, audio_file)
@@ -252,6 +253,7 @@ def Scenarios(current_query : str , conversation_history : list , first_ask=Fals
     
     print('query ', current_query)
     print('sstate ', session_state)
+    user_query = current_query
     # For first we will always check if anything user asked is like common phrases and present in our local json file then give response to that particular query
     conversation_history = handle_prompt(first_ask, conversation_history)
 
@@ -266,10 +268,10 @@ def Scenarios(current_query : str , conversation_history : list , first_ask=Fals
         audio_file = resp_func.get('audio_file')
         session_state = resp_func.get('session_state')
         conversation_history.clear() if not conv_history else conversation_history.append({"role": "assistant", "content": response})
-        audio_file = handle_audio(response, audio_file=audio_file, self_image=self_image)
+        audio_file = handle_audio(user_query, response, audio_file=audio_file, self_image=self_image)
         return scenario_return(response, conversation_history, audio_file, session_state, self_image)
 
-    # Common Phrases
+    # Common Phrases # WORKERBEE Add check against audio_text DB
     print("common phrases")
     s = datetime.now()
     for query, response in common_phrases.items():
@@ -280,7 +282,7 @@ def Scenarios(current_query : str , conversation_history : list , first_ask=Fals
             conversation_history.clear() if not conv_history else conversation_history.append({"role": "assistant", "content": response})
             ## find audio file to set to new_audio False
             # return audio file
-            audio_file = handle_audio(response, audio_file=audio_file, self_image=self_image) 
+            audio_file = handle_audio(user_query, response, audio_file=audio_file, self_image=self_image) 
             print('common phrases:', (datetime.now() - s).total_seconds())
 
             return scenario_return(response, conversation_history, audio_file, session_state, self_image)
@@ -328,15 +330,52 @@ def Scenarios(current_query : str , conversation_history : list , first_ask=Fals
         response = llm_assistant_response(current_query, conversation_history)
 
     conversation_history.clear() if not conv_history else conversation_history.append({"role": "assistant", "content": response})
-    audio_file = handle_audio(response=response, audio_file=audio_file, self_image=self_image)
+    audio_file = handle_audio(user_query, response=response, audio_file=audio_file, self_image=self_image)
     return scenario_return(response, conversation_history, audio_file, session_state, self_image)
+
+
+def remove_exact_string(string_a, string_b):
+    # Split string_a by string_b
+    split_strings = string_a.split(string_b)
+    
+    # Join the split strings without the occurrences of string_b
+    final_string_a = ''.join(split_strings)
+
+    return final_string_a
 
 def ozz_query(text, self_image):
     
+    def ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply=False):
+        json_data = {'text': text, 
+                    'audio_path': audio_file, 
+                    'self_image': self_image, 
+                    'page_direct': page_direct, 
+                    'listen_after_reply': listen_after_reply}
+        return json_data
+    
+    def clean_current_query_from_previous_ai_response(text):
+        last_text = text[-1]
+        current_query = text[-1]['user'] # user query
+        # take previous ai response and remove if it found in current_query
+        if 'assistant' in last_text:
+            ai_last_resp = text[-1]['assistant']
+        else:
+            ai_last_resp = None
+        
+        if ai_last_resp:
+            current_query = remove_exact_string(string_a=current_query, string_b=ai_last_resp)
+
+        # WORKERBEE confirm is senitentment of phrase is outside bounds of responding to
+
+        return text, current_query
+
     def handle_response(text : str, self_image : str):
 
-        current_query = text[-1]['user'] # user query
-        
+        text, current_query = clean_current_query_from_previous_ai_response(text)
+
+        if len(current_query) == 0:
+            return ozz_query_json_return(text, self_image, audio_file, page_direct=None, listen_after_reply=False)
+
         conversation_history_file_path = 'master_ozz/conversation_history.json'
         session_state_path = 'master_ozz/session_state.json'
 
@@ -368,9 +407,8 @@ def ozz_query(text, self_image):
         print(audio_file)
         print(self_image)
         
-        # audio_dir='/Users/stefanstapinski/ENV/ozz/ozz/custom_voiceGPT/frontend/build/'
-        # build_file_name='temp_audio.mp3'
-        # audio_file = os.path.join(audio_dir, build_file_name)
+        text[-1].update({'resp': response})
+
         audio_file='temp_audio.mp3'
         
         #
@@ -383,6 +421,7 @@ def ozz_query(text, self_image):
         
         session_state['returning_question'] = False
         session_state['response_type'] = 'response'
+        session_state['text'] = text
 
         # For saving a chat history for current session in json file
         with open(session_state_path, 'w') as session_state_file:
@@ -392,8 +431,6 @@ def ozz_query(text, self_image):
         with open(conversation_history_file_path, 'w') as conversation_history_file:
             json.dump(conversation_history,conversation_history_file)
         
-        text[-1].update({'resp': response})
-        # text[-1] = response  # for normal response return without class
 
         return {'text': text, 'audio_file': audio_file, 'session_state': session_state, 'self_image': self_image}
     
@@ -410,12 +447,6 @@ def ozz_query(text, self_image):
     
     page_direct= None # 'http://localhost:8501/heart'
     listen_after_reply = False # True if session_state.get('response_type') == 'question' else False
-    
-    json_data = {'text': text, 
-                 'audio_path': audio_file, 
-                 'page_direct': page_direct, 
-                 'self_image': self_image, 
-                 'listen_after_reply': listen_after_reply}
 
-    return json_data
+    return ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply)
 
