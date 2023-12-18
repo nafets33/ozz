@@ -81,7 +81,7 @@ def text_audio_fields(file_path, text, user_query=None, self_image=None):
     return {'file_path': file_path, 
             'text': text, 
             'self_image': self_image,
-            'datetime': datetime.now(),
+            'datetime': datetime.now().strftime("%B %d, %Y %H:%M"),
             'user_query': user_query}
 
 def load_local_json(file_path):
@@ -96,6 +96,7 @@ def init_text_audio_db():
     if os.path.exists(file_path):
         # master_text_audio = ReadPickleData(f'{text_audio_db}.pkl')
         master_text_audio = load_local_json(file_path)
+        master_text_audio = {'master_text_audio': master_text_audio}
         return master_text_audio
     
     audio_db = os.path.join(OZZ_DB, 'audio')
@@ -257,7 +258,7 @@ def save_master_text_db(master_text_audio):
 
 def save_audio(filename, audio, response, user_query, self_image=False):
     ## all saving should happen at end of response return WORKERBEE
-    ipdb.set_trace()
+
     master_text_audio = init_text_audio_db().get('master_text_audio')
     master_text_audio.append(text_audio_fields(filename, response, user_query, self_image))
     save_master_text_db(master_text_audio)
@@ -593,7 +594,6 @@ def Retriever(query : str, persist_directory : str, search_kwards_num=3):
         result = qa_chain({"query": query})
 
         print('retervier:', (datetime.now() - s).total_seconds())
-
 
         return result
     except Exception as e:

@@ -23,7 +23,7 @@ load_dotenv(os.path.join(main_root, ".env"))
 
 constants = init_constants()
 DATA_PATH = constants.get('DATA_PATH')
-PERSIST_PATH = constants.get('PERSITS_PATH')
+PERSIST_PATH = constants.get('PERSIST_PATH')
 
 # Loading the json common phrases file and setting up the json file
 json_file = open('master_ozz/greetings.json','r')
@@ -145,7 +145,7 @@ def Scenarios(current_query : str , conversation_history : list , first_ask=Fals
             # response = process_response(response)
             for db_audio_file, ozz_reponse in audio_text.items():
                 # ozz_reponse = process_response(ozz_reponse)
-                if calculate_similarity(response, ozz_reponse) > .88:
+                if calculate_similarity(response, ozz_reponse) > .95:
                     # print("audio found")
                     return db_audio_file
         print('findaudio:', (datetime.now() - s).total_seconds())
@@ -294,8 +294,8 @@ def Scenarios(current_query : str , conversation_history : list , first_ask=Fals
         s = datetime.now()
         print("EMBEDDINGS")
 
-        db_name=None
-        our_embeddings_phrases = ['hoot couture', 'hoot couture kids', 'hootcouturekids', 'hoots store', 'something about the store', 'in the store', 'clothes do you have', 'do you have']
+        db_name={}
+        our_embeddings_phrases = ['where is', 'looking for', 'hoot couture', 'hoot couture kids', 'hootcouturekids', 'hoots store', 'something about the store', 'in the store', 'clothes do you have', 'do you have']
         question_conv_sayings = ['what', 'what about', 'tell me about', 'tell me', 'tell us something about the store']
         for phrase in our_embeddings_phrases:
             if phrase in current_query:
@@ -314,17 +314,16 @@ def Scenarios(current_query : str , conversation_history : list , first_ask=Fals
         #         db_name = 'db1'
         #         break
         print('detemine embedding:', (datetime.now() - s).total_seconds())
-        # if db_name:
-        #     return {'db_name': db_name}
-        # else:
-        return db_name
+
+        print("embedding", db_name)
+        return {'db_name': db_name}
 
     use_our_embeddings = determine_embedding(current_query)
     if use_our_embeddings:
         db_name = use_our_embeddings.get('db_name')
         print("USE EMBEDDINGS: ", db_name)
         Retriever_db = os.path.join(PERSIST_PATH, db_name)
-        response = Retriever(query, Retriever_db).get('result')
+        response = Retriever(current_query, Retriever_db).get('result')
     else:
         print("CALL LLM")
         response = llm_assistant_response(current_query, conversation_history)
@@ -390,10 +389,10 @@ def ozz_query(text, self_image):
         print(session_state)
 
         #Conversation History to chat back and forth
-        conversation_history : list = [] if len(text) <= 1 else conversation_history
+        conversation_history = [] if len(text) == 0 else conversation_history
         conv_history = True # if len(conversation_history) > 0 else False
         first_ask = True if len(conversation_history) == 0 else False
-
+        print("CONV HIST", conversation_history)
         # Call the Scenario Function and get the response accordingly
         scenario_resp = Scenarios(current_query, conversation_history, first_ask, conv_history, session_state, self_image=self_image)
         response = scenario_resp.get('response')
@@ -450,3 +449,10 @@ def ozz_query(text, self_image):
 
     return ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply)
 
+## db 
+
+## def save_interaction(client_user, what_said, date, ai_respone, ai_image) # fact table
+
+## def embedd_the_day()
+
+## short term memory vs long term memory

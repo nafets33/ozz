@@ -66,6 +66,7 @@ def clean_data(data):
 st.write('Ozz')
 
 sac_menu = sac_menu_buttons()
+st.info(sac_menu)
 # sac_menu_main(sac_menu)
 if sac_menu == 'Ozz':
     ozz()
