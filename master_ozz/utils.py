@@ -1,61 +1,70 @@
 import streamlit as st
+import streamlit_antd_components as sac
+
 import speech_recognition as sr
 import time 
 from dotenv import load_dotenv
 import os
+import pickle
+import time
+from datetime import datetime
+import streamlit as st
+import pandas as pd
+import socket
+import ipdb
+import sys
+import json
+
 from elevenlabs import set_api_key
 from elevenlabs import Voice, VoiceSettings, generate
 from elevenlabs import generate, stream
 from elevenlabs import save
-import pickle
-import psycopg2
-from PIL import Image
-
-import asyncio
-import os
-import pickle
-import sqlite3
-import sys
-import time
-from datetime import datetime
-import streamlit as st
-import hashlib
-import shutil
-import pandas as pd
-import aiohttp
-import pytz
-import socket
-import ipdb
-
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores.faiss import FAISS
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.document_loaders import  UnstructuredMarkdownLoader, UnstructuredWordDocumentLoader, PyPDFLoader, PythonLoader, CSVLoader, TextLoader, UnstructuredHTMLLoader, UnstructuredExcelLoader
-import os
-
-
 from langchain.chains import RetrievalQA
-from langchain.embeddings import OpenAIEmbeddings
 from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
-from langchain.vectorstores.faiss import FAISS
-from dotenv import load_dotenv
-import os
+
+from langchain.prompts import PromptTemplate
 import openai
 
 
+from PIL import Image
+
+from pydub import AudioSegment
+
+from custom_voiceGPT import custom_voiceGPT, VoiceGPT_options_builder
+
+from bs4 import BeautifulSoup
+import re
+from streamlit_extras.switch_page_button import switch_page
+
+
 from youtubesearchpython import *
-import streamlit as st
-import os
+
+def print_line_of_error(e='print_error_message'):
+    exc_type, exc_obj, exc_tb = sys.exc_info()
+    print(e, exc_type, exc_tb.tb_lineno)
+    return exc_type, exc_tb.tb_lineno
 
 def ozz_master_root(info='\ozz\ozz'):
     script_path = os.path.abspath(__file__)
     return os.path.dirname(os.path.dirname(script_path)) # \pollen\pollen
 
+def ozz_master_root_db(info='\ozz\ozz\ozz_db'):
+    script_path = os.path.abspath(__file__)
+    return os.path.join(os.path.dirname(os.path.dirname(script_path)), 'ozz_db')
+
 load_dotenv(os.path.join(ozz_master_root(),'.env'))
 set_api_key(os.environ.get("api_elevenlabs"))
 
+ROOT_PATH = ozz_master_root()
+DATA_PATH = f"{ROOT_PATH}/DATA"
+PERSIST_PATH = f"{ROOT_PATH}/STORAGE"
+OZZ_DB = ozz_master_root_db()
 
 def init_constants():
     ROOT_PATH = ozz_master_root()
@@ -64,6 +73,47 @@ def init_constants():
 
     return {'DATA_PATH': DATA_PATH,
             'PERSIST_PATH':PERSIST_PATH,}
+
+def text_audio_fields(file_path, text, user_query=None, self_image=None):
+    if not self_image:
+        self_image = file_path.split("/")[-1].split(".")[0] # name of file without extension
+
+    return {'file_path': file_path, 
+            'text': text, 
+            'self_image': self_image,
+            'datetime': datetime.now().strftime("%B %d, %Y %H:%M"),
+            'user_query': user_query}
+
+def load_local_json(file_path):
+    with open(file_path, 'r') as filee:
+        data = json.load(filee)
+    
+    return data
+
+def init_text_audio_db():
+    text_audio_db = os.path.join(OZZ_DB, 'master_text_audio')
+    file_path = f'{text_audio_db}.json'
+    if os.path.exists(file_path):
+        # master_text_audio = ReadPickleData(f'{text_audio_db}.pkl')
+        master_text_audio = load_local_json(file_path)
+        master_text_audio = {'master_text_audio': master_text_audio}
+        return master_text_audio
+    
+    audio_db = os.path.join(OZZ_DB, 'audio')
+    master_text_audio = []
+    for audio in os.listdir(audio_db):
+        try:
+            audio_source = os.path.join(audio_db, audio)
+            text = transcribe_audio_mp3(audio_source)
+            input_save = text_audio_fields(audio_source, text)
+            master_text_audio.append(input_save)
+        except Exception as e:
+            print_line_of_error(e)
+    
+    save_master_text_db(master_text_audio)
+
+    return master_text_audio
+
 
 def ReadPickleData(pickle_file):
     # Check the file's size and modification time
@@ -106,6 +156,59 @@ def ReadPickleData(pickle_file):
         time.sleep(0.033)
 
 
+def PickleData(pickle_file, data_to_store):
+    if pickle_file:
+        if len(data_to_store) > 0:
+            with open(pickle_file, "wb+") as dbfile:
+                pickle.dump(data_to_store, dbfile)
+        else:
+            return False
+    else:
+        return False
+
+    return True
+
+
+def transcribe_audio_mp3(audio_file_path):
+    recognizer = sr.Recognizer()
+
+    # Load the audio file using pydub
+    audio = AudioSegment.from_file(audio_file_path)
+
+    # Convert audio to a compatible format (16-bit PCM WAV)
+    audio = audio.set_frame_rate(16000).set_channels(1).set_sample_width(2)
+
+    # Export the audio to a temporary WAV file
+    temp_wav_file = "temp.wav"
+    audio.export(temp_wav_file, format="wav")
+
+    with sr.AudioFile(temp_wav_file) as source:
+        audio_data = recognizer.record(source)
+
+    # Transcribe the audio
+    try:
+        transcribed_text = recognizer.recognize_google(audio_data)
+        return transcribed_text
+    except sr.UnknownValueError:
+        print("Speech Recognition could not understand the audio")
+    except sr.RequestError as e:
+        print(f"Could not request results from Google Web Speech API; {e}")
+
+    return None
+
+
+def append_audio(input_file1, input_file2, output_file):
+    # Load audio segments
+    audio_segment1 = AudioSegment.from_file(input_file1)
+    audio_segment2 = AudioSegment.from_file(input_file2)
+
+    # Concatenate audio segments
+    final_audio = audio_segment1 + audio_segment2
+
+    # Export the concatenated audio to a file
+    final_audio.export(output_file, format="mp4")  #
+
+
 def search_youtube():
     channelsSearch = ChannelsSearch('NoCopyrightSounds', limit = 10, region = 'US')
 
@@ -145,30 +248,56 @@ def base_content():
 
     return main_return
 
+def save_master_text_db(master_text_audio):
+    text_audio_db = os.path.join(OZZ_DB, 'master_text_audio')
+    PickleData(f'{text_audio_db}.pkl', {'master_text_audio': master_text_audio})
+    with open(f'{text_audio_db}.json', 'w') as file:
+        json.dump(master_text_audio, file)
+    
+    return True
 
-def save_audio(filename, audio):
+def save_audio(filename, audio, response, user_query, self_image=False):
+    ## all saving should happen at end of response return WORKERBEE
+
+    master_text_audio = init_text_audio_db().get('master_text_audio')
+    master_text_audio.append(text_audio_fields(filename, response, user_query, self_image))
+    save_master_text_db(master_text_audio)
+
+    # audio_db = os.path.join(OZZ_DB, 'audio')
+    # db_file_name = os.path.join(audio_db, filename.split("/")[-1])
     save(
         audio=audio,               # Audio bytes (returned by generate)
         filename=filename               # Filename to save audio to (e.g. "audio.wav")
     )
+
+    local_build_file = 'temp_audio.mp3'
+    audio_dir='/Users/stefanstapinski/ENV/ozz/ozz/custom_voiceGPT/frontend/build/'
+    save(
+        audio=audio,               # Audio bytes (returned by generate)
+        filename=os.path.join(audio_dir, local_build_file)               # Filename to save audio to (e.g. "audio.wav")
+    )
     return True
 
 def generate_audio(query="Hello Story Time Anyone?", voice='Mimi', use_speaker_boost=True, settings_vars={'stability': .71, 'similarity_boost': .5, 'style': 0.0}):
-    # 'Mimi', #'Charlotte', 'Fin'
-    audio = generate(
-        text=query,
-        voice=voice, #'Charlotte', 'Fin'
-    )
+    try:
+        # 'Mimi', #'Charlotte', 'Fin'
+        audio = generate(
+            text=query,
+            voice=voice, #'Charlotte', 'Fin'
+        )
 
-    # audio = generate(
-    #     text="Hello! My name is Bella.",
-    #     voice=Voice(
-    #         voice_id='EXAVITQu4vr4xnSDxMaL',
-    #         settings=VoiceSettings(stability=0.71, similarity_boost=0.5, style=0.0, use_speaker_boost=True)
-    #     )
-    # )
+        # audio = generate(
+        #     text="Hello! My name is Bella.",
+        #     voice=Voice(
+        #         voice_id='EXAVITQu4vr4xnSDxMaL',
+        #         settings=VoiceSettings(stability=0.71, similarity_boost=0.5, style=0.0, use_speaker_boost=True)
+        #     )
+        # )
 
-    return audio
+        return audio
+    except Exception as e:
+        print_line_of_error(e)
+        return None
 
 def conversational_phrases(your_name, Hobby, Interest, Location, City, Place):
 
@@ -287,7 +416,7 @@ def set_streamlit_page_config_once():
         queenbee = os.path.join(jpg_root, "woots_jumps_once.gif")
         page_icon = Image.open(queenbee)
         st.set_page_config(
-            page_title="QuantQueen",
+            page_title="Ozz",
             page_icon=page_icon,
             layout="wide",
             initial_sidebar_state='collapsed',
@@ -360,8 +489,8 @@ def get_ip_address():
     ip_address = socket.gethostbyname(hostname)
     return ip_address
 
-def return_app_ip(streamlit_ip="http://localhost:8502"):
-    ip_address = get_ip_address()
+def return_app_ip(streamlit_ip="http://localhost:8502", ip_address="http://127.0.0.1:8000"):
+    # ip_address = get_ip_address()
     if ip_address == os.environ.get('gcp_ip'):
         # print("IP", ip_address, os.environ.get('gcp_ip'))
         ip_address = "https://api.quantqueen.com"
@@ -449,19 +578,26 @@ def CreateEmbeddings(textChunks :str ,persist_directory : str):
 
 
 # Function to fetch the answers from FAISS vector db 
-def Retriever(query : str, persist_directory : str):
-    embeddings = OpenAIEmbeddings()
-    # memory = ConversationBufferMemory()
-    # embeddings = HuggingFaceInstructEmbeddings(model_name=EMBEDDING_MODEL_NAME)
-    vectordb = FAISS.load_local(persist_directory,embeddings=embeddings)
-    retriever = vectordb.as_retriever(search_type="mmr", search_kwargs={"k": 3})
+def Retriever(query : str, persist_directory : str, search_kwards_num=3):
+    try:
+        s = datetime.now()
 
-    # For OpenAI ChatGPT Model
-    qa_chain = RetrievalQA.from_chain_type(llm=ChatOpenAI(model='gpt-3.5-turbo-16k',max_tokens=10000), chain_type='stuff', retriever=retriever, return_source_documents=True)
+        embeddings = OpenAIEmbeddings()
+        # memory = ConversationBufferMemory()
+        # embeddings = HuggingFaceInstructEmbeddings(model_name=EMBEDDING_MODEL_NAME)
+        vectordb = FAISS.load_local(persist_directory,embeddings=embeddings)
+        retriever = vectordb.as_retriever(search_type="mmr", search_kwargs={"k": search_kwards_num})
 
-    result = qa_chain({"query": query})
-    return result
+        # For OpenAI ChatGPT Model
+        qa_chain = RetrievalQA.from_chain_type(llm=ChatOpenAI(model='gpt-3.5-turbo-16k',max_tokens=10000), chain_type='stuff', retriever=retriever, return_source_documents=True)
 
+        result = qa_chain({"query": query})
+
+        print('retervier:', (datetime.now() - s).total_seconds())
+
+        return result
+    except Exception as e:
+        print_line_of_error(e)
 
 def MergeIndexes(db_locations : list, new_location : str = None):
     embeddings = OpenAIEmbeddings()
@@ -483,65 +619,138 @@ def MergeIndexes(db_locations : list, new_location : str = None):
 
 
 
-# # Connect to the PostgreSQL database
-# conn = psycopg2.connect(
-#     dbname="ozz_db",
-#     user="stefanstapinski",
-#     password="ozz",
-#     host="localhost",
-#     port=5432,
-# )
+def sign_in_client_user():
+    if 'client_user' not in st.session_state:
+        st.info("Enter email to continue")
+        with st.form("Your Name, use Email"):
+            enter_name = st.text_input('email')
+            if st.form_submit_button('save'):
+                st.session_state['client_user'] = enter_name
+                st.rerun()
+        return False
+    else:
+        return True
+# def llm_response(query, chat_history):
+#     memory = ConversationBufferMemory(
+#                                         memory_key="chat_history",
+#                                         max_len=50,
+#                                         return_messages=True,
+#                                     )
 
-# # Open the audio file
-# with open("your_audio_file.mp3", "rb") as audio_file:
-#     audio_data = audio_file.read()
+#     prompt_template = '''
+#     You are a Bioinformatics expert with immense knowledge and experience in the field. Your name is Dr. Fanni.
+#     Answer my questions based on your knowledge and our older conversation. Do not make up answers.
+#     If you do not know the answer to a question, just say "I don't know".
 
-# # Insert the audio data into the database
-# cursor = conn.cursor()
-# cursor.execute("INSERT INTO audio_files (audio_data) VALUES (%s)", (audio_data,))
-# conn.commit()
+#     Given the following conversation and a follow up question, answer the question.
 
-# # Close the cursor and connection
-# cursor.close()
-# conn.close()
+#     {chat_history}
+
+#     question: {question}
+#     '''
+
+#     PROMPT = PromptTemplate.from_template(
+#                 template=prompt_template
+#             )
 
 
-# # Database connection parameters
-# db_params = {
-#     "host": "localhost",
-#     "database": "ozz_db",
-#     "user": "stefanstapinski",
-#     "password": "ozz",
-#     "port": 5432
-# }
+#     chain = ConversationalRetrievalChain.from_llm(
+#                                                     chat_model,
+#                                                     retriever,
+#                                                     memory=memory,
+#                                                     condense_question_prompt=PROMPT
+#                                                 )
 
-# # SQL statement to create the audio files table
-# create_table_sql = """
-# CREATE TABLE audio_files (
-#     id serial PRIMARY KEY,
-#     title varchar(100),
-#     audio_data bytea
-# );
-# """
+#     pp.pprint(chain({'question': q1, 'chat_history': memory.chat_memory.messages}))
 
-# try:
-#     # Connect to the database
-#     conn = psycopg2.connect(**db_params)
 
-#     # Create a cursor object
-#     cursor = conn.cursor()
+# TRAINING FUNCTIONS #
 
-#     # Execute the SQL statement to create the table
-#     cursor.execute(create_table_sql)
+def is_html(data):
+    # Use BeautifulSoup to check if the data is HTML
+    try:
+        soup = BeautifulSoup(data, 'html.parser')
+        return soup.html is not None
+    except:
+        return False
 
-#     # Commit the changes
-#     conn.commit()
+def clean_html(html):
+    soup = BeautifulSoup(html, 'html.parser')
+    text_content = soup.get_text()
+    return text_content
 
-#     # Close the cursor and connection
-#     cursor.close()
-#     conn.close()
+def clean_text(text):
+    # Remove non-alphanumeric characters and extra whitespaces
+    cleaned_text = re.sub(r'[^a-zA-Z0-9\s]', '', text)
+    cleaned_text = re.sub(' +', ' ', cleaned_text)  # Remove extra whitespaces
+    return cleaned_text
 
-#     print("Table 'audio_files' created successfully.")
+def clean_data(data):
+    if is_html(data):
+        # If it's HTML, clean the HTML content first
+        cleaned_text = clean_html(data)
+        # Then, clean the text
+        cleaned_text = clean_text(cleaned_text)
+        return cleaned_text
+    else:
+        # If it's not HTML, just clean the text
+        return clean_text(data)
 
-# except psycopg2.Error as e:
-#     print("Error creating table:", e)
+
+
+def sac_menu_buttons(main='Ozz'):
+    if main=='Ozz':
+        sac_menu_buttons = sac.buttons([
+            sac.ButtonsItem(label='Ozz', icon='robot'),
+            sac.ButtonsItem(label='Lab', icon='backpack4-fill'),
+            # sac.ButtonsItem(label='Ozz', icon='wechat', href=f'{st.session_state["streamlit_ip"]}/ozz'),
+            sac.ButtonsItem(label='Client Models', disabled=True),
+            sac.ButtonsItem(label='Account', icon='share-fill'),
+        ], 
+        format_func='title', align='end', type='text')
+    elif main == 'Account':
+        sac_menu_buttons = sac.buttons([
+            sac.ButtonsItem(label='account', icon='key'),
+            sac.ButtonsItem(label='Ozz', icon='house'),
+            # sac.ButtonsItem(label='Log Out', icon='key'),
+        ], format_func='title', align='end', type='text')
+
+    return sac_menu_buttons
+
+def sac_menu_main(sac_menu):
+    if sac_menu == 'Lab':
+        switch_page('Lab')
+
+    if sac_menu == 'Ozz':
+        switch_page('Ozz')
+
+
+#### CHARACTERS ####
+def hoots_and_hootie(width=350, height=350, self_image="hootsAndHootie.png", face_recon=True, show_video=True,input_text=True,show_conversation=True, no_response_time=3):
+    to_builder = VoiceGPT_options_builder.create()
+    to = to_builder.build()
+    # if st.session_state['username'] not in users_allowed_queen_email
+    custom_voiceGPT(
+        api=f"{st.session_state['ip_address']}/api/data/voiceGPT",
+        api_key=os.environ.get('ozz_key'),
+        # client_user=client_user,
+        self_image=self_image,
+        width=width,
+        height=height,
+        hello_audio="test_audio.mp3",
+        face_recon=face_recon,
+        show_video=show_video,
+        input_text=input_text,
+        show_conversation=show_conversation,
+        no_response_time=no_response_time,
+        commands=[{
+            "keywords": ["hey Hoots"], # keywords are case insensitive
+            "api_body": {"keyword": "hey hoots"},
+        }, {
+            "keywords": ["bye Hoots", "bye Foods"],
+            "api_body": {"keyword": "bye hoots"},
+        }
+        ]
+    )
+
+    return True
