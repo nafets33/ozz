@@ -180,6 +180,12 @@ const CustomVoiceGPT = (props) => {
         const audio = new Audio(data["audio_path"])
         audio.play()
       }
+      if (data["page_direct"]) {
+        console.log("api has page direct", data["page_direct"])
+        if (data["page_direct"] !== false) {
+        window.location.reload()
+        }
+      }
     } catch (error) {
       // console.log("api call on listen failded!")
     }

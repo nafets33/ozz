@@ -43,12 +43,8 @@ import re
 from streamlit_extras.switch_page_button import switch_page
 
 
-from youtubesearchpython import *
+# from youtubesearchpython import *
 
-def print_line_of_error(e='print_error_message'):
-    exc_type, exc_obj, exc_tb = sys.exc_info()
-    print(e, exc_type, exc_tb.tb_lineno)
-    return exc_type, exc_tb.tb_lineno
 
 def ozz_master_root(info='\ozz\ozz'):
     script_path = os.path.abspath(__file__)
@@ -58,21 +54,36 @@ def ozz_master_root_db(info='\ozz\ozz\ozz_db'):
     script_path = os.path.abspath(__file__)
     return os.path.join(os.path.dirname(os.path.dirname(script_path)), 'ozz_db')
 
-load_dotenv(os.path.join(ozz_master_root(),'.env'))
-set_api_key(os.environ.get("api_elevenlabs"))
-
-ROOT_PATH = ozz_master_root()
-DATA_PATH = f"{ROOT_PATH}/DATA"
-PERSIST_PATH = f"{ROOT_PATH}/STORAGE"
-OZZ_DB = ozz_master_root_db()
 
 def init_constants():
     ROOT_PATH = ozz_master_root()
+    OZZ_DB = ozz_master_root_db()
     DATA_PATH = f"{ROOT_PATH}/DATA"
     PERSIST_PATH = f"{ROOT_PATH}/STORAGE"
+    OZZ_BUILD_dir = f"{ROOT_PATH}/custom_voiceGPT/frontend/build"
+    OZZ_db_audio = f"{OZZ_DB}/audio"
+    OZZ_db_images = f"{OZZ_DB}/images"
 
     return {'DATA_PATH': DATA_PATH,
-            'PERSIST_PATH':PERSIST_PATH,}
+            'PERSIST_PATH':PERSIST_PATH,
+            'OZZ_BUILD_dir': OZZ_BUILD_dir,
+            "OZZ_db_audio": OZZ_db_audio,
+            "OZZ_db_images": OZZ_db_images}
+
+ROOT_PATH = ozz_master_root()
+OZZ_DB = ozz_master_root_db()
+
+constants = init_constants()
+DATA_PATH = constants.get('DATA_PATH')
+PERSIST_PATH = constants.get('PERSIST_PATH')
+OZZ_BUILD_dir = constants.get('OZZ_BUILD_dir')
+OZZ_db_audio = constants.get('OZZ_db_audio')
+OZZ_db_images = constants.get('OZZ_db_images')
+
+
+load_dotenv(os.path.join(ozz_master_root(),'.env'))
+set_api_key(os.environ.get("api_elevenlabs"))
+
 
 def text_audio_fields(file_path, text, user_query=None, self_image=None):
     if not self_image:
@@ -167,6 +178,12 @@ def PickleData(pickle_file, data_to_store):
         return False
 
     return True
+
+
+def print_line_of_error(e='print_error_message'):
+    exc_type, exc_obj, exc_tb = sys.exc_info()
+    print(e, exc_type, exc_tb.tb_lineno)
+    return exc_type, exc_tb.tb_lineno
 
 
 def transcribe_audio_mp3(audio_file_path):
@@ -267,14 +284,13 @@ def save_audio(filename, audio, response, user_query, self_image=False):
     # db_file_name = os.path.join(audio_db, filename.split("/")[-1])
     save(
         audio=audio,               # Audio bytes (returned by generate)
-        filename=filename               # Filename to save audio to (e.g. "audio.wav")
+        filename=os.path.join(OZZ_db_audio, filename)                # Filename to save audio to (e.g. "audio.wav")
     )
 
     local_build_file = 'temp_audio.mp3'
-    audio_dir='/Users/stefanstapinski/ENV/ozz/ozz/custom_voiceGPT/frontend/build/'
     save(
         audio=audio,               # Audio bytes (returned by generate)
-        filename=os.path.join(audio_dir, local_build_file)               # Filename to save audio to (e.g. "audio.wav")
+        filename=os.path.join(OZZ_BUILD_dir, local_build_file)               # Filename to save audio to (e.g. "audio.wav")
     )
     return True
 
@@ -484,10 +500,12 @@ def set_streamlit_page_config_once():
     #   "howdy":"rowdy :p"
     # }
 
+
 def get_ip_address():
     hostname = socket.gethostname()
     ip_address = socket.gethostbyname(hostname)
     return ip_address
+
 
 def return_app_ip(streamlit_ip="http://localhost:8502", ip_address="http://127.0.0.1:8000"):
     # ip_address = get_ip_address()
@@ -599,6 +617,7 @@ def Retriever(query : str, persist_directory : str, search_kwards_num=3):
     except Exception as e:
         print_line_of_error(e)
 
+
 def MergeIndexes(db_locations : list, new_location : str = None):
     embeddings = OpenAIEmbeddings()
     """taking first database for merging all the databases
@@ -616,7 +635,6 @@ def MergeIndexes(db_locations : list, new_location : str = None):
     # Return the merged database or we can store it as new db name as well 
     # dbPrimary.save_local(new_location)  Location where we have to save the merged database  
     return dbPrimary.docstore._dict
-
 
 
 def sign_in_client_user():

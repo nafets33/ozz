@@ -24,6 +24,9 @@ load_dotenv(os.path.join(main_root, ".env"))
 constants = init_constants()
 DATA_PATH = constants.get('DATA_PATH')
 PERSIST_PATH = constants.get('PERSIST_PATH')
+OZZ_BUILD_dir = constants.get('OZZ_BUILD_dir')
+# OZZ_db_audio = constants.get('OZZ_db_audio')
+# OZZ_db_images = constants.get('OZZ_db_images')
 
 # Loading the json common phrases file and setting up the json file
 json_file = open('master_ozz/greetings.json','r')
@@ -64,7 +67,7 @@ def copy_and_replace_rename(source_path, destination_directory, build_file_name=
         # Copy the file from source to destination, overwriting if it exists
         shutil.copy2(source_path, destination_path)
         
-        print(f"File copied from {source_path} to {destination_path}")
+        # print(f"File copied from {source_path} to {destination_path}")
 
     except FileNotFoundError:
         print(f"Error: File not found at {source_path}")
@@ -152,7 +155,7 @@ def Scenarios(current_query : str , conversation_history : list , first_ask=Fals
 
         return audio_file
 
-    def handle_audio(user_query, response, audio_file=None, self_image=None, audio_dir='/Users/stefanstapinski/ENV/ozz/ozz/custom_voiceGPT/frontend/build/'):
+    def handle_audio(user_query, response, audio_file=None, self_image=None):
         s = datetime.now()
         
         master_text_audio = init_text_audio_db().get('master_text_audio')
@@ -168,7 +171,7 @@ def Scenarios(current_query : str , conversation_history : list , first_ask=Fals
         if audio_file: # if
             print("AUDIO FOUND ", audio_file)
             source_file = os.path.join(db_DB_audio, audio_file)
-            destination_directory = audio_dir
+            destination_directory = OZZ_BUILD_dir
             copy_and_replace_rename(source_file, destination_directory)
 
             return audio_file
@@ -176,17 +179,16 @@ def Scenarios(current_query : str , conversation_history : list , first_ask=Fals
             ## NEW AUDIO
             fname_image = self_image.split('.')[0]
             filename = f'{fname_image}__{fnames}.mp3'
-            audio_file = os.path.join(db_DB_audio, filename)
+            audio_file = filename #os.path.join(db_DB_audio, filename)
             print("NEW AUDIO", audio_file)
             audio = generate_audio(query=response)
 
             if audio:
-                filename = audio_file
                 save_audio(filename, audio, response, user_query, self_image)
             else:
                 audio_file = "techincal_errors.mp3"
                 source_file = os.path.join(db_DB_audio, audio_file)
-                destination_directory = audio_dir
+                destination_directory = OZZ_BUILD_dir
                 copy_and_replace_rename(source_file, destination_directory)
 
         print('audiofunc:', (datetime.now() - s).total_seconds())
@@ -319,7 +321,7 @@ def Scenarios(current_query : str , conversation_history : list , first_ask=Fals
         return {'db_name': db_name}
 
     use_our_embeddings = determine_embedding(current_query)
-    if use_our_embeddings:
+    if use_our_embeddings.get('db_name'):
         db_name = use_our_embeddings.get('db_name')
         print("USE EMBEDDINGS: ", db_name)
         Retriever_db = os.path.join(PERSIST_PATH, db_name)
@@ -373,7 +375,7 @@ def ozz_query(text, self_image):
         text, current_query = clean_current_query_from_previous_ai_response(text)
 
         if len(current_query) == 0:
-            return ozz_query_json_return(text, self_image, audio_file, page_direct=None, listen_after_reply=False)
+            return ozz_query_json_return(text, self_image, audio_file=None, page_direct=None, listen_after_reply=False)
 
         conversation_history_file_path = 'master_ozz/conversation_history.json'
         session_state_path = 'master_ozz/session_state.json'
@@ -444,7 +446,7 @@ def ozz_query(text, self_image):
     print(audio_file)
     print(self_image)
     
-    page_direct= None # 'http://localhost:8501/heart'
+    page_direct= False # if redirect, add redirect page into session_state
     listen_after_reply = False # True if session_state.get('response_type') == 'question' else False
 
     return ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply)
