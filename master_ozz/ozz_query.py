@@ -8,6 +8,7 @@ import pandas as pd
 from datetime import datetime
 import pytz
 import re
+# from collections import deque
 
 
 est = pytz.timezone("US/Eastern")
@@ -240,11 +241,11 @@ def Scenarios(current_query : str , conversation_history : list , first_ask=Fals
                         response = "story_time"
                         audio_file = audio_file
                         break
-                    else:
-                        print("Could not Find Story")
-                        response = "What Story would you like to hear?"
-                        session_state['response_type'] = 'question'
-                        audio_file = None
+                    # else:
+                    #     print("Could not Find Story")
+                    #     response = "What Story would you like to hear?"
+                    #     session_state['response_type'] = 'question'
+                    #     audio_file = None
             # ipdb.set_trace()
             print('queryfunc:', (datetime.now() - s).total_seconds())
             return {'response': response, 'audio_file': audio_file, 'session_state': session_state}
@@ -393,6 +394,13 @@ def ozz_query(text, self_image):
         #Conversation History to chat back and forth
         conversation_history = [] if len(text) == 0 else conversation_history
         conv_history = True # if len(conversation_history) > 0 else False
+        # if len(conv_history) > 8:
+        #     conv_history = 
+        # conversation_history = deque(conversation_history, 8)
+        # conversation_history = list(conversation_history)
+        def get_last_eight(lst):
+            return lst[-8:]
+        conversation_history = get_last_eight(conversation_history)
         first_ask = True if len(conversation_history) == 0 else False
         print("CONV HIST", conversation_history)
         # Call the Scenario Function and get the response accordingly

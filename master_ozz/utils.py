@@ -95,6 +95,16 @@ def text_audio_fields(file_path, text, user_query=None, self_image=None):
             'datetime': datetime.now().strftime("%B %d, %Y %H:%M"),
             'user_query': user_query}
 
+def text_image_fields(file_path, text, user_query=None, self_image=None):
+    if not self_image:
+        self_image = file_path.split("/")[-1].split(".")[0] # name of file without extension
+
+    return {'file_path': file_path, 
+            'text': text, 
+            'self_image': self_image,
+            'datetime': datetime.now().strftime("%B %d, %Y %H:%M"),
+            'user_query': user_query}
+
 def load_local_json(file_path):
     with open(file_path, 'r') as filee:
         data = json.load(filee)
@@ -125,6 +135,18 @@ def init_text_audio_db():
 
     return master_text_audio
 
+
+def init_text_image_db():
+    text_image_db = os.path.join(OZZ_DB, 'master_text_image')
+    file_path = f'{text_image_db}.json'
+    if os.path.exists(file_path):
+        master_text_image = load_local_json(file_path)
+        master_text_image = {'master_text_image': master_text_image}
+        return master_text_image
+    else:
+        master_text_image = {'master_text_image': []}
+
+    return master_text_image
 
 def ReadPickleData(pickle_file):
     # Check the file's size and modification time
@@ -226,31 +248,7 @@ def append_audio(input_file1, input_file2, output_file):
     final_audio.export(output_file, format="mp4")  #
 
 
-def search_youtube():
-    channelsSearch = ChannelsSearch('NoCopyrightSounds', limit = 10, region = 'US')
 
-    print(channelsSearch.result())
-
-    video = Video.get('https://www.youtube.com/watch?v=z0GKGpObgPY', mode = ResultMode.json, get_upload_date=True)
-    print(video)
-    videoInfo = Video.getInfo('https://youtu.be/z0GKGpObgPY', mode = ResultMode.json)
-    print(videoInfo)
-    videoFormats = Video.getFormats('z0GKGpObgPY')
-    print(videoFormats)
-
-
-
-    channel_id = "UC_aEa8K-EOJ3D6gOs7HcyNg"
-    playlist = Playlist(playlist_from_channel_id(channel_id))
-
-    print(f'Videos Retrieved: {len(playlist.videos)}')
-
-    while playlist.hasMoreVideos:
-        print('Getting more videos...')
-        playlist.getNextVideos()
-        print(f'Videos Retrieved: {len(playlist.videos)}')
-
-    print('Found all the videos.')
 
 
 def base_content():
@@ -264,6 +262,11 @@ def base_content():
     }
 
     return main_return
+
+def save_json(data, db_name='master_text_image'):
+    db = os.path.join(OZZ_DB, db_name)
+    with open(f'{db}.json', 'w') as file:
+        json.dump(data, file)
 
 def save_master_text_db(master_text_audio):
     text_audio_db = os.path.join(OZZ_DB, 'master_text_audio')
@@ -742,6 +745,128 @@ def sac_menu_main(sac_menu):
     if sac_menu == 'Ozz':
         switch_page('Ozz')
 
+import requests 
+from PIL import Image
+
+def generate_image(text="2 cute owls in a forest, Award-Winning Art, Detailed, Photorealistic, Fanart", size="256x256", save_img=True, use_llm_enhance=True): 
+    openai.api_key=os.getenv("OPENAI_API_KEY")
+    prompt = generate_image_prompt(text)
+    print(prompt)
+    res = openai.Image.create( 
+        # text describing the generated image 
+        prompt=prompt, 
+        # number of images to generate  
+        n=1, 
+        # size of each generated image 
+        size=size, 
+    ) 
+    # returning the URL of one image as  
+    # we are generating only one image 
+    url1 = res["data"][0]["url"]
+    
+    if save_img:
+        fname = save_image(url1)
+    
+    master_text_image = init_text_image_db().get('master_text_image')
+    data = text_image_fields(fname, prompt, prompt)
+    master_text_image.append(data)
+    save_json(master_text_image)
+
+
+def save_image(url1):
+    response = requests.get(url1) 
+    # saving the image in PNG format
+    images_len = len(os.listdir(OZZ_db_images))
+    filepath = os.path.join(OZZ_db_images, )
+    fname = f'dalle_img_{images_len}.png'
+    with open(filepath, "wb") as f: 
+        f.write(response.content) 
+    
+    # # opening the saved image and converting it into "RGBA" format 
+    # # converted image is saved in result 
+    # result = Image.open(fn).convert('RGBA') 
+    # # saving the new image in PNG format 
+    # fn = os.path.join(OZZ_db_images, 'img_rgba.png')
+    # result.save(fn,'PNG')
+
+    return fname
+
+import random
+
+def generate_image_prompt(query="2 owls sleeping", enhancements=['futuristic']):
+    # Default prompt
+    prompt = f"Create an image of {query}."
+
+    # Enhancement categories with real artist-inspired attributes
+    enhancement_categories = {
+        'realism': [
+            "Emulate the meticulous realism of Chuck Close.",
+            "Capture the lifelike details seen in the works of Audrey Flack.",
+            "Achieve a photographic level of realism reminiscent of Roberto Bernardi."
+        ],
+        'impressionism': [
+            "Infuse the scene with the enchanting brushstrokes characteristic of Claude Monet.",
+            "Evoke the light and color techniques used by Camille Pissarro.",
+            "Channel the dreamlike essence of Edgar Degas' impressionistic style."
+        ],
+        'surrealism': [
+            "Explore the fantastical realms of Salvador Dalí through surrealistic elements.",
+            "Incorporate dreamlike and bizarre elements inspired by René Magritte.",
+            "Create a whimsical narrative akin to the surreal worlds crafted by Yves Tanguy."
+        ],
+        'abstract': [
+            "Embrace non-representational forms reminiscent of Wassily Kandinsky's abstract works.",
+            "Explore geometric abstraction inspired by Kazimir Malevich.",
+            "Capture the essence of abstract expressionism seen in Joan Mitchell's paintings."
+        ],
+        'colorful': [
+            "Infuse the composition with vibrant colors similar to the palettes of Wassily Kandinsky.",
+            "Create a bold and colorful composition inspired by Sonia Delaunay.",
+            "Explore the use of intense hues reminiscent of Fauvist master André Derain."
+        ],
+        'monochrome': [
+            "Convey a powerful visual impact through a monochromatic palette, inspired by Franz Kline.",
+            "Explore the emotional depth of black and white compositions, akin to Anselm Kiefer's works.",
+            "Create a dramatic atmosphere using grayscale tones, influenced by the photography of Ansel Adams."
+        ],
+        'vintage': [
+            "Evoke the nostalgia of vintage photography with sepia tones inspired by Dora Maar.",
+            "Create a retro atmosphere inspired by the vintage aesthetics of Edward Hopper.",
+            "Infuse the composition with a timeless quality reminiscent of the works of Norman Rockwell."
+        ],
+        'futuristic': [
+            "Explore a futuristic cityscape inspired by the visionary architecture of Zaha Hadid.",
+            "Capture the sleek and modern aesthetic seen in the works of Santiago Calatrava.",
+            "Incorporate cutting-edge technology and design elements inspired by Syd Mead."
+        ],
+        'minimalism': [
+            "Embrace simplicity and clean lines in the style of Donald Judd's minimalistic sculptures.",
+            "Explore the use of negative space and simplicity inspired by Agnes Martin.",
+            "Create a visually serene composition reminiscent of the minimalistic works of Yayoi Kusama."
+        ],
+        'expressionism': [
+            "Infuse the composition with emotional intensity reminiscent of Egon Schiele's expressionistic portraits.",
+            "Capture the bold and expressive brushstrokes inspired by Ernst Ludwig Kirchner.",
+            "Explore the raw and emotive qualities of expressionism seen in the works of Chaim Soutine."
+        ]
+    }
+
+    # Apply enhancements
+    if enhancements:
+        for category in enhancements:
+            if category in enhancement_categories:
+                prompt += f" {random.choice(enhancement_categories[category])},"
+    # print(prompt)
+    return prompt.rstrip(',') + "."
+
+    # # Example usage:
+    # query = "a cityscape"
+    # enhancements = ['futuristic', 'realism', 'impressionism']
+
+    # prompt = generate_image_prompt(query, enhancements)
+    # print(prompt)
+
+
 
 #### CHARACTERS ####
 def hoots_and_hootie(width=350, height=350, self_image="hootsAndHootie.png", face_recon=True, show_video=True,input_text=True,show_conversation=True, no_response_time=3):
@@ -762,7 +887,7 @@ def hoots_and_hootie(width=350, height=350, self_image="hootsAndHootie.png", fac
         show_conversation=show_conversation,
         no_response_time=no_response_time,
         commands=[{
-            "keywords": ["hey Hoots"], # keywords are case insensitive
+            "keywords": ["hey Hoots", "hey Hoot"], # keywords are case insensitive
             "api_body": {"keyword": "hey hoots"},
         }, {
             "keywords": ["bye Hoots", "bye Foods"],

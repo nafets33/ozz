@@ -41,6 +41,17 @@ def load_ozz_voice(api_key=Body(...), text=Body(...), self_image=Body(...)): #, 
     #         {'role':'user','content': 'any kind of kid related'}
     #        ]
     # ipdb.set_trace()
-    json_data = ozz_query(text, self_image)
 
+    def ozz_query_json_return(text, self_image, audio_file, page_direct=None, listen_after_reply=False):
+        json_data = {'text': text, 
+                    'audio_path': audio_file, 
+                    'self_image': self_image, 
+                    'page_direct': page_direct, 
+                    'listen_after_reply': listen_after_reply}
+        return json_data
+    # try:
+    json_data = ozz_query_json_return(text, self_image, audio_file='test_audio.mp3')
     return JSONResponse(content=json_data)
+    # finally:
+    #     json_data = ozz_query(text, self_image)
+    #     return JSONResponse(content=json_data)
