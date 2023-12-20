@@ -14,7 +14,7 @@ set_streamlit_page_config_once()
 
 master_text_audio=init_text_audio_db()
 
-ip_address, streamlit_ip = return_app_ip("http://localhost:8501")
+ip_address, streamlit_ip = return_app_ip() # "http://localhost:8501"
 print(ip_address)
 print(st.session_state)
 if not sign_in_client_user():

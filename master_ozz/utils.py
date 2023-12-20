@@ -511,10 +511,10 @@ def get_ip_address():
 
 
 def return_app_ip(streamlit_ip="http://localhost:8502", ip_address="http://127.0.0.1:8000"):
-    # ip_address = get_ip_address()
+    ip_address = get_ip_address()
     if ip_address == os.environ.get('gcp_ip'):
         # print("IP", ip_address, os.environ.get('gcp_ip'))
-        ip_address = "https://api.quantqueen.com"
+        ip_address = "https://api.divergent-thinkers.com"
         streamlit_ip = ip_address
     else:
         ip_address = "http://127.0.0.1:8000"
