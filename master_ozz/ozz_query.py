@@ -376,6 +376,7 @@ def ozz_query(text, self_image):
         text, current_query = clean_current_query_from_previous_ai_response(text)
 
         if len(current_query) == 0:
+            print("NO RESPONSE RETURN BLANK")
             return ozz_query_json_return(text, self_image, audio_file=None, page_direct=None, listen_after_reply=False)
 
         conversation_history_file_path = 'master_ozz/conversation_history.json'
@@ -421,16 +422,17 @@ def ozz_query(text, self_image):
         audio_file='temp_audio.mp3'
         
         #
-        #  if "?" in response:
-        #     session_state['returning_question'] = True
-        #     session_state['response_type'] = 'question'
-        # else:
-        #     session_state['returning_question'] = False
-        #     session_state['response_type'] = 'response'
-        
-        session_state['returning_question'] = False
-        session_state['response_type'] = 'response'
         session_state['text'] = text
+        
+        if "?" in response:
+            session_state['returning_question'] = True
+            session_state['response_type'] = 'question'
+        else:
+            session_state['returning_question'] = False
+            session_state['response_type'] = 'response'
+    
+        # session_state['returning_question'] = False
+        # session_state['response_type'] = 'response'
 
         # For saving a chat history for current session in json file
         with open(session_state_path, 'w') as session_state_file:
@@ -455,7 +457,7 @@ def ozz_query(text, self_image):
     print(self_image)
     
     page_direct= False # if redirect, add redirect page into session_state
-    listen_after_reply = False # True if session_state.get('response_type') == 'question' else False
+    listen_after_reply = session_state['returning_question'] # True if session_state.get('response_type') == 'question' else False
 
     return ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply)
 

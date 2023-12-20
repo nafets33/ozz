@@ -890,7 +890,7 @@ def hoots_and_hootie(width=350, height=350, self_image="hootsAndHootie.png", fac
             "keywords": ["hey Hoots", "hey Hoot"], # keywords are case insensitive
             "api_body": {"keyword": "hey hoots"},
         }, {
-            "keywords": ["bye Hoots", "bye Foods"],
+            "keywords": ["bye Hoots"],
             "api_body": {"keyword": "bye hoots"},
         }
         ]

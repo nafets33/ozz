@@ -47,6 +47,7 @@ const CustomVoiceGPT = (props) => {
   const videoHeight = 480
   const videoWidth = 640
   const canvasRef = useRef()
+  const audioRef = useRef(null)
 
   const handleInputText = (e) => {
     const { value } = e.target
@@ -169,25 +170,50 @@ const CustomVoiceGPT = (props) => {
         self_image: imageSrc,
         face_data: faceData.current,
       }
+      console.log("api")
       const { data } = await axios.post(api, body)
       console.log("data :>> ", data, body)
       data["self_image"] && setImageSrc(data["self_image"])
-      data["listen_after_reply"] &&
-        setListenAfterReply(data["listen_after_reply"])
-      setAnswers(data["text"])
-      g_anwers = [...data["text"]]
       if (data["audio_path"]) {
-        const audio = new Audio(data["audio_path"])
-        audio.play()
-      }
-      if (data["page_direct"]) {
-        console.log("api has page direct", data["page_direct"])
-        if (data["page_direct"] !== false) {
-        window.location.reload()
+        if (audioRef.current) {
+          audioRef.current.pause(); // Pause existing playback if any
+        }
+        audioRef.current = new Audio(data["audio_path"]);
+        audioRef.current.play();
+        
+        // const audio = new Audio(data["audio_path"]);
+        // audio.play();
+  
+        audioRef.current.onended = () => {
+          console.log("Audio playback finished.");
+  
+          if (data["listen_after_reply"]) {
+            setListenAfterReply(data["listen_after_reply"]);
+          }
+  
+          setAnswers(data["text"]);
+          g_anwers = [...data["text"]];
+    
+          if (data["page_direct"] === true) {
+            console.log("api has page direct", data["page_direct"]);
+            window.location.reload();
+          }
+        };
+      } else {
+        if (data["listen_after_reply"]) {
+          setListenAfterReply(data["listen_after_reply"]);
+        }
+  
+        setAnswers(data["text"]);
+        g_anwers = [...data["text"]];
+    
+        if (data["page_direct"] === true) {
+          console.log("api has page direct", data["page_direct"]);
+          window.location.reload();
         }
       }
     } catch (error) {
-      // console.log("api call on listen failded!")
+      console.log("api call on listen failded!", error)
     }
   }
 

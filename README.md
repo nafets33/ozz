@@ -7,7 +7,20 @@ streamlit run ozz_app.py
 python ozz_api.py
 
 
+# build component
+del lock file
+use zsh not bash
+npm build run
 
+
+# gcp setup nginx
+
+sudo apt update
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d divergent-thinkers.com
+
+
+sudo ln -s /etc/nginx/sites-available/divergent-thinkers.com /etc/nginx/sites-enabled/
 
 
 #### OLD

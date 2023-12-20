@@ -30,7 +30,7 @@ def lab():
 
     with st.sidebar:
     # with ozz_lab_lab:
-        files = st.sidebar.file_uploader('Upload your files',type=['PDF','CSV','MD','DOCX','DOC','XLSX','PY','HTML'],accept_multiple_files=True)
+        files = st.sidebar.file_uploader('Upload your files',type=['PDF','CSV','MD','DOCX','DOC','XLSX','PY','HTML', 'TXT'],accept_multiple_files=True)
         
         # Store all the files
         if not os.path.exists(DATA_PATH):

@@ -2,8 +2,33 @@ import streamlit as st
 from youtubesearchpython import VideosSearch
 import os
 
+# def search_youtube():
+#     channelsSearch = ChannelsSearch('NoCopyrightSounds', limit = 10, region = 'US')
 
-def search_youtube(search_query, max_results=5):
+#     print(channelsSearch.result())
+
+#     video = Video.get('https://www.youtube.com/watch?v=z0GKGpObgPY', mode = ResultMode.json, get_upload_date=True)
+#     print(video)
+#     videoInfo = Video.getInfo('https://youtu.be/z0GKGpObgPY', mode = ResultMode.json)
+#     print(videoInfo)
+#     videoFormats = Video.getFormats('z0GKGpObgPY')
+#     print(videoFormats)
+
+
+
+#     channel_id = "UC_aEa8K-EOJ3D6gOs7HcyNg"
+#     playlist = Playlist(playlist_from_channel_id(channel_id))
+
+#     print(f'Videos Retrieved: {len(playlist.videos)}')
+
+#     while playlist.hasMoreVideos:
+#         print('Getting more videos...')
+#         playlist.getNextVideos()
+#         print(f'Videos Retrieved: {len(playlist.videos)}')
+
+#     print('Found all the videos.')
+
+def search_youtube(search_query='story book reads', max_results=5):
     """
     Search YouTube for videos based on the given query.
 
@@ -22,28 +47,19 @@ def search_youtube(search_query, max_results=5):
             "title": result["title"],
             "link": result["link"],
             "duration": result["duration"],
-            "views": result["views"],
+            "views": result.get("views", None),  # Use get method to handle KeyError
             "thumbnails": result["thumbnails"],
         }
         results.append(video_info)
 
-    # # Example usage:
-    # search_query = "Python programming tutorial"
-    # search_results = search_youtube(search_query)
-
-    # for idx, result in enumerate(search_results, start=1):
-    #     print(f"{idx}. Title: {result['title']}")
-    #     print(f"   Link: {result['link']}")
-    #     print(f"   Duration: {result['duration']}")
-    #     print(f"   Views: {result['views']}")
-    #     print()
     return results
 
 
 def get_channel_videos_info(channel_url, output_file="output.txt"):
     # Search for videos in the given channel
     videos_search = VideosSearch(channel_url, limit=20)
-    results = videos_search.result()['result']​
+    results = videos_search.result()['result']
+
     # Check if the output file exists; if not, create it
     if not os.path.isfile(output_file):
         with open(output_file, 'w', encoding='utf-8') as new_file:
@@ -119,10 +135,26 @@ def display_channel_info():
             st.write("-------------\n")
 
 
+
 def youtube():
     st.title("YouTube Channel Info")
 
-    # Get user input for the YouTube channel link
+    search_results = search_youtube()
+
+    for i, result in enumerate(search_results):
+        st.header(result["title"])
+        thumbnail_url = result['thumbnails'][0].get('url')
+        st.image(thumbnail_url, caption="Thumbnail", use_column_width=False)
+        # st.image(result["thumbnails"][0], caption="Thumbnail", use_column_width=True)
+        st.markdown("**Duration:** " + str(result['duration']) + " | **Views:** " + str(result['views']))
+        st.markdown("**Link:** [" + result['link'] + "](" + result['link'] + ")")
+        # st.button(f"{result['title']},", key=result['title'])
+        button_key = f"play_button_{i}"
+        if st.button(f"Play Video {result['title']}", key=button_key):
+            st.video(result['link']) 
+    
+        st.write("---")  # Separator between results
+    
     channel_url = st.text_input("Enter the YouTube channel link:")
 
     if st.button("Get Channel Videos Info"):
@@ -136,6 +168,7 @@ def youtube():
             # Call the function to get and display channel videos info
             get_channel_videos_info(formatted_channel_url)
             display_channel_info()
+
 
 if __name__ == "__main__":
     youtube()
