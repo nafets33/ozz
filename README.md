@@ -6,22 +6,36 @@ pip install requirements.txt
 streamlit run ozz_app.py
 python ozz_api.py
 
+# SSH
+cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+
 
 # build component
 del lock file
 use zsh not bash
-npm build run
+npm run build
 
 
 # gcp setup nginx
+1. updates site-avial
+2. sudo ln
+3. sudo cert
+
+update only sites-enabled without CERTA
 
 sudo apt update
 sudo apt install certbot python3-certbot-nginx
 sudo certbot --nginx -d divergent-thinkers.com
 
-
 sudo ln -s /etc/nginx/sites-available/divergent-thinkers.com /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/api.divergent-thinkers.com /etc/nginx/sites-enabled/
 
+
+sudo certbot --nginx -d api.divergent-thinkers.com -d www.divergent-thinkers.com
+#REMOVE sites-enabled
+
+sudo systemctl restart nginx
+sudo systemctl start nginx
 
 #### OLD
 brew install postgresql

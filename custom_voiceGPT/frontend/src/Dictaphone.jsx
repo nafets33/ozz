@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react"
-import { useSpeechRecognition } from "react-speech-recognition"
-
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 let timer
-
 const Dictaphone = ({
   commands,
   myFunc,
@@ -22,10 +20,10 @@ const Dictaphone = ({
     resetTranscript,
     listening,
     browserSupportsSpeechRecognition,
+    browserSupportsContinuousListening, 
     isMicrophoneAvailable,
   } = useSpeechRecognition({ transcribing, clearTranscriptOnListen })
   const [prevScript, setPrevScript] = useState("")
-
   useEffect(() => {
     // console.log(
     //   "Got interim result:",
@@ -37,7 +35,14 @@ const Dictaphone = ({
     //   console.log("prevScript :>> ", prevScript)
     // }
   }, [interimTranscript])
-
+  useEffect(() => {
+    if (browserSupportsContinuousListening) {
+      SpeechRecognition.startListening({ continuous: true });
+    } else {
+      SpeechRecognition.startListening();
+    }
+    return () => SpeechRecognition.stopListening();
+  }, []);
   useEffect(() => {
     if (finalTranscript != "") {
       console.log("Got final result:", finalTranscript)
@@ -50,7 +55,6 @@ const Dictaphone = ({
           for (let j = 0; j < keywords.length; j++) {
             const keyword = new RegExp(keywords[j], "i")
             const isKeywordFound = finalTranscript.search(keyword) != -1
-
             if (isKeywordFound) {
               myFunc(finalTranscript, commands[i], 1)
               resetTranscript()
@@ -73,15 +77,13 @@ const Dictaphone = ({
       resetTranscript()
     }
   }, [finalTranscript, listenAfterRelpy, commands])
-
+  
   if (!browserSupportsSpeechRecognition) {
     return <span>No browser support</span>
   }
-
   if (!isMicrophoneAvailable) {
     return <span>Please allow access to the microphone</span>
   }
-
   return (
     <>
       {show_conversation && (
@@ -96,5 +98,4 @@ const Dictaphone = ({
     </>
   )
 }
-
 export default Dictaphone
