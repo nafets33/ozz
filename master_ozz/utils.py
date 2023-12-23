@@ -1,5 +1,4 @@
 import streamlit as st
-import streamlit_antd_components as sac
 
 import speech_recognition as sr
 import time 
@@ -14,6 +13,9 @@ import socket
 import ipdb
 import sys
 import json
+import random
+import requests 
+from PIL import Image
 
 from elevenlabs import set_api_key
 from elevenlabs import Voice, VoiceSettings, generate
@@ -32,8 +34,6 @@ from langchain.prompts import PromptTemplate
 import openai
 
 
-from PIL import Image
-
 from pydub import AudioSegment
 
 from custom_voiceGPT import custom_voiceGPT, VoiceGPT_options_builder
@@ -41,10 +41,139 @@ from custom_voiceGPT import custom_voiceGPT, VoiceGPT_options_builder
 from bs4 import BeautifulSoup
 import re
 from streamlit_extras.switch_page_button import switch_page
+import hashlib
 
+import boto3
+from botocore.exceptions import NoCredentialsError
 
 # from youtubesearchpython import *
+#### AUTH UTILS #####
 
+def hash_string(string):
+    # Hash the string
+    hashed_string = hashlib.sha256(string.encode()).hexdigest()
+    # Convert the hash to an integer ID
+    id = int(hashed_string, 16) % (10 ** 8)
+    return id
+
+def return_db_root(client_username):
+    def client_dbs_root():
+        client_dbs = os.path.join(ozz_master_root(), "client_user_dbs")
+        return client_dbs
+    client_user_pqid = hash_string(client_username)
+    client_user = client_username.split("@")[0]
+    db_name = f'db__{client_user}_{client_user_pqid}'
+    db_root = os.path.join(client_dbs_root(), db_name)
+
+    return db_root
+
+def init_clientUser_dbroot(client_username, force_db_root=False, queenKING=False):
+
+    if force_db_root:
+        db_root = os.path.join(ozz_master_root(), "ozz_db/sneakpeak")
+    # elif client_username in ['stefanstapinski@gmail.com']:  ## admin
+    #     db_root = os.path.join(hive_master_root(), "db")
+    else:
+        db_root = return_db_root(client_username=client_username)
+        if os.path.exists(db_root) == False:
+            os.mkdir(db_root)
+            os.mkdir(os.path.join(db_root, "logs"))
+    
+    if queenKING:
+        st.session_state['db_root'] = db_root
+        st.session_state["admin"] = True if client_username == "stefanstapinski@gmail.com" else False
+
+    return db_root
+
+def init_pollen_dbs(db_root, prod, queens_chess_pieces=['queen_king.json'], queenKING=False, init=True, db_return={}):
+    # db_return = {f'{queens_chess_piece}': f'{queens_chess_piece}'}
+    for queens_chess_piece in queens_chess_pieces:
+        # WORKERBEE don't check if file exists, only check on init
+        if prod:
+            PB_QUEEN_Pickle = os.path.join(db_root, f'{queens_chess_piece}')
+        else:
+            # print("My Queen Sandbox")
+            PB_QUEEN_Pickle = os.path.join(db_root, f'sandbox_{queens_chess_piece}')
+        if init:
+            if os.path.exists(PB_QUEEN_Pickle) == False:
+                print(f"Init {PB_QUEEN_Pickle}")
+                save_json(PB_QUEEN_Pickle, [])
+
+        if queenKING:
+            st.session_state[queens_chess_piece] = PB_QUEEN_Pickle
+        
+        db_return[queens_chess_piece] = queens_chess_piece
+
+
+    return db_return
+
+def live_sandbox__setup_switch(pq_env, switch_env=False):
+
+    try:
+        prod = pq_env.get('env')
+
+        prod_name = (
+            "LIVE"
+            if prod
+            else "Sandbox"
+        )
+        
+        st.session_state["prod_name"] = prod_name
+        st.session_state["production"] = prod
+
+        if switch_env:
+            if prod:
+                prod = False
+                st.session_state["production"] = prod
+                prod_name = "Sanbox"
+                st.session_state["prod_name"] = prod_name
+            else:
+                prod = True
+                st.session_state["production"] = prod
+                prod_name = "LIVE"
+                st.session_state["prod_name"] = prod_name
+            # save
+            pq_env.update({'env': prod})
+            PickleData(pq_env.get('source'), pq_env)
+
+        return prod
+    except Exception as e:
+        print_line_of_error("live sb switch")
+
+def setup_instance(client_username, switch_env, force_db_root, queenKING, prod=None, init=False):
+    client_dbs = os.path.join(ozz_master_root(), "client_user_dbs")
+    if os.path.exists(client_dbs) == False:
+        print("INIT CLIENT DB")
+        os.mkdir(client_dbs)
+
+    queens_chess_pieces=['queen_king.json', 'conversation_history.json', 'session_state.json', 'master_conversation_history.json']
+    try:
+        db_root = init_clientUser_dbroot(client_username=client_username, force_db_root=force_db_root, queenKING=queenKING)  # main_root = os.getcwd() // # db_root = os.path.join(main_root, 'db')
+        if prod is not None:
+            init_pollen_dbs(db_root, prod, queens_chess_pieces, queenKING, init)
+            return prod
+        else:
+            # Ensure Environment
+            PB_env_PICKLE = os.path.join(db_root, f'{"queen_king"}{"_env"}.pkl')
+            if os.path.exists(PB_env_PICKLE) == False:
+                PickleData(PB_env_PICKLE, {'source': PB_env_PICKLE,'env': False})
+            
+            pq_env = ReadPickleData(PB_env_PICKLE)
+            prod = live_sandbox__setup_switch(pq_env, switch_env)
+            
+            init_pollen_dbs(db_root, prod, queens_chess_pieces, queenKING, init)
+            
+            st.session_state['prod'] = prod
+            st.session_state['client_user'] = client_username
+            return prod
+    except Exception as e:
+        print_line_of_error(f"setup instance {e}")
+
+def kingdom():
+    allowed_emails=['stefanstapinski@gmail.com']
+    return allowed_emails
+
+#### AUTH UTILS #####
 
 def ozz_master_root(info='\ozz\ozz'):
     script_path = os.path.abspath(__file__)
@@ -108,18 +237,21 @@ def text_image_fields(file_path, text, user_query=None, self_image=None):
 def load_local_json(file_path):
     with open(file_path, 'r') as filee:
         data = json.load(filee)
-    
+        
     return data
 
-def init_text_audio_db():
-    text_audio_db = os.path.join(OZZ_DB, 'master_text_audio')
-    file_path = f'{text_audio_db}.json'
-    if os.path.exists(file_path):
-        # master_text_audio = ReadPickleData(f'{text_audio_db}.pkl')
-        master_text_audio = load_local_json(file_path)
-        master_text_audio = {'master_text_audio': master_text_audio}
+def save_json(db_name, data):
+    if db_name:
+        with open(db_name, 'w') as file:
+            json.dump(data, file)
+
+def init_text_audio_db(db_name='master_text_audio.json'):
+    master_text_audio_file_path = os.path.join(OZZ_DB, db_name)
+    if os.path.exists(master_text_audio_file_path):
+        master_text_audio = load_local_json(master_text_audio_file_path)
         return master_text_audio
     
+    print("INIT DB")
     audio_db = os.path.join(OZZ_DB, 'audio')
     master_text_audio = []
     for audio in os.listdir(audio_db):
@@ -131,20 +263,18 @@ def init_text_audio_db():
         except Exception as e:
             print_line_of_error(e)
     
-    save_master_text_db(master_text_audio)
+    save_json(master_text_audio_file_path, master_text_audio)
 
     return master_text_audio
 
 
-def init_text_image_db():
-    text_image_db = os.path.join(OZZ_DB, 'master_text_image')
-    file_path = f'{text_image_db}.json'
+def init_text_image_db(db_name='master_text_image.json'):
+    file_path = os.path.join(OZZ_DB, db_name)
     if os.path.exists(file_path):
         master_text_image = load_local_json(file_path)
-        master_text_image = {'master_text_image': master_text_image}
         return master_text_image
     else:
-        master_text_image = {'master_text_image': []}
+        master_text_image = {'source': file_path, 'data': []}
 
     return master_text_image
 
@@ -248,9 +378,6 @@ def append_audio(input_file1, input_file2, output_file):
     final_audio.export(output_file, format="mp4")  #
 
 
-
-
-
 def base_content():
     def content_type(name, url, tags):
         return {name, url, tags}
@@ -263,25 +390,13 @@ def base_content():
 
     return main_return
 
-def save_json(data, db_name='master_text_image'):
-    db = os.path.join(OZZ_DB, db_name)
-    with open(f'{db}.json', 'w') as file:
-        json.dump(data, file)
 
-def save_master_text_db(master_text_audio):
-    text_audio_db = os.path.join(OZZ_DB, 'master_text_audio')
-    PickleData(f'{text_audio_db}.pkl', {'master_text_audio': master_text_audio})
-    with open(f'{text_audio_db}.json', 'w') as file:
-        json.dump(master_text_audio, file)
-    
-    return True
-
-def save_audio(filename, audio, response, user_query, self_image=False):
+def save_audio(filename, audio, response, user_query, self_image=False, db_name='master_text_audio.json'):
     ## all saving should happen at end of response return WORKERBEE
-
-    master_text_audio = init_text_audio_db().get('master_text_audio')
+    master_text_audio_file_path = os.path.join(OZZ_DB, db_name)
+    master_text_audio = init_text_audio_db()
     master_text_audio.append(text_audio_fields(filename, response, user_query, self_image))
-    save_master_text_db(master_text_audio)
+    save_json(master_text_audio_file_path, master_text_audio)
 
     # audio_db = os.path.join(OZZ_DB, 'audio')
     # db_file_name = os.path.join(audio_db, filename.split("/")[-1])
@@ -448,60 +563,9 @@ def set_streamlit_page_config_once():
     except st.errors.StreamlitAPIException as e:
         if "can only be called once per app" in e.__str__():
             # ignore this error
-            return
+            return True
         raise e
 
-    # {
-    #   "hi":"Yes! How may i help you today :)",
-    #   "hello":"Yes! How may i help you today :)",
-    #   "hey":"Yup! Tell me",
-    #   "helloo":"Yes! How may i help you today :)",
-    #   "hellooo":"Yes! How may i help you today :)",
-    #   "g morining":"Good Morning to you to",
-    #   "gmorning":"Good Morning to you to",
-    #   "good morning":"Good Morning to you to",
-    #   "morning":"Good Morning to you to",
-    #   "good day":"Have a nice day to you to",
-    #   "good afternoon":"Good afternoon",
-    #   "good evening":"Good afternoon",
-    #   "greetings":"Hello what's up",
-    #   "greeting":"Hello what's up",
-    #   "good to see you":"You can't see me :P",
-    #   "its good seeing you":"You can't see me :P",
-    #   "how are you":"I'm fine. what bout you",
-    #   "how're you":"good",
-    #   "how are you doing":"nothing just responding to you",
-    #   "how ya doin'":"pulling out in my rs6",
-    #   "how ya doin":"pulling out in my rs6 with kerosene",
-    #   "how is everything":"going fine",
-    #   "how is everything going":"it's good going",
-    #   "how's everything going":"it's good",
-    #   "how is you":"not bad",
-    #   "how's you":"not bad",
-    #   "how are things":"not bad they are good",
-    #   "how're things":"not bad they are good",
-    #   "how is it going":"not bad",
-    #   "how's it going":"not bad",
-    #   "how's it goin'":"not bad",
-    #   "how's it goin":"not bad",
-    #   "how is life been treating you":"good than i thought",
-    #   "how's life been treating you":"good than i thought",
-    #   "how have you been":"good than i thought",
-    #   "how've you been":"good than i thought",
-    #   "what is up":"good than i thought",
-    #   "what's up":"good than i thought",
-    #   "what is cracking":"nothing just doing my jobs",
-    #   "what's cracking":"nothing just doing my jobs",
-    #   "what is good":"good is good",
-    #   "what's good":"good is good",
-    #   "what is happening":"nothing special",
-    #   "what's happening":"nothing special",
-    #   "what is new":"nothing special",
-    #   "what's new":"nothing special",
-    #   "what is neww":"nothing special",
-    #   "g’day":"to you to",
-    #   "howdy":"rowdy :p"
-    # }
 
 
 def get_ip_address():
@@ -510,8 +574,15 @@ def get_ip_address():
     return ip_address
 
 
-def return_app_ip(streamlit_ip="http://localhost:8502", ip_address="http://127.0.0.1:8000"):
-    ip_address = get_ip_address()
+def return_app_ip(streamlit_ip="http://localhost:8501", ip_address=None):
+    
+    ip_address = st.session_state.get('ip_address')
+    
+    if ip_address:
+        pass
+    else:
+        ip_address = get_ip_address()
+    
     if ip_address == os.environ.get('gcp_ip'):
         # print("IP", ip_address, os.environ.get('gcp_ip'))
         ip_address = "https://api.divergent-thinkers.com"
@@ -651,38 +722,7 @@ def sign_in_client_user():
         return False
     else:
         return True
-# def llm_response(query, chat_history):
-#     memory = ConversationBufferMemory(
-#                                         memory_key="chat_history",
-#                                         max_len=50,
-#                                         return_messages=True,
-#                                     )
 
-#     prompt_template = '''
-#     You are a Bioinformatics expert with immense knowledge and experience in the field. Your name is Dr. Fanni.
-#     Answer my questions based on your knowledge and our older conversation. Do not make up answers.
-#     If you do not know the answer to a question, just say "I don't know".
-
-#     Given the following conversation and a follow up question, answer the question.
-
-#     {chat_history}
-
-#     question: {question}
-#     '''
-
-#     PROMPT = PromptTemplate.from_template(
-#                 template=prompt_template
-#             )
-
-
-#     chain = ConversationalRetrievalChain.from_llm(
-#                                                     chat_model,
-#                                                     retriever,
-#                                                     memory=memory,
-#                                                     condense_question_prompt=PROMPT
-#                                                 )
-
-#     pp.pprint(chain({'question': q1, 'chat_history': memory.chat_memory.messages}))
 
 
 # TRAINING FUNCTIONS #
@@ -719,34 +759,6 @@ def clean_data(data):
 
 
 
-def sac_menu_buttons(main='Ozz'):
-    if main=='Ozz':
-        sac_menu_buttons = sac.buttons([
-            sac.ButtonsItem(label='Ozz', icon='robot'),
-            sac.ButtonsItem(label='Lab', icon='backpack4-fill'),
-            # sac.ButtonsItem(label='Ozz', icon='wechat', href=f'{st.session_state["streamlit_ip"]}/ozz'),
-            sac.ButtonsItem(label='Client Models', disabled=True),
-            sac.ButtonsItem(label='Account', icon='share-fill'),
-        ], 
-        format_func='title', align='end', type='text')
-    elif main == 'Account':
-        sac_menu_buttons = sac.buttons([
-            sac.ButtonsItem(label='account', icon='key'),
-            sac.ButtonsItem(label='Ozz', icon='house'),
-            # sac.ButtonsItem(label='Log Out', icon='key'),
-        ], format_func='title', align='end', type='text')
-
-    return sac_menu_buttons
-
-def sac_menu_main(sac_menu):
-    if sac_menu == 'Lab':
-        switch_page('Lab')
-
-    if sac_menu == 'Ozz':
-        switch_page('Ozz')
-
-import requests 
-from PIL import Image
 
 def generate_image(text="2 cute owls in a forest, Award-Winning Art, Detailed, Photorealistic, Fanart", size="256x256", save_img=True, use_llm_enhance=True): 
     openai.api_key=os.getenv("OPENAI_API_KEY")
@@ -767,10 +779,12 @@ def generate_image(text="2 cute owls in a forest, Award-Winning Art, Detailed, P
     if save_img:
         fname = save_image(url1)
     
-    master_text_image = init_text_image_db().get('master_text_image')
+    db_name='master_text_image.json'
+    file_path = os.path.join(OZZ_DB, db_name)
+    MT_Image = init_text_image_db(db_name)
     data = text_image_fields(fname, prompt, prompt)
-    master_text_image.append(data)
-    save_json(master_text_image)
+    MT_Image.append(data)
+    save_json(file_path, MT_Image)
 
 
 def save_image(url1):
@@ -791,7 +805,6 @@ def save_image(url1):
 
     return fname
 
-import random
 
 def generate_image_prompt(query="2 owls sleeping", enhancements=['futuristic']):
     # Default prompt
@@ -868,32 +881,69 @@ def generate_image_prompt(query="2 owls sleeping", enhancements=['futuristic']):
 
 
 
-#### CHARACTERS ####
-def hoots_and_hootie(width=350, height=350, self_image="hootsAndHootie.png", face_recon=True, show_video=True,input_text=True,show_conversation=True, no_response_time=3):
-    to_builder = VoiceGPT_options_builder.create()
-    to = to_builder.build()
-    # if st.session_state['username'] not in users_allowed_queen_email
-    custom_voiceGPT(
-        api=f"{st.session_state['ip_address']}/api/data/voiceGPT",
-        api_key=os.environ.get('ozz_key'),
-        # client_user=client_user,
-        self_image=self_image,
-        width=width,
-        height=height,
-        hello_audio="test_audio.mp3",
-        face_recon=face_recon,
-        show_video=show_video,
-        input_text=input_text,
-        show_conversation=show_conversation,
-        no_response_time=no_response_time,
-        commands=[{
-            "keywords": ["hey Hoots", "hey Hoot"], # keywords are case insensitive
-            "api_body": {"keyword": "hey hoots"},
-        }, {
-            "keywords": ["bye Hoots"],
-            "api_body": {"keyword": "bye hoots"},
-        }
-        ]
-    )
+def upload_to_s3(local_file, bucket, s3_file):
+    """
+    Upload a file to an S3 bucket.
 
-    return True
+    :param local_file: Path to the local file you want to upload
+    :param bucket: S3 bucket name
+    :param s3_file: S3 key (path) where the file will be stored
+    :return: True if the file was uploaded successfully, False otherwise
+    """
+    try:
+        # Create an S3 client
+        s3 = boto3.client('s3', aws_access_key_id=os.environ.get('s3_access_key'),
+                          aws_secret_access_key=os.environ.get('s3_secret'))
+
+        # Upload the file
+        s3.upload_file(local_file, bucket, s3_file)
+        print("Upload Successful")
+        return True
+    except FileNotFoundError:
+        print("The file was not found")
+        return False
+    except NoCredentialsError:
+        print("Credentials not available")
+        return False
+
+        # Example usage
+        audio_file_path = 'your_audio_file_path.mp3'
+        bucket_name = 'ozzz'
+        s3_key = 'audios/filename.mp3'
+
+        upload_to_s3(audio_file_path, bucket_name, s3_key)
+
+
+
+# def llm_response(query, chat_history):
+#     memory = ConversationBufferMemory(
+#                                         memory_key="chat_history",
+#                                         max_len=50,
+#                                         return_messages=True,
+#                                     )
+
+#     prompt_template = '''
+#     You are a Bioinformatics expert with immense knowledge and experience in the field. Your name is Dr. Fanni.
+#     Answer my questions based on your knowledge and our older conversation. Do not make up answers.
+#     If you do not know the answer to a question, just say "I don't know".
+
+#     Given the following conversation and a follow up question, answer the question.
+
+#     {chat_history}
+
+#     question: {question}
+#     '''
+
+#     PROMPT = PromptTemplate.from_template(
+#                 template=prompt_template
+#             )
+
+
+#     chain = ConversationalRetrievalChain.from_llm(
+#                                                     chat_model,
+#                                                     retriever,
+#                                                     memory=memory,
+#                                                     condense_question_prompt=PROMPT
+#                                                 )
+
+#     pp.pprint(chain({'question': q1, 'chat_history': memory.chat_memory.messages}))

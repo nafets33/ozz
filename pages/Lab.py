@@ -2,7 +2,7 @@ import streamlit as st
 import os
 from bs4 import BeautifulSoup
 import re
-from master_ozz.utils import sac_menu_main, clean_text, clean_html, sac_menu_buttons, return_app_ip, init_text_audio_db, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
+from master_ozz.utils import return_app_ip, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
 from streamlit_extras.switch_page_button import switch_page
 from dotenv import load_dotenv
 
@@ -11,11 +11,8 @@ def lab():
     main_root = ozz_master_root()  # os.getcwd()
     load_dotenv(os.path.join(main_root, ".env"))
     set_streamlit_page_config_once()
-
-    # sac_menu = sac_menu_buttons()
-    # sac_menu_main(sac_menu)
-
-    ip_address, streamlit_ip = return_app_ip("http://localhost:8501")
+    
+    ip_address, streamlit_ip = return_app_ip()
     print(ip_address)
 
     if not sign_in_client_user():

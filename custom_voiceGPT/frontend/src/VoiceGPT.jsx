@@ -32,6 +32,8 @@ const CustomVoiceGPT = (props) => {
     input_text,
     no_response_time,
     face_recon,
+    api_key,
+    refresh_ask,
   } = kwargs
   const [imageSrc, setImageSrc] = useState(kwargs.self_image)
   const [message, setMessage] = useState("")
@@ -165,10 +167,11 @@ const CustomVoiceGPT = (props) => {
       console.log("api call on listen...", command)
       const body = {
         tigger_type: type,
-        api_key: "api_key",
+        api_key: api_key,
         text: text,
         self_image: imageSrc,
         face_data: faceData.current,
+        refresh_ask: refresh_ask,
       }
       console.log("api")
       const { data } = await axios.post(api, body)
@@ -326,7 +329,7 @@ const CustomVoiceGPT = (props) => {
             <input
               className="form-control"
               type="text"
-              placeholder="Chat with chatGPT"
+              placeholder="Chat with Hoots"
               value={textString}
               onChange={handleInputText}
               onKeyDown={handleOnKeyDown}

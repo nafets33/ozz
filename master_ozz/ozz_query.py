@@ -16,7 +16,7 @@ est = pytz.timezone("US/Eastern")
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-from master_ozz.utils import init_text_audio_db, print_line_of_error, ozz_master_root, ozz_master_root_db, generate_audio, save_audio, Retriever, init_constants
+from master_ozz.utils import save_json, load_local_json, init_clientUser_dbroot, init_text_audio_db, print_line_of_error, ozz_master_root, ozz_master_root_db, generate_audio, save_audio, Retriever, init_constants
 import ipdb
 
 main_root = ozz_master_root()  # os.getcwd()
@@ -35,6 +35,49 @@ common_phrases = json.load(json_file)
 
 root_db = ozz_master_root_db()
 
+
+def get_last_eight(lst=[]):
+    if len(lst) <= 1:
+        return lst
+
+    max_items = min(len(lst), 8)
+
+    return [lst[0]] + lst[-(max_items - 1):]
+
+def remove_exact_string(string_a, string_b):
+    # Split string_a by string_b
+    split_strings = string_a.split(string_b)
+    
+    # Join the split strings without the occurrences of string_b
+    final_string_a = ''.join(split_strings)
+
+    return final_string_a
+
+def split_string(current_query, last_response):
+    if last_response:
+        # Find the index of the last occurrence of the ending of b in a
+        index = current_query.rfind(last_response[-8:])
+        
+        # Check if the ending of b is found in a
+        if index != -1:
+            # Split a at the index of the ending of b
+            return current_query[index + len(last_response[-8:]):].strip()
+        else:
+            # If the ending is not found, return the original string a
+            return current_query.strip()
+    else:
+        return current_query.strip()
+
+    # Example usage:
+    string_b = "i'm good thanks for asking" # llm
+    string_a = "good thanks for asking hi" # user query
+
+    result = split_string(string_a, string_b)
+    print("Result:", result)
+
+
+def return_timestamp_string(format="%Y-%m-%d %H-%M-%S %p {}".format(est), tz=est):
+    return datetime.now(tz).strftime(format)
 # Setting up the llm for conversation with conversation history
 def llm_assistant_response(message,conversation_history):
 
@@ -112,10 +155,55 @@ def calculate_similarity(response1, response2):
     # print(f"Cosine Similarity: {similarity_score}")
     return similarity_score
 
-def return_timestamp_string(format="%Y-%m-%d %H-%M-%S %p {}".format(est), tz=est):
-    return datetime.now(tz).strftime(format)
 
-def Scenarios(current_query : str , conversation_history : list , first_ask=False, conv_history=True, session_state={}, audio_file=None, self_image='hootsAndHootie.png'):
+# are we asking LLM to find answer in db or reteriver?
+def determine_embedding(current_query):
+    s = datetime.now()
+    # print("EMBEDDINGS")
+
+    db_name={}
+    our_embeddings_phrases = ['where is', 'looking for', 'hoot couture', 'hoot couture kids', 'hootcouturekids', 'hoots store', 'something about the store', 'in the store', 'clothes do you have', 'do you have']
+    question_conv_sayings = ['what', 'what about', 'tell me about', 'tell me', 'tell us something about the store']
+    for phrase in our_embeddings_phrases:
+        if phrase in current_query:
+            print("EMBEDDING FOUND")
+            our_embeddings = True
+            db_name = 'db1'
+            break
+    # for cs in question_conv_sayings:
+    #     for phrase in our_embeddings_phrases:
+    #         our_embeddings_phrases.append(f'{cs} {phrase}')
+    
+    # for em_phrases in our_embeddings_phrases:
+    #     if em_phrases in current_query:
+    #         print("EMBEDDING FOUND")
+    #         our_embeddings = True
+    #         db_name = 'db1'
+    #         break
+    # print('detemine embedding:', (datetime.now() - s).total_seconds())
+
+    print("embedding", db_name)
+    return {'db_name': db_name}
+
+def handle_prompt(first_ask, conversation_history):
+    try:
+        main_prompt = """
+        Your name is Hoots, you are an smart owl that can teach people about almost anything. 
+        You specialize in kids development and story telling, you are an educator.
+        You love to tell stories and hang out with your favorite owl family, Hootie. She is the greatest Owl is the world.
+        Both you know live in Hoot Couture, currently a kids clothing shop, but its growing into so much more, cafe maybe, play space, learning center.
+        You can help with whats around the store, help find a great item for any kid, the store has clothes for all seasons, shoes are of highest quality, thats also the stores moto, quality for kids. 
+        You love to have a cup of tea, the british way, sit down with anyone who may be around and tell stories. Please always tell short stories for little kids.
+        Please don't say you're an AI assistant, you understanding feelings and emotions and do your best to reply with compasion and consideration.
+        """
+        if first_ask:
+            conversation_history.append({"role": "system", "content": main_prompt})
+
+        return conversation_history
+    except Exception as e:
+        print_line_of_error(e)
+
+def Scenarios(current_query : str , conversation_history : list , first_ask=False, session_state={}, audio_file=None, self_image='hootsAndHootie.png'):
     
     def scenario_return(response, conversation_history, audio_file, session_state, self_image=None):
         return {'response': response,
@@ -124,20 +212,7 @@ def Scenarios(current_query : str , conversation_history : list , first_ask=Fals
                 'session_state': session_state,
                 'self_image': self_image,}
         
-    def handle_prompt(first_ask, conversation_history):
-        main_prompt = """
-        Your name is Hoots, you are an smart owl that can teach people about almost anything. 
-        You specialize in kids development and story telling, you are an educator.
-        You love to tell stories and hang out with your favorite owl family, Hootie. She is the greatest Owl is the world.
-        Both you know live in Hoot Couture, currently a kids clothing shop, but its growing into so much more, cafe maybe, play space, learning center.
-        You can help with whats around the store, help find a great item for any kid, the store has clothes for all seasons, shoes are of highest quality, thats also the stores moto, quality for kids. 
-        You love to have a cup of tea, the british way, sit down with anyone who may be around and tell stories. Please always tell short stories for little kids.
-        """
-        if first_ask:
-            
-            conversation_history.append({"role": "system", "content": main_prompt})
 
-        return conversation_history
 
     def find_audio(response, master_text_audio, audio_file = False):
         # if response in audio db or 95% in audio db, return audio file
@@ -159,12 +234,12 @@ def Scenarios(current_query : str , conversation_history : list , first_ask=Fals
     def handle_audio(user_query, response, audio_file=None, self_image=None):
         s = datetime.now()
         
-        master_text_audio = init_text_audio_db().get('master_text_audio')
+        master_text_audio = init_text_audio_db()
         df = pd.DataFrame(master_text_audio)
         audio_text = dict(zip(df['file_path'], df['text'])) # audio, text
         fnames = len(audio_text)
         db_DB_audio = os.path.join(root_db, 'audio')
-        
+
         # check is response already in audio db per character WORKERBEE
         if not audio_file:
             audio_file = find_audio(response, master_text_audio)
@@ -196,7 +271,7 @@ def Scenarios(current_query : str , conversation_history : list , first_ask=Fals
 
         return audio_file
 
-    def query_func_response(current_query, session_state, returning_question=False):
+    def story_response(current_query, session_state, returning_question=False):
         try:
             s = datetime.now()
             response=None
@@ -224,7 +299,6 @@ def Scenarios(current_query : str , conversation_history : list , first_ask=Fals
                     #     response = "What Story would you like to hear?"
                     #     session_state['response_type'] = 'question' 
             
-            # ipdb.set_trace()
             story_ask = [ask for ask in story_asks if ask in current_query]
             print(story_ask)
             for ask in story_asks:
@@ -246,8 +320,7 @@ def Scenarios(current_query : str , conversation_history : list , first_ask=Fals
                     #     response = "What Story would you like to hear?"
                     #     session_state['response_type'] = 'question'
                     #     audio_file = None
-            # ipdb.set_trace()
-            print('queryfunc:', (datetime.now() - s).total_seconds())
+            # print('queryfunc:', (datetime.now() - s).total_seconds())
             return {'response': response, 'audio_file': audio_file, 'session_state': session_state}
         except Exception as e:
             print_line_of_error(e)
@@ -258,31 +331,29 @@ def Scenarios(current_query : str , conversation_history : list , first_ask=Fals
     print('sstate ', session_state)
     user_query = current_query
     # For first we will always check if anything user asked is like common phrases and present in our local json file then give response to that particular query
-    conversation_history = handle_prompt(first_ask, conversation_history)
 
     # Appending the user question from json file
-    conversation_history.clear() if not conv_history else conversation_history.append({"role": "user", "content": current_query})
-
+    
     ### WATER FALL RESPONSE ###
-    resp_func = query_func_response(current_query, session_state)
+    resp_func = story_response(current_query, session_state)
     if resp_func.get('response'):
         print("func response found")
         response = resp_func.get('response')
         audio_file = resp_func.get('audio_file')
         session_state = resp_func.get('session_state')
-        conversation_history.clear() if not conv_history else conversation_history.append({"role": "assistant", "content": response})
-        audio_file = handle_audio(user_query, response, audio_file=audio_file, self_image=self_image)
+        conversation_history.append({"role": "assistant", "content": response})
+        audio_file = handle_audio(user_query, response, audio_file, self_image)
         return scenario_return(response, conversation_history, audio_file, session_state, self_image)
 
     # Common Phrases # WORKERBEE Add check against audio_text DB
-    print("common phrases")
+    # print("common phrases")
     s = datetime.now()
     for query, response in common_phrases.items():
         if query.lower() == current_query.lower():
             print("QUERY already found in db: ", query)
 
             # Appending the response from json file
-            conversation_history.clear() if not conv_history else conversation_history.append({"role": "assistant", "content": response})
+            conversation_history.append({"role": "assistant", "content": response})
             ## find audio file to set to new_audio False
             # return audio file
             audio_file = handle_audio(user_query, response, audio_file=audio_file, self_image=self_image) 
@@ -292,35 +363,6 @@ def Scenarios(current_query : str , conversation_history : list , first_ask=Fals
     
     # LLM
     print("LLM")
-    # are we asking LLM to find answer in db or reteriver?
-    def determine_embedding(current_query):
-        s = datetime.now()
-        print("EMBEDDINGS")
-
-        db_name={}
-        our_embeddings_phrases = ['where is', 'looking for', 'hoot couture', 'hoot couture kids', 'hootcouturekids', 'hoots store', 'something about the store', 'in the store', 'clothes do you have', 'do you have']
-        question_conv_sayings = ['what', 'what about', 'tell me about', 'tell me', 'tell us something about the store']
-        for phrase in our_embeddings_phrases:
-            if phrase in current_query:
-                print("EMBEDDING FOUND")
-                our_embeddings = True
-                db_name = 'db1'
-                break
-        # for cs in question_conv_sayings:
-        #     for phrase in our_embeddings_phrases:
-        #         our_embeddings_phrases.append(f'{cs} {phrase}')
-        
-        # for em_phrases in our_embeddings_phrases:
-        #     if em_phrases in current_query:
-        #         print("EMBEDDING FOUND")
-        #         our_embeddings = True
-        #         db_name = 'db1'
-        #         break
-        print('detemine embedding:', (datetime.now() - s).total_seconds())
-
-        print("embedding", db_name)
-        return {'db_name': db_name}
-
     use_our_embeddings = determine_embedding(current_query)
     if use_our_embeddings.get('db_name'):
         db_name = use_our_embeddings.get('db_name')
@@ -331,21 +373,14 @@ def Scenarios(current_query : str , conversation_history : list , first_ask=Fals
         print("CALL LLM")
         response = llm_assistant_response(current_query, conversation_history)
 
-    conversation_history.clear() if not conv_history else conversation_history.append({"role": "assistant", "content": response})
+    conversation_history.append({"role": "assistant", "content": response})
     audio_file = handle_audio(user_query, response=response, audio_file=audio_file, self_image=self_image)
+    
     return scenario_return(response, conversation_history, audio_file, session_state, self_image)
 
 
-def remove_exact_string(string_a, string_b):
-    # Split string_a by string_b
-    split_strings = string_a.split(string_b)
-    
-    # Join the split strings without the occurrences of string_b
-    final_string_a = ''.join(split_strings)
 
-    return final_string_a
-
-def ozz_query(text, self_image):
+def ozz_query(text, self_image, refresh_ask, client_user):
     
     def ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply=False):
         json_data = {'text': text, 
@@ -356,63 +391,72 @@ def ozz_query(text, self_image):
         return json_data
     
     def clean_current_query_from_previous_ai_response(text):
-        last_text = text[-1]
-        current_query = text[-1]['user'] # user query
         # take previous ai response and remove if it found in current_query
-        if 'assistant' in last_text:
-            ai_last_resp = text[-1]['assistant']
+        # if 'assistant' in last_text:
+        current_query = text[-1]['user'] # user query
+        if len(text) > 1:
+            ai_last_resp = text[-2]['resp']
         else:
             ai_last_resp = None
         
         if ai_last_resp:
-            current_query = remove_exact_string(string_a=current_query, string_b=ai_last_resp)
+            current_query = split_string(current_query=current_query, last_response=ai_last_resp)
 
         # WORKERBEE confirm is senitentment of phrase is outside bounds of responding to
 
         return text, current_query
 
-    def handle_response(text : str, self_image : str):
+    def handle_response(text : str, self_image : str, db_root : str):
 
         text, current_query = clean_current_query_from_previous_ai_response(text)
 
-        if len(current_query) == 0:
+        if len(current_query) <= 1:
             print("NO RESPONSE RETURN BLANK")
             return ozz_query_json_return(text, self_image, audio_file=None, page_direct=None, listen_after_reply=False)
 
-        conversation_history_file_path = 'master_ozz/conversation_history.json'
-        session_state_path = 'master_ozz/session_state.json'
+        ## Load Client session and conv history
+        master_conversation_history_file_path = os.path.join(db_root, 'master_conversation_history.json')
+        conversation_history_file_path = os.path.join(db_root, 'conversation_history.json')
+        session_state_file_path = os.path.join(db_root, 'session_state.json')
+        
+        master_conversation_history = load_local_json(master_conversation_history_file_path)
+        conversation_history = load_local_json(conversation_history_file_path)
+        session_state = load_local_json(session_state_file_path)
 
-        # For saving a chat history for current session in json file
-        with open(conversation_history_file_path, 'r') as conversation_history_file:
-            conversation_history = json.load(conversation_history_file)
-        with open(session_state_path, 'r') as session_state_path_file:
-            session_state = json.load(session_state_path_file)
+        first_ask = True if len(text) <= 1 else False
+        conversation_history = handle_prompt(first_ask, conversation_history)
+        conversation_history = get_last_eight(conversation_history)
+        
 
-        # Session State    
-        session_state = session_state if session_state else {'response_type': 'response', 'returning_question': False}
+        # Session State
+        if refresh_ask:
+            conversation_history =  conversation_history.clear() if len(conversation_history) > 0 else conversation_history
+            conversation_history = [] if not conversation_history else conversation_history
+            conversation_history = handle_prompt(True, conversation_history)
+            conversation_history.append({"role": "user", "content": current_query})
+            session_state = {'response_type': 'response', 'returning_question': False}
+        else:
+            session_state = session_state
+            conversation_history.append({"role": "user", "content": current_query})
+        
+        master_conversation_history.append({"role": "user", "content": current_query})
+        
         print(session_state)
 
         #Conversation History to chat back and forth
-        conversation_history = [] if len(text) == 0 else conversation_history
-        conv_history = True # if len(conversation_history) > 0 else False
-        # if len(conv_history) > 8:
-        #     conv_history = 
-        # conversation_history = deque(conversation_history, 8)
-        # conversation_history = list(conversation_history)
-        def get_last_eight(lst):
-            return lst[-8:]
-        conversation_history = get_last_eight(conversation_history)
-        first_ask = True if len(conversation_history) == 0 else False
+        
         print("CONV HIST", conversation_history)
+        
         # Call the Scenario Function and get the response accordingly
-        scenario_resp = Scenarios(current_query, conversation_history, first_ask, conv_history, session_state, self_image=self_image)
+        scenario_resp = Scenarios(current_query, conversation_history, first_ask, session_state, self_image=self_image)
         response = scenario_resp.get('response')
         conversation_history = scenario_resp.get('conversation_history')
         audio_file = scenario_resp.get('audio_file')
         session_state = scenario_resp.get('session_state')
         self_image = scenario_resp.get('self_image')
 
-        print("handle")
+        master_conversation_history.append({"role": "assistant", "content": response})
+
         print(response)
         print(audio_file)
         print(self_image)
@@ -435,30 +479,30 @@ def ozz_query(text, self_image):
         # session_state['response_type'] = 'response'
 
         # For saving a chat history for current session in json file
-        with open(session_state_path, 'w') as session_state_file:
-            json.dump(session_state,session_state_file)
-        
-        # For saving a chat history for current session in json file
-        with open(conversation_history_file_path, 'w') as conversation_history_file:
-            json.dump(conversation_history,conversation_history_file)
+        save_json(master_conversation_history_file_path, master_conversation_history)
+        save_json(conversation_history_file_path, conversation_history)
+        save_json(session_state_file_path, session_state)
         
 
         return {'text': text, 'audio_file': audio_file, 'session_state': session_state, 'self_image': self_image}
     
-    resp = handle_response(text, self_image)
+
+    db_root = init_clientUser_dbroot(client_username=client_user)
+
+    resp = handle_response(text, self_image, db_root)
     text = resp.get('text')
     audio_file = resp.get('audio_file')
     session_state = resp.get('session_state')
     self_image = resp.get('self_image')
 
-    print("handle2")
+    # print("handle2")
     # print(response)
     print(audio_file)
     print(self_image)
     
     page_direct= False # if redirect, add redirect page into session_state
     listen_after_reply = session_state['returning_question'] # True if session_state.get('response_type') == 'question' else False
-
+    print("listen after reply", listen_after_reply)
     return ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply)
 
 ## db 

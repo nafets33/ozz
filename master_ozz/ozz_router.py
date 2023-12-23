@@ -30,7 +30,7 @@ def load_ozz_voice():
     return JSONResponse(content=json_data)
 
 @router.post("/voiceGPT", status_code=status.HTTP_200_OK)
-def load_ozz_voice(api_key=Body(...), text=Body(...), self_image=Body(...)): #, client_user=Body(...)):
+def load_ozz_voice(api_key=Body(...), text=Body(...), self_image=Body(...), refresh_ask=Body(...)): #, client_user=Body(...)):
     # print(client_user)
     # Test Queries with user and assistant and saving in conversation history as well as json file
     # text = [{"role": "system", "content": "You are a cute and smart assistant for kids."},
@@ -40,7 +40,13 @@ def load_ozz_voice(api_key=Body(...), text=Body(...), self_image=Body(...)): #, 
     #         {'role':'user', 'content': 'hey hootie tell me a story'}, {'role':'assistant','content': 'what story would you like to hear'}, 
     #         {'role':'user','content': 'any kind of kid related'}
     #        ]
+    # print("apikey", api_key, " ", os.environ.get("ozz_key"))
+    if api_key != os.environ.get("ozz_key"): # fastapi_pollenq_key
+        print("Auth Failed", api_key)
+        # Log the trader WORKERBEE
+        return "NOTAUTH"
+    
+    client_user = 'stefanstapinski@gmail.com'
 
-
-    json_data = ozz_query(text, self_image)
+    json_data = ozz_query(text, self_image, refresh_ask, client_user)
     return JSONResponse(content=json_data)

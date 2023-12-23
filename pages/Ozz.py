@@ -2,24 +2,67 @@ import streamlit as st
 import os
 from bs4 import BeautifulSoup
 import re
-from master_ozz.utils import sac_menu_main, sac_menu_buttons, hoots_and_hootie, return_app_ip, init_text_audio_db, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
+from master_ozz.utils import return_app_ip, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
 from streamlit_extras.switch_page_button import switch_page
 from dotenv import load_dotenv
+from custom_voiceGPT import custom_voiceGPT, VoiceGPT_options_builder
+
+load_dotenv(os.path.join(ozz_master_root(),'.env'))
+#### CHARACTERS ####
+
+def hoots_and_hootie(width=350, height=350, 
+                     self_image="hootsAndHootie.png", 
+                     face_recon=True, 
+                     show_video=True, 
+                     input_text=True, 
+                     show_conversation=True, 
+                     no_response_time=3,
+                     refresh_ask=True):
+    
+    to_builder = VoiceGPT_options_builder.create()
+    to = to_builder.build()
+
+    custom_voiceGPT(
+        api=f"{st.session_state['ip_address']}/api/data/voiceGPT",
+        api_key=os.environ.get('ozz_key'),
+        # client_user=client_user,
+        self_image=self_image,
+        width=width,
+        height=height,
+        hello_audio="test_audio.mp3",
+        face_recon=face_recon, # True False, if face for 4 seconds, trigger api unless text being recorded trigger api, else pass
+        show_video=show_video, # True False, show the video on page
+        # listen=listen, # True False if True go into listen mode to trigger api
+        input_text=input_text,
+        show_conversation=show_conversation,
+        no_response_time=no_response_time,
+        refresh_ask=refresh_ask,
+        commands=[{
+            "keywords": ["hey Hoots", "hey Hoot", "hey Hootie", 'morning Hoots', 'morning Hootie'], # keywords are case insensitive
+            "api_body": {"keyword": "hey hoots"},
+        }, {
+            "keywords": ["bye Hoots"],
+            "api_body": {"keyword": "bye hoots"},
+        }
+        ]
+    )
+
+    return True
 
 def ozz():
     main_root = ozz_master_root()  # os.getcwd()
     # load_dotenv(os.path.join(main_root, ".env"))
 
     set_streamlit_page_config_once()
-    # sac_menu = sac_menu_buttons()
-    # sac_menu_main(sac_menu)
 
-    ip_address, streamlit_ip = return_app_ip("http://localhost:8501")
+    ip_address, streamlit_ip = return_app_ip()
     print(ip_address)
 
     if not sign_in_client_user():
         st.stop()
 
+    refresh_ask = True if 'page_refresh' not in st.session_state else False
+    st.session_state['page_refresh'] = True
     client_user = st.session_state['client_user']
 
     constants = init_constants()
@@ -30,7 +73,7 @@ def ozz():
     # START
     st.title('Hoots & Hootie')
 
-    hoots_and_hootie()
+    hoots_and_hootie(refresh_ask=refresh_ask)
 if __name__ == '__main__':
     ozz()
 
