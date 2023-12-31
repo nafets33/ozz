@@ -7,6 +7,8 @@ from ozz_auth import signin_main
 from master_ozz.utils import setup_instance, return_app_ip, init_text_audio_db, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
 from pages.Ozz import ozz
 from pages.Lab import lab
+from pages.YouTube import youtube
+
 import streamlit_antd_components as sac
 
 print("OZZ START")
@@ -71,6 +73,9 @@ if sac_menu == 'Ozz':
     ozz()
 elif sac_menu == 'Lab':
     lab()
+
+if 'current_youtube_search' in st.session_state and st.session_state['current_youtube_search'] != False:
+    youtube()
 
 st.write('Ozz')
 

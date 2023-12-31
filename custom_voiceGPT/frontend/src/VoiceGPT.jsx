@@ -38,7 +38,7 @@ const CustomVoiceGPT = (props) => {
   const [imageSrc, setImageSrc] = useState(kwargs.self_image)
   const [message, setMessage] = useState("")
   const [answers, setAnswers] = useState([])
-  const [listenAfterRelpy, setListenAfterReply] = useState(false)
+  const [listenAfterReply, setListenAfterReply] = useState(false)
   const [modelsLoaded, setModelsLoaded] = useState(false)
   const [captureVideo, setCaptureVideo] = useState(false)
   const [textString, setTextString] = useState("")
@@ -177,97 +177,45 @@ const CustomVoiceGPT = (props) => {
       const { data } = await axios.post(api, body)
       console.log("data :>> ", data, body)
       data["self_image"] && setImageSrc(data["self_image"])
-      if (data["audio_path"]) {
-        if (audioRef.current) {
-          audioRef.current.pause(); // Pause existing playback if any
-        }
-        audioRef.current = new Audio(data["audio_path"]);
-        audioRef.current.play();
+      if (audioRef.current) {
+        audioRef.current.pause(); // Pause existing playback if any
+      }
+
+      stopListening() // turn off listen
+
+      audioRef.current = new Audio(data["audio_path"]);
+      audioRef.current.play();
+      
+      audioRef.current.onended = () => {
+        console.log("Audio playback finished.");
         
-        // const audio = new Audio(data["audio_path"]);
-        // audio.play();
-  
-        audioRef.current.onended = () => {
-          console.log("Audio playback finished.");
-  
-          if (data["listen_after_reply"]) {
-            setListenAfterReply(data["listen_after_reply"]);
-          }
-  
-          setAnswers(data["text"]);
-          g_anwers = [...data["text"]];
-    
-          if (data["page_direct"] === true) {
-            console.log("api has page direct", data["page_direct"]);
-            window.location.reload();
-          }
-        };
-      } else {
-        if (data["listen_after_reply"]) {
+        listenContinuously()
+
+        if (data["listen_after_reply"] === true) {
           setListenAfterReply(data["listen_after_reply"]);
         }
-  
+        
+        console.log("listen after reply", data["listen_after_reply"])
+        
         setAnswers(data["text"]);
         g_anwers = [...data["text"]];
-    
+
         if (data["page_direct"] === true) {
           console.log("api has page direct", data["page_direct"]);
           window.location.reload();
         }
-      }
+      } 
     } catch (error) {
       console.log("api call on listen failded!", error)
     }
   }
 
-  // const commands = useMemo(() => {
-  //   return kwargs["commands"].map((command) => ({
-  //     command: command["keywords"],
-  //     callback: (ret) => {
-  //       timer && clearTimeout(timer)
-  //       timer = setTimeout(() => myFunc(ret, command, 1), 1000)
-  //     },
-  //     matchInterim: true,
-  //   }))
-  // }, [kwargs.commands])
-  // const commands = [
-  //   {
-  //     command: "I would like to order *",
-  //     callback: (food) => setMessage(`Your order is for: ${food}`),
-  //     matchInterim: true,
-  //   },
-  //   {
-  //     command: "The weather is :condition today",
-  //     callback: (condition) => setMessage(`Today, the weather is ${condition}`),
-  //   },
-  //   {
-  //     command: ["Hey foots", "Hey foods"],
-  //     callback: ({ command }) => setMessage(`Hi there! You said: "${command}"`),
-  //     matchInterim: true,
-  //   },
-  //   {
-  //     command: "Beijing",
-  //     callback: (command, spokenPhrase, similarityRatio) =>
-  //       setMessage(
-  //         `${command} and ${spokenPhrase} are ${similarityRatio * 100}% similar`
-  //       ),
-  //     // If the spokenPhrase is "Benji", the message would be "Beijing and Benji are 40% similar"
-  //     isFuzzyMatch: true,
-  //     fuzzyMatchingThreshold: 0.2,
-  //   },
-  //   {
-  //     command: ["eat", "sleep", "leave"],
-  //     callback: (command) => setMessage(`Best matching command: ${command}`),
-  //     isFuzzyMatch: true,
-  //     fuzzyMatchingThreshold: 0.2,
-  //     bestMatchOnly: true,
-  //   },
-  //   {
-  //     command: "clear",
-  //     callback: ({ resetTranscript }) => resetTranscript(),
-  //     matchInterim: true,
-  //   },
-  // ]
+  const stopListening = () => {
+    SpeechRecognition.stopListening();
+};
+  const startListening = () => {
+    SpeechRecognition.startListening();
+};
 
   const listenContinuously = () =>
     SpeechRecognition.startListening({
@@ -314,7 +262,7 @@ const CustomVoiceGPT = (props) => {
           <Dictaphone
             commands={commands}
             myFunc={myFunc}
-            listenAfterRelpy={listenAfterRelpy}
+            listenAfterReply={listenAfterReply}
             noResponseTime={no_response_time}
             show_conversation={show_conversation}
           />

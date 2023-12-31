@@ -173,7 +173,18 @@ def kingdom():
     allowed_emails=['stefanstapinski@gmail.com']
     return allowed_emails
 
+def init_user_session_state():
+    ss_file  = os.path.join(st.session_state['db_root'], 'session_state.json')
+    ss_data = load_local_json(ss_file)
+    for k,v in ss_data.items():
+        st.session_state[k] = v
+    
+    return True
+
 #### AUTH UTILS #####
+
+# search_google_images, define when to set true and when it does it will display the images in slider form auto flipping each image every 3 seconds until user clicks and then it will stop slider from moving
+
 
 def ozz_master_root(info='\ozz\ozz'):
     script_path = os.path.abspath(__file__)

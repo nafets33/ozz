@@ -1,7 +1,7 @@
 import streamlit as st
 from youtubesearchpython import VideosSearch
 import os
-
+from master_ozz.utils import init_user_session_state
 # def search_youtube():
 #     channelsSearch = ChannelsSearch('NoCopyrightSounds', limit = 10, region = 'US')
 
@@ -136,10 +136,16 @@ def display_channel_info():
 
 
 
-def youtube():
-    st.title("YouTube Channel Info")
 
-    search_results = search_youtube()
+def youtube():
+    st.write("Video Search")
+    
+    init_user_session_state()
+    
+    youtube_search = st.session_state['current_youtube_search']
+    max_results = st.session_state['max_results']
+    
+    search_results = search_youtube(search_query=youtube_search, max_results=max_results)
 
     for i, result in enumerate(search_results):
         st.header(result["title"])

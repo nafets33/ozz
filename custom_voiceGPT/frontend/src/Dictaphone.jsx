@@ -1,101 +1,82 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react";
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
-let timer
+
 const Dictaphone = ({
   commands,
   myFunc,
-  listenAfterRelpy,
+  listenAfterReply=false,
   noResponseTime = 1,
   show_conversation = true,
 }) => {
-  const [transcribing, setTranscribing] = useState(true)
-  const [clearTranscriptOnListen, setClearTranscriptOnListen] = useState(true)
-  const toggleTranscribing = () => setTranscribing(!transcribing)
-  const toggleClearTranscriptOnListen = () =>
-    setClearTranscriptOnListen(!clearTranscriptOnListen)
-  const {
-    transcript,
-    interimTranscript,
-    finalTranscript,
-    resetTranscript,
-    listening,
-    browserSupportsSpeechRecognition,
-    browserSupportsContinuousListening, 
-    isMicrophoneAvailable,
-  } = useSpeechRecognition({ transcribing, clearTranscriptOnListen })
-  const [prevScript, setPrevScript] = useState("")
+  const [transcribing, setTranscribing] = useState(true);
+  const [clearTranscriptOnListen, setClearTranscriptOnListen] = useState(true);
+  const { finalTranscript, resetTranscript, listening, browserSupportsSpeechRecognition, isMicrophoneAvailable } = useSpeechRecognition({ transcribing, clearTranscriptOnListen });
+  const [prevScript, setPrevScript] = useState("");
+
   useEffect(() => {
-    // console.log(
-    //   "Got interim result:",
-    //   interimTranscript.length,
-    //   interimTranscript
-    // )
-    // setPrevScript(interimTranscript)
-    // if (interimTranscript === "") {
-    //   console.log("prevScript :>> ", prevScript)
-    // }
-  }, [interimTranscript])
-  useEffect(() => {
-    if (browserSupportsContinuousListening) {
-      SpeechRecognition.startListening({ continuous: true });
-    } else {
-      SpeechRecognition.startListening();
-    }
-    return () => SpeechRecognition.stopListening();
-  }, []);
-  useEffect(() => {
-    if (finalTranscript != "") {
-      console.log("Got final result:", finalTranscript)
-      timer && clearTimeout(timer)
-      timer = setTimeout(() => {
-        setPrevScript(finalTranscript)
-        // keyword trigger
+    if (finalTranscript !== "") {
+      console.log("Got final result:", finalTranscript);
+      
+      // Add logs to check the conditions
+      console.log("listenAfterReply:", listenAfterReply);
+      console.log("Number of words:", finalTranscript.split(" ").length);
+
+      // Clear the previous script if a keyword is found or if the transcript exceeds 89 words
+      if (finalTranscript.split(" ").length > 89) {
+        console.log("Transcript exceeds 89 words. Clearing.");
+        resetTranscript();
+        return;
+      }
+
+      // Set the previous script
+      setPrevScript(finalTranscript);
+
+      // Start the timer to check for keywords after a pause
+      const timer = setTimeout(() => {
         for (let i = 0; i < commands.length; i++) {
-          const { keywords, api_body } = commands[i]
+          const { keywords, api_body } = commands[i];
           for (let j = 0; j < keywords.length; j++) {
-            const keyword = new RegExp(keywords[j], "i")
-            const isKeywordFound = finalTranscript.search(keyword) != -1
-            if (isKeywordFound) {
-              myFunc(finalTranscript, commands[i], 1)
-              resetTranscript()
-              return
+            const keyword = new RegExp(keywords[j], "i");
+            const isKeywordFound = finalTranscript.search(keyword) !== -1;
+            console.log("listenAfterReply:", listenAfterReply);
+            if (isKeywordFound || listenAfterReply) {
+              if (listenAfterReply) {
+                myFunc(finalTranscript, { api_body: { keyword: "" } }, 3);
+              } else if (isKeywordFound) {
+                myFunc(finalTranscript, commands[i], 1);
+              }
+              resetTranscript();
+              return;
             }
           }
         }
-        if (listenAfterRelpy) {
-          myFunc(finalTranscript, { api_body: { keyword: "" } }, 3)
-          resetTranscript()
-          return
-        }
-        //waiting for keyword
-        console.log("waiting for keyword")
-        resetTranscript()
-      }, noResponseTime * 1000)
+        // Waiting for a keyword
+        console.log("Waiting for a keyword");
+      }, noResponseTime * 1000);
+
+      return () => clearTimeout(timer); // Clear the timer on component unmount or when useEffect runs again
     }
-    if (finalTranscript != "" && !listenAfterRelpy) {
-      setPrevScript(finalTranscript)
-      resetTranscript()
-    }
-  }, [finalTranscript, listenAfterRelpy, commands])
-  
+  }, [finalTranscript, listenAfterReply, commands, noResponseTime, resetTranscript]);
+
   if (!browserSupportsSpeechRecognition) {
-    return <span>No browser support</span>
+    return <span>No browser support</span>;
   }
+
   if (!isMicrophoneAvailable) {
-    return <span>Please allow access to the microphone</span>
+    return <span>Please allow access to the microphone</span>;
   }
+
   return (
     <>
       {show_conversation && (
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <span>you said: {prevScript}</span>
-          <span>listening: {listening ? "on" : "off"}</span>
-          <span>
-            clearTranscriptOnListen: {clearTranscriptOnListen ? "on" : "off"}
-          </span>
+          <span>You said: {prevScript}</span>
+          <span>Listening: {listening ? "on" : "off"}</span>
+          <span>Clear Transcript On Listen: {clearTranscriptOnListen ? "on" : "off"}</span>
         </div>
       )}
     </>
-  )
-}
-export default Dictaphone
+  );
+};
+
+export default Dictaphone;
