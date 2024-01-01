@@ -111,3 +111,4 @@ zipp==3.17.0
 streamlit-antd-components==0.2.4
 streamlit-player==0.1.5
 streamlit-extras==0.2.7
+google-search-results
