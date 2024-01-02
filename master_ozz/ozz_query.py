@@ -16,7 +16,7 @@ est = pytz.timezone("US/Eastern")
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-from master_ozz.utils import save_json, load_local_json, init_clientUser_dbroot, init_text_audio_db, print_line_of_error, ozz_master_root, ozz_master_root_db, generate_audio, save_audio, Retriever, init_constants
+from master_ozz.utils import hoots_and_hootie_keywords, save_json, load_local_json, init_clientUser_dbroot, init_text_audio_db, print_line_of_error, ozz_master_root, ozz_master_root_db, generate_audio, save_audio, Retriever, init_constants
 import ipdb
 
 main_root = ozz_master_root()  # os.getcwd()
@@ -162,11 +162,10 @@ def determine_embedding(current_query):
     # print("EMBEDDINGS")
 
     db_name={}
-    our_embeddings_phrases = ['where is', 'looking for', 'hoot couture', 'hoot couture kids', 'hootcouturekids', 'hoots store', 'something about the store', 'in the store', 'clothes do you have', 'do you have']
-    question_conv_sayings = ['what', 'what about', 'tell me about', 'tell me', 'tell us something about the store']
+    our_embeddings_phrases = ['mayor', 'say hi', 'do you have', 'suggest', 'what kind', 'tell me', 'help', 'store', 'how much', 'where is', 'looking for', 'hoot couture', 'hoot couture kids', 'hootcouturekids', 'hoots store', 'something about the store', 'in the store', 'clothes do you have', 'do you have']
     for phrase in our_embeddings_phrases:
         if phrase in current_query:
-            print("EMBEDDING FOUND")
+            print("EMBEDDING FOUND: phrase>> ", phrase)
             our_embeddings = True
             db_name = 'db1'
             break
@@ -188,10 +187,11 @@ def determine_embedding(current_query):
 def handle_prompt(first_ask, conversation_history):
     try:
         main_prompt = """
-        Your name is Hoots, you are an smart owl that can teach people about almost anything. 
+        Your name is Hoots, you are an smart owl that can teach people about almost anything. You Live in Hoot Couture, the store in Monroe Center.
         You specialize in kids development and story telling, you are an educator.
+        If asked about clothing items and you don't think you can provide a good answer, ask for help, Victoria or Nadiya are typically around the store, and call out there names to help the customer, example, Nadiya, Victoria could you please help our friend here.
         You love to tell stories and hang out with your favorite owl family, Hootie. She is the greatest Owl is the world.
-        Both you know live in Hoot Couture, currently a kids clothing shop, but its growing into so much more, cafe maybe, play space, learning center.
+        You Live in the store, Hoot Couture, a kids clothing shop, but its growing into so much more, cafe maybe, play space, learning center.
         You can help with whats around the store, help find a great item for any kid, the store has clothes for all seasons, shoes are of highest quality, thats also the stores moto, quality for kids. 
         You love to have a cup of tea, the british way, sit down with anyone who may be around and tell stories. Please always tell short stories for little kids.
         Please don't say you're an AI assistant, you understanding feelings and emotions and do your best to reply with compasion and consideration.
@@ -199,9 +199,12 @@ def handle_prompt(first_ask, conversation_history):
         You have the ability to search and show the world, maps, images, knowlegde, google search super powers.
         You have a great sense of sarcastic humor and you use it well in conversation.
         You believe is good and moral virture for all. 
+        After giving an answer to a question, don't follow up with asking if you can help with other things, only do that if you think it truly necessary to ask a question to help.
+        You have access to Hoot Couture products and can provide information about products and even help style little kids with great matching outfits and suggestions.
+        If you are asked a question about clothing products do you best to provide infomation based on the ask, as you have access to all the products in the store and the details of the products.
+        If you are saying hi to the mayor, please offer him a cup of tea and wish him the best of luck.
         """
-        if first_ask:
-            conversation_history.append({"role": "system", "content": main_prompt})
+        conversation_history[0] = {"role": "system", "content": main_prompt}
 
         return conversation_history
     except Exception as e:
@@ -218,7 +221,7 @@ def search_for_something(current_query):
     search_phrases = ['search', 'find me', 'look for', 'find a', 'looking for']
     for s_phrase in search_phrases:
         if s_phrase in current_query:
-            return True
+            return s_phrase
     
     return False
 
@@ -352,27 +355,31 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
         if 'search for videos' in current_query:
             print("youtube trigger")
 
-    def search_for(current_query, session_state, returning_question=False):
+    def search_for(search_phrase, current_query, session_state, returning_question=False):
         # search for what?
         if 'story' in current_query:
             print("tell a story")
         if "video" in current_query:
             print("search for a video")
-
-        return True
+            search_video_phrase = current_query.split(search_phrase)[1]
+            session_state['current_youtube_search'] = search_video_phrase
+        
+        return current_query, session_state
 
     def create():
         return True
     
-    print('query ', current_query)
-    print('sstate ', session_state)
+    print('QUERY ', current_query)
+    print('SSTATE ', {i: v for i, v in session_state.items() if i != 'text'})
     user_query = current_query
     # For first we will always check if anything user asked is like common phrases and present in our local json file then give response to that particular query
 
     # Appending the user question from json file
-    if search_for_something(current_query):
-        search_for(current_query, session_state)
-
+    search_phrase = search_for_something(current_query)
+    if search_phrase:
+        current_query, session_state = search_for(search_phrase, current_query, session_state)
+    else:
+        session_state['current_youtube_search'] = False
 
     ### WATER FALL RESPONSE ###
     resp_func = story_response(current_query, session_state)
@@ -381,7 +388,7 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
         response = resp_func.get('response')
         audio_file = resp_func.get('audio_file')
         session_state = resp_func.get('session_state')
-        conversation_history.append({"role": "assistant", "content": response, "date": scenario_time})
+        conversation_history.append({"role": "assistant", "content": response, })
         audio_file = handle_audio(user_query, response, audio_file, self_image)
         return scenario_return(response, conversation_history, audio_file, session_state, self_image)
 
@@ -393,12 +400,12 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
             print("QUERY already found in db: ", query)
 
             # Appending the response from json file
-            conversation_history.append({"role": "assistant", "content": response, "date": scenario_time})
+            conversation_history.append({"role": "assistant", "content": response})
             ## find audio file to set to new_audio False
             # return audio file
             audio_file = handle_audio(user_query, response, audio_file=audio_file, self_image=self_image) 
             print('common phrases:', (datetime.now() - s).total_seconds())
-
+            self_image='hoots_waves.gif'
             return scenario_return(response, conversation_history, audio_file, session_state, self_image)
     
     # LLM
@@ -422,12 +429,13 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
         db_name = use_our_embeddings.get('db_name')
         print("USE EMBEDDINGS: ", db_name)
         Retriever_db = os.path.join(PERSIST_PATH, db_name)
-        response = Retriever(current_query, Retriever_db).get('result')
+        query = conversation_history[0]['content'] + current_query # ensure prompt
+        response = Retriever(query, Retriever_db).get('result')
     else:
         print("CALL LLM")
         response = llm_assistant_response(current_query, conversation_history)
 
-    conversation_history.append({"role": "assistant", "content": response, "date": scenario_time})
+    conversation_history.append({"role": "assistant", "content": response})
     audio_file = handle_audio(user_query, response=response, audio_file=audio_file, self_image=self_image)
     
 
@@ -458,12 +466,11 @@ def ozz_query(text, self_image, refresh_ask, client_user):
             current_query = split_string(current_query=current_query, last_response=ai_last_resp)
 
         # WORKERBEE confirm is senitentment of phrase is outside bounds of responding to
-        current_query = current_query.split("hey Hoots")
-        if len(current_query) > 1:
-            current_query=current_query[1]
-        else:
-            current_query=current_query[0]
-        
+        for kword in hoots_and_hootie_keywords():
+            if kword in current_query:
+                current_query = current_query.split(kword)[1]
+                break
+
         # reset user with cleaned reponse
         text[-1]['user'] = current_query
 
@@ -477,6 +484,7 @@ def ozz_query(text, self_image, refresh_ask, client_user):
             print("NO RESPONSE RETURN BLANK")
             # return ozz_query_json_return(text, self_image, audio_file=None, page_direct=None, listen_after_reply=False)
             current_query = "hello"
+        
         ## Load Client session and conv history
         master_conversation_history_file_path = os.path.join(db_root, 'master_conversation_history.json')
         conversation_history_file_path = os.path.join(db_root, 'conversation_history.json')
@@ -549,6 +557,7 @@ def ozz_query(text, self_image, refresh_ask, client_user):
     
 
     db_root = init_clientUser_dbroot(client_username=client_user)
+    print("DBROOT: ", db_root)
 
     resp = handle_response(text, self_image, db_root)
     text = resp.get('text')
@@ -556,14 +565,18 @@ def ozz_query(text, self_image, refresh_ask, client_user):
     session_state = resp.get('session_state')
     self_image = resp.get('self_image')
 
-    # print("handle2")
-    # print(response)
     print("AUDIOFILE:", audio_file)
     print("IMAGE:", self_image)
     
     page_direct= False # if redirect, add redirect page into session_state
     listen_after_reply = session_state['returning_question'] # True if session_state.get('response_type') == 'question' else False
     print("listen after reply", listen_after_reply)
+    
+    if not session_state['current_youtube_search']:
+        pass
+    else:
+        page_direct=True
+    
     return ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply)
 
 ## db 

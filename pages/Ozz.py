@@ -2,7 +2,7 @@ import streamlit as st
 import os
 from bs4 import BeautifulSoup
 import re
-from master_ozz.utils import return_app_ip, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
+from master_ozz.utils import init_user_session_state, hoots_and_hootie_keywords, return_app_ip, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
 from streamlit_extras.switch_page_button import switch_page
 from dotenv import load_dotenv
 from custom_voiceGPT import custom_voiceGPT, VoiceGPT_options_builder
@@ -38,7 +38,7 @@ def hoots_and_hootie(width=350, height=350,
         no_response_time=no_response_time,
         refresh_ask=refresh_ask,
         commands=[{
-            "keywords": ["hey Hoots", "hey Hoot", "hey Hootie", 'morning Hoots', 'morning Hootie'], # keywords are case insensitive
+            "keywords": hoots_and_hootie_keywords(), # keywords are case insensitive
             "api_body": {"keyword": "hey hoots"},
         }, {
             "keywords": ["bye Hoots"],
@@ -52,7 +52,6 @@ def hoots_and_hootie(width=350, height=350,
 def ozz():
     main_root = ozz_master_root()  # os.getcwd()
     # load_dotenv(os.path.join(main_root, ".env"))
-
     set_streamlit_page_config_once()
 
     ip_address, streamlit_ip = return_app_ip()
@@ -61,6 +60,9 @@ def ozz():
     if not sign_in_client_user():
         st.stop()
 
+    init_user_session_state()
+    print('ss keys', {i:"" for i,v in st.session_state.items()})
+    
     refresh_ask = True if 'page_refresh' not in st.session_state else False
     st.session_state['page_refresh'] = True
     client_user = st.session_state['client_user']

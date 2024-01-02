@@ -1,28 +1,17 @@
-import React, { useState, useEffect, FC, memo, useMemo, useRef } from "react"
-import axios from "axios"
-import {
-  ComponentProps,
-  Streamlit,
-  withStreamlitConnection,
-} from "streamlit-component-lib"
-import SpeechRecognition, {
-  useSpeechRecognition,
-} from "react-speech-recognition"
-import Dictaphone from "./Dictaphone"
-import * as faceapi from "@vladmandic/face-api"
+import React, { useState, useEffect, useRef } from "react";
+import axios from "axios";
+import { Streamlit } from "streamlit-component-lib";
+import SpeechRecognition from "react-speech-recognition";
+import Dictaphone from "./Dictaphone";
+import * as faceapi from "@vladmandic/face-api";
 
-const imageUrls = {
-  hoots: "/hoots.png",
-  hootsAndHootie: "/hootsAndhootie.png",
-}
-
-let timer = null
-let faceTimer = null
-let g_anwers = []
-let firstFace = false
+let timer = null;
+let faceTimer = null;
+let g_anwers = [];
+let firstFace = false;
 
 const CustomVoiceGPT = (props) => {
-  const { api, kwargs = {} } = props
+  const { api, kwargs = {} } = props;
   const {
     commands,
     height,
@@ -34,62 +23,76 @@ const CustomVoiceGPT = (props) => {
     face_recon,
     api_key,
     refresh_ask,
-  } = kwargs
-  const [imageSrc, setImageSrc] = useState(kwargs.self_image)
-  const [message, setMessage] = useState("")
-  const [answers, setAnswers] = useState([])
-  const [listenAfterReply, setListenAfterReply] = useState(false)
-  const [modelsLoaded, setModelsLoaded] = useState(false)
-  const [captureVideo, setCaptureVideo] = useState(false)
-  const [textString, setTextString] = useState("")
+  } = kwargs;
+  const [imageSrc, setImageSrc] = useState(kwargs.self_image);
+  const [message, setMessage] = useState("");
+  const [answers, setAnswers] = useState([]);
+  const [listenAfterReply, setListenAfterReply] = useState(false);
+  const [modelsLoaded, setModelsLoaded] = useState(false);
+  const [captureVideo, setCaptureVideo] = useState(false);
+  const [textString, setTextString] = useState("");
+  const [apiInProgress, setApiInProgress] = useState(false); // Added state for API in progress
 
-  const faceData = useRef([])
-  const faceTriggered = useRef(false)
-  const videoRef = useRef()
-  const videoHeight = 480
-  const videoWidth = 640
-  const canvasRef = useRef()
-  const audioRef = useRef(null)
+  const faceData = useRef([]);
+  const faceTriggered = useRef(false);
+  const videoRef = useRef();
+  const videoHeight = 480;
+  const videoWidth = 640;
+  const canvasRef = useRef();
+  const audioRef = useRef(null);
+
+  const [isListening, setIsListening] = useState(true);
+
+  // ... (other code)
+
+  const checkListeningStatus = () => {
+    // Check if continuous listening is active
+    if (!SpeechRecognition.browserSupportsContinuousListening()) {
+      // If not, restart continuous listening
+      startContinuousListening();
+    }
+  };
+
 
   const handleInputText = (e) => {
-    const { value } = e.target
-    setTextString(value)
-  }
+    const { value } = e.target;
+    setTextString(value);
+  };
 
   const handleOnKeyDown = (e) => {
     if (e.key === "Enter") {
-      console.log("textString :>> ", textString)
-      myFunc(textString, { api_body: { keyword: "" } }, 4)
-      setTextString("")
+      console.log("textString :>> ", textString);
+      myFunc(textString, { api_body: { keyword: "" } }, 4);
+      setTextString("");
     }
-  }
+  };
 
   const startVideo = () => {
-    setCaptureVideo(true)
+    setCaptureVideo(true);
     navigator.mediaDevices
       .getUserMedia({ video: { width: 300 } })
       .then((stream) => {
-        let video = videoRef.current
-        video.srcObject = stream
-        video.play()
+        let video = videoRef.current;
+        video.srcObject = stream;
+        video.play();
       })
       .catch((err) => {
-        console.error("error:", err)
-      })
-  }
+        console.error("error:", err);
+      });
+  };
 
   const handleVideoOnPlay = () => {
     setInterval(async () => {
       if (canvasRef && canvasRef.current) {
         canvasRef.current.innerHTML = faceapi.createCanvasFromMedia(
           videoRef.current
-        )
+        );
         const displaySize = {
           width: videoWidth,
           height: videoHeight,
-        }
+        };
 
-        faceapi.matchDimensions(canvasRef.current, displaySize)
+        faceapi.matchDimensions(canvasRef.current, displaySize);
 
         const detections = await faceapi
           .detectAllFaces(
@@ -97,28 +100,28 @@ const CustomVoiceGPT = (props) => {
             new faceapi.TinyFaceDetectorOptions()
           )
           .withFaceLandmarks()
-          .withFaceExpressions()
+          .withFaceExpressions();
 
-        const resizedDetections = faceapi.resizeResults(detections, displaySize)
+        const resizedDetections = faceapi.resizeResults(detections, displaySize);
 
         if (resizedDetections.length > 0) {
-          faceData.current = resizedDetections
+          faceData.current = resizedDetections;
           if (!faceTriggered.current && face_recon) {
-            myFunc("", { api_body: { keyword: "" } }, 2)
-            faceTriggered.current = true
+            myFunc("", { api_body: { keyword: "" } }, 2);
+            faceTriggered.current = true;
           }
         } else {
-          faceTimer && clearTimeout(faceTimer)
+          faceTimer && clearTimeout(faceTimer);
           setTimeout(() => {
-            faceData.current = []
-          }, 1000)
+            faceData.current = [];
+          }, 1000);
         }
 
         if (resizedDetections.length > 0 && !firstFace) {
-          firstFace = true
+          firstFace = true;
           if (kwargs.hello_audio) {
-            const audio = new Audio(kwargs.hello_audio)
-            audio.play()
+            const audio = new Audio(kwargs.hello_audio);
+            audio.play();
           }
         }
 
@@ -126,45 +129,36 @@ const CustomVoiceGPT = (props) => {
           canvasRef.current &&
           canvasRef.current
             .getContext("2d")
-            .clearRect(0, 0, videoWidth, videoHeight)
+            .clearRect(0, 0, videoWidth, videoHeight);
         canvasRef &&
           canvasRef.current &&
-          faceapi.draw.drawDetections(canvasRef.current, resizedDetections)
+          faceapi.draw.drawDetections(canvasRef.current, resizedDetections);
         canvasRef &&
           canvasRef.current &&
-          faceapi.draw.drawFaceLandmarks(canvasRef.current, resizedDetections)
+          faceapi.draw.drawFaceLandmarks(canvasRef.current, resizedDetections);
         canvasRef &&
           canvasRef.current &&
-          faceapi.draw.drawFaceExpressions(canvasRef.current, resizedDetections)
+          faceapi.draw.drawFaceExpressions(
+            canvasRef.current,
+            resizedDetections
+          );
       }
-    }, 300)
-  }
+    }, 300);
+  };
 
   const closeWebcam = () => {
-    videoRef.current.pause()
-    videoRef.current.srcObject.getTracks()[0].stop()
-    setCaptureVideo(false)
-  }
-  const testFunc = async () => {
-    const audio = new Audio("./test_audio.mp3s")
-    console.log(audio.play())
-    const response = await axios.post(
-      "http://192.168.143.97:8000/api/data/voiceGPT",
-      {
-        api_key: "sdf",
-        text: "text",
-        self_image: "something",
-      }
-    )
-    console.log("response :>> ", response)
-  }
+    videoRef.current.pause();
+    videoRef.current.srcObject.getTracks()[0].stop();
+    setCaptureVideo(false);
+  };
 
   const myFunc = async (ret, command, type) => {
-    setMessage(` (${command["api_body"]["keyword"]}) ${ret},`)
-    const text = [...g_anwers, { user: ret }]
-    setAnswers([...text])
+    setMessage(` (${command["api_body"]["keyword"]}) ${ret},`);
+    const text = [...g_anwers, { user: ret }];
+    setAnswers([...text]);
     try {
-      console.log("api call on listen...", command)
+      console.log("api call on listen...", command);
+      setApiInProgress(true); // Set API in progress to true
       const body = {
         tigger_type: type,
         api_key: api_key,
@@ -172,31 +166,29 @@ const CustomVoiceGPT = (props) => {
         self_image: imageSrc,
         face_data: faceData.current,
         refresh_ask: refresh_ask,
-      }
-      console.log("api")
-      const { data } = await axios.post(api, body)
-      console.log("data :>> ", data, body)
-      data["self_image"] && setImageSrc(data["self_image"])
+      };
+      console.log("api");
+      const { data } = await axios.post(api, body);
+      console.log("data :>> ", data, body);
+      data["self_image"] && setImageSrc(data["self_image"]);
       if (audioRef.current) {
         audioRef.current.pause(); // Pause existing playback if any
       }
 
-      stopListening() // turn off listen
+      stopListening(); // turn off listen
 
       audioRef.current = new Audio(data["audio_path"]);
       audioRef.current.play();
-      
+
       audioRef.current.onended = () => {
         console.log("Audio playback finished.");
-        
-        listenContinuously()
 
-        if (data["listen_after_reply"] === true) {
-          setListenAfterReply(data["listen_after_reply"]);
-        }
-        
-        console.log("listen after reply", data["listen_after_reply"])
-        
+        listenContinuously();
+
+        setListenAfterReply(data["listen_after_reply"]);
+
+        console.log("listen after reply", data["listen_after_reply"]);
+
         setAnswers(data["text"]);
         g_anwers = [...data["text"]];
 
@@ -204,59 +196,93 @@ const CustomVoiceGPT = (props) => {
           console.log("api has page direct", data["page_direct"]);
           window.location.reload();
         }
-      } 
+
+        setApiInProgress(false); // Set API in progress to false after completion
+      };
     } catch (error) {
-      console.log("api call on listen failded!", error)
+      console.log("api call on listen failed!", error);
+      setApiInProgress(false); // Set API in progress to false on error
     }
-  }
+  };
+
+  const startContinuousListening = () => {
+    // Start continuous listening
+    SpeechRecognition.startListening({
+      continuous: true,
+      language: "en-GB",
+    });
+    setIsListening(true);
+  };
 
   const stopListening = () => {
     SpeechRecognition.stopListening();
-};
+  };
   const startListening = () => {
     SpeechRecognition.startListening();
-};
+  };
 
   const listenContinuously = () =>
     SpeechRecognition.startListening({
       continuous: true,
       language: "en-GB",
-    })
+    });
   const listenContinuouslyInChinese = () =>
     SpeechRecognition.startListening({
       continuous: true,
       language: "zh-CN",
-    })
+    });
   const listenOnce = () =>
-    SpeechRecognition.startListening({ continuous: false })
-
-  useEffect(() => Streamlit.setFrameHeight())
-
-  useEffect(() => {}, [props])
+    SpeechRecognition.startListening({ continuous: false });
 
   useEffect(() => {
+    Streamlit.setFrameHeight();
+
+    // Check listening status every minute
+    const intervalId = setInterval(checkListeningStatus, 60000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
+  
+  useEffect(() => {
     const loadModels = async () => {
-      const MODEL_URL = process.env.PUBLIC_URL + "/models"
+      const MODEL_URL = process.env.PUBLIC_URL + "/models";
 
       Promise.all([
         faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
         faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
         faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
         faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
-      ]).then(setModelsLoaded(true))
-    }
-    loadModels()
+        faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL),
+      ]).then(() => setModelsLoaded(true));
+    };
+    loadModels();
     const interval = setInterval(() => {
-      console.log("faceData.current :>> ", faceData.current)
-    }, 3000)
-    return () => clearInterval(interval)
-  }, [])
+      console.log("faceData.current :>> ", faceData.current);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <>
       <div className="p-2">
-        <div>
-          <img src={imageSrc} height={height || 100} width={width || 100} />
+      <div>
+          {imageSrc && imageSrc.toLowerCase().endsWith(".mp4") ? (
+            <video
+              height={height || 100}
+              width={width || 100}
+              controls
+              autoPlay={true} // Use a variable to control autoplay shouldAutoplay
+              loop={false}
+              muted
+            >
+              <source src={imageSrc} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          ) : (
+            <img src={imageSrc} height={height || 100} width={width || 100} />
+          )}
         </div>
         <div className="p-2">
           <Dictaphone
@@ -265,6 +291,7 @@ const CustomVoiceGPT = (props) => {
             listenAfterReply={listenAfterReply}
             noResponseTime={no_response_time}
             show_conversation={show_conversation}
+            apiInProgress={apiInProgress} // Pass down API in progress
           />
         </div>
         <div className="form-group">
@@ -290,17 +317,16 @@ const CustomVoiceGPT = (props) => {
             {answers.map((answer, idx) => (
               <div key={idx}>
                 <div>-user: {answer.user}</div>
-                <div>-resp: {answer.resp ? answer.resp : "thinking..."}</div>
+                <div>
+                  -resp: {answer.resp ? answer.resp : "thinking..."}
+                </div>
               </div>
             ))}
           </>
         )}
       </div>
       <div>
-        {/* <button onClick={listenOnce}>Listen Once</button> */}
-        {/* <button onClick={listenContinuouslyInChinese}></button> */}
-        {/* <button onClick={SpeechRecognition.stopListening}>Stop</button> */}
-        {/* <button onClick={testFunc}>test</button> */}
+        {/* ... (rest of your code) */}
       </div>
       <div>
         {face_recon && (
@@ -368,7 +394,7 @@ const CustomVoiceGPT = (props) => {
         )}
       </div>
     </>
-  )
-}
+  );
+};
 
-export default CustomVoiceGPT
+export default CustomVoiceGPT;

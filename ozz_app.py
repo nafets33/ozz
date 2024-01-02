@@ -64,11 +64,10 @@ print([i for i, v in st.session_state.items()])
 
 
 # STARTst.write('Ozz')
-st.write('Ozz')
 
 sac_menu = sac_menu_buttons_func()
-st.info(sac_menu)
-# sac_menu_main(sac_menu)
+# st.info(sac_menu)
+
 if sac_menu == 'Ozz':
     ozz()
 elif sac_menu == 'Lab':
@@ -77,7 +76,6 @@ elif sac_menu == 'Lab':
 if 'current_youtube_search' in st.session_state and st.session_state['current_youtube_search'] != False:
     youtube()
 
-st.write('Ozz')
 
 st.button("refresh")
 st.session_state['page_refresh_count']+=1

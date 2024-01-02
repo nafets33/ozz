@@ -6,8 +6,11 @@ anyio==3.7.1
 asttokens==2.4.1
 async-timeout==4.0.3
 attrs==23.1.0
+bcrypt==4.1.2
 beautifulsoup4==4.12.2
 blinker==1.7.0
+boto3==1.34.6
+botocore==1.34.6
 cachetools==5.3.2
 certifi==2023.11.17
 charset-normalizer==3.3.2
@@ -22,6 +25,7 @@ docx2txt==0.8
 elevenlabs==0.2.26
 exceptiongroup==1.2.0
 executing==2.0.1
+extra-streamlit-components==0.1.60
 faiss-cpu==1.7.4
 Faker==21.0.0
 fastapi==0.105.0
@@ -48,6 +52,8 @@ ipython==8.18.1
 itsdangerous==2.1.2
 jedi==0.19.1
 Jinja2==3.1.2
+jmespath==1.0.1
+joblib==1.3.2
 jsonpatch==1.33
 jsonpointer==2.4
 jsonschema==4.20.0
@@ -84,6 +90,7 @@ pydantic-core==2.14.5
 pydeck==0.8.1b0
 pydub==0.25.1
 pygments==2.17.2
+PyJWT==2.8.0
 pymdown-extensions==10.5
 pyparsing==3.1.1
 python-dateutil==2.8.2
@@ -95,8 +102,12 @@ regex==2023.10.3
 requests==2.31.0
 rich==13.7.0
 rpds-py==0.13.2
+s3transfer==0.10.0
 safetensors==0.4.1
+scikit-learn==1.3.2
+scipy==1.11.4
 six==1.16.0
+sklearn==0.0
 smmap==5.0.1
 sniffio==1.3.0
 soupsieve==2.5
@@ -107,6 +118,7 @@ stack-data==0.6.3
 starlette==0.27.0
 streamlit==1.28.0
 streamlit-antd-components==0.2.4
+streamlit-authenticator==0.2.3
 streamlit-camera-input-live==0.2.0
 streamlit-card==1.0.0
 streamlit-chat==0.1.1
@@ -119,6 +131,7 @@ streamlit-player==0.1.5
 streamlit-toggle-switch==1.0.2
 streamlit-vertical-slider==2.0.5
 tenacity==8.2.3
+threadpoolctl==3.2.0
 tokenizers==0.15.0
 toml==0.10.2
 tomli==2.0.1
@@ -131,7 +144,7 @@ typing-extensions==4.9.0
 typing-inspect==0.9.0
 tzdata==2023.3
 tzlocal==5.2
-urllib3==2.1.0
+urllib3==1.26.18
 uvicorn==0.23.2
 validators==0.22.0
 watchdog==3.0.0

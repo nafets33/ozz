@@ -4,9 +4,10 @@ import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognitio
 const Dictaphone = ({
   commands,
   myFunc,
-  listenAfterReply=false,
+  listenAfterReply = false,
   noResponseTime = 1,
   show_conversation = true,
+  apiInProgress = false, // Receive apiInProgress as a prop
 }) => {
   const [transcribing, setTranscribing] = useState(true);
   const [clearTranscriptOnListen, setClearTranscriptOnListen] = useState(true);
@@ -16,10 +17,10 @@ const Dictaphone = ({
   useEffect(() => {
     if (finalTranscript !== "") {
       console.log("Got final result:", finalTranscript);
-      
+
       // Add logs to check the conditions
       console.log("listenAfterReply:", listenAfterReply);
-      console.log("Number of words:", finalTranscript.split(" ").length);
+      // console.log("Number of words:", finalTranscript.split(" ").length);
 
       // Clear the previous script if a keyword is found or if the transcript exceeds 89 words
       if (finalTranscript.split(" ").length > 89) {
@@ -39,7 +40,7 @@ const Dictaphone = ({
             const keyword = new RegExp(keywords[j], "i");
             const isKeywordFound = finalTranscript.search(keyword) !== -1;
             console.log("listenAfterReply:", listenAfterReply);
-            if (isKeywordFound || listenAfterReply) {
+            if ((isKeywordFound || listenAfterReply) && !apiInProgress) {
               if (listenAfterReply) {
                 myFunc(finalTranscript, { api_body: { keyword: "" } }, 3);
               } else if (isKeywordFound) {
@@ -50,13 +51,14 @@ const Dictaphone = ({
             }
           }
         }
-        // Waiting for a keyword
-        console.log("Waiting for a keyword");
+        // Waiting for a keyword or API is in progress
+        console.log("Waiting for a keyword or API is in progress");
       }, noResponseTime * 1000);
 
       return () => clearTimeout(timer); // Clear the timer on component unmount or when useEffect runs again
     }
-  }, [finalTranscript, listenAfterReply, commands, noResponseTime, resetTranscript]);
+  }, [finalTranscript, listenAfterReply, commands, noResponseTime, resetTranscript, apiInProgress]);
+
 
   if (!browserSupportsSpeechRecognition) {
     return <span>No browser support</span>;

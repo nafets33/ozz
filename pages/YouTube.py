@@ -141,11 +141,16 @@ def youtube():
     st.write("Video Search")
     
     init_user_session_state()
+    if 'current_youtube_search' not in st.session_state or not st.session_state['current_youtube_search']:
+        st.session_state['current_youtube_search'] = 'hamster book stories'
+        st.session_state['max_results'] = 10
     
     youtube_search = st.session_state['current_youtube_search']
     max_results = st.session_state['max_results']
     
-    search_results = search_youtube(search_query=youtube_search, max_results=max_results)
+    final_search = st.text_input("youtube SEARCH", value=youtube_search)
+
+    search_results = search_youtube(search_query=final_search, max_results=max_results)
 
     for i, result in enumerate(search_results):
         st.header(result["title"])

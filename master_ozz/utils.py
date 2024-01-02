@@ -681,7 +681,7 @@ def CreateEmbeddings(textChunks :str ,persist_directory : str):
 
 
 # Function to fetch the answers from FAISS vector db 
-def Retriever(query : str, persist_directory : str, search_kwards_num=3):
+def Retriever(query : str, persist_directory : str, search_kwards_num=4):
     try:
         s = datetime.now()
 
@@ -925,6 +925,8 @@ def upload_to_s3(local_file, bucket, s3_file):
         upload_to_s3(audio_file_path, bucket_name, s3_key)
 
 
+def hoots_and_hootie_keywords():
+    return ["hey Hoots", "hey Hoot", "hey Hootie", 'morning Hoots', 'morning Hootie']
 
 # def llm_response(query, chat_history):
 #     memory = ConversationBufferMemory(
