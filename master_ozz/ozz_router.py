@@ -1,13 +1,14 @@
 from fastapi import status, Body
+from fastapi.responses import JSONResponse, FileResponse
+
 import ipdb
 import openai
 from dotenv import load_dotenv
 import os
 import json
 
-from fastapi.responses import JSONResponse
 from master_ozz.ozz_query import ozz_query
-from master_ozz.utils import ozz_master_root
+from master_ozz.utils import ozz_master_root, init_constants
 
 from fastapi import APIRouter
 router = APIRouter(
@@ -20,9 +21,26 @@ router = APIRouter(
 main_root = ozz_master_root()  # os.getcwd()
 load_dotenv(os.path.join(main_root, ".env"))
 
-# setting up FastAPI
+@router.get("/{file_name}")
+def get_file(file_name: str):
+    constants = init_constants()
+    OZZ_db_audio = constants.get('OZZ_db_audio')
+    OZZ_db_images = constants.get('OZZ_db_images')
+    file_path = os.path.join(OZZ_db_audio, file_name)
+    
+    # Determine the media type based on the file extension
+    media_type = "application/octet-stream"
+    if file_name.lower().endswith(".mp3"):
+        media_type = "audio/mp3"
+        file_path = os.path.join(OZZ_db_audio, file_name)
+    elif file_name.lower().endswith(".png"):
+        media_type = "image/png"
+        file_path = os.path.join(OZZ_db_images, file_name)
+    elif file_name.lower().endswith(".gif"):
+        media_type = "image/gif"
+        file_path = os.path.join(OZZ_db_images, file_name)
 
-# Loading the environment variables
+    return FileResponse(file_path, media_type=media_type)
 
 @router.get("/test", status_code=status.HTTP_200_OK)
 def load_ozz_voice():

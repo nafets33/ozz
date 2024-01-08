@@ -23,6 +23,8 @@ const CustomVoiceGPT = (props) => {
     face_recon,
     api_key,
     refresh_ask,
+    before_trigger,
+    api_audio,
   } = kwargs;
   const [imageSrc, setImageSrc] = useState(kwargs.self_image);
   const [message, setMessage] = useState("");
@@ -42,6 +44,8 @@ const CustomVoiceGPT = (props) => {
   const audioRef = useRef(null);
 
   const [isListening, setIsListening] = useState(true);
+  const [isGreenLightOn, setIsGreenLightOn] = useState(false);
+
 
   // ... (other code)
 
@@ -159,6 +163,8 @@ const CustomVoiceGPT = (props) => {
     try {
       console.log("api call on listen...", command);
       setApiInProgress(true); // Set API in progress to true
+      stopListening()
+
       const body = {
         tigger_type: type,
         api_key: api_key,
@@ -175,35 +181,57 @@ const CustomVoiceGPT = (props) => {
         audioRef.current.pause(); // Pause existing playback if any
       }
 
-      stopListening(); // turn off listen
-
-      audioRef.current = new Audio(data["audio_path"]);
+      // audioRef.current = new Audio(data["audio_path"]);
+      const apiUrlWithFileName = `${api_audio}${data["audio_path"]}`;
+      audioRef.current = new Audio(apiUrlWithFileName);
       audioRef.current.play();
 
-      audioRef.current.onended = () => {
-        console.log("Audio playback finished.");
+      // Wait for the onended callback to complete before continuing
+      await new Promise((resolve) => {
+        audioRef.current.onended = () => {
+          console.log("Audio playback finished.");
+          resolve();
+        };
+      });
 
-        listenContinuously();
+      console.log("Audio ENDED MOVE TO SET VARS .");
+      setAnswers(data["text"]);
+      g_anwers = [...data["text"]];
+      
+      setListenAfterReply(data["listen_after_reply"]);
+      console.log("listen after reply", data["listen_after_reply"]);
 
-        setListenAfterReply(data["listen_after_reply"]);
-
-        console.log("listen after reply", data["listen_after_reply"]);
-
-        setAnswers(data["text"]);
-        g_anwers = [...data["text"]];
-
-        if (data["page_direct"] === true) {
-          console.log("api has page direct", data["page_direct"]);
-          window.location.reload();
-        }
-
-        setApiInProgress(false); // Set API in progress to false after completion
-      };
+      if (data["page_direct"] !== false && data["page_direct"] !== null) {
+        console.log("api has page direct", data["page_direct"]);
+        // window.location.reload();
+        window.location.href = data["page_direct"];
+      }
+      
+      listenContinuously();
+      setApiInProgress(false); // Set API in progress to false after completion
+      
     } catch (error) {
       console.log("api call on listen failed!", error);
       setApiInProgress(false); // Set API in progress to false on error
     }
   };
+
+  useEffect(() => {
+    Streamlit.setFrameHeight();
+
+    // Check listening status every minute
+    const intervalId = setInterval(() => {
+      if (!SpeechRecognition.browserSupportsContinuousListening()) {
+        // If continuous listening is not active, start it
+        console.log("LISTEN STOPPED TURNING BACK ON", error);
+        listenContinuously();
+      }
+    }, 60000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
 
   const startContinuousListening = () => {
     // Start continuous listening
@@ -234,16 +262,6 @@ const CustomVoiceGPT = (props) => {
   const listenOnce = () =>
     SpeechRecognition.startListening({ continuous: false });
 
-  useEffect(() => {
-    Streamlit.setFrameHeight();
-
-    // Check listening status every minute
-    const intervalId = setInterval(checkListeningStatus, 60000);
-
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, []);
   
   useEffect(() => {
     const loadModels = async () => {
@@ -282,6 +300,20 @@ const CustomVoiceGPT = (props) => {
             </video>
           ) : (
             <img src={imageSrc} height={height || 100} width={width || 100} />
+          )}
+          {/* Flashing green line indicator */}
+          {apiInProgress && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '10px',
+                left: '0',
+                width: '100%',
+                height: '4px',
+                background: 'linear-gradient(90deg, green, transparent 50%, green)',
+                animation: 'flashLine 1s infinite',
+              }}
+            />
           )}
         </div>
         <div className="p-2">

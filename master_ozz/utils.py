@@ -19,7 +19,6 @@ from PIL import Image
 
 from elevenlabs import set_api_key
 from elevenlabs import Voice, VoiceSettings, generate
-from elevenlabs import generate, stream
 from elevenlabs import save
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -45,6 +44,10 @@ import hashlib
 
 import boto3
 from botocore.exceptions import NoCredentialsError
+
+# import replicate ### ??????
+import replicate as rp
+
 
 # from youtubesearchpython import *
 #### AUTH UTILS #####
@@ -416,28 +419,26 @@ def save_audio(filename, audio, response, user_query, self_image=False, db_name=
         filename=os.path.join(OZZ_db_audio, filename)                # Filename to save audio to (e.g. "audio.wav")
     )
 
-    local_build_file = 'temp_audio.mp3'
-    save(
-        audio=audio,               # Audio bytes (returned by generate)
-        filename=os.path.join(OZZ_BUILD_dir, local_build_file)               # Filename to save audio to (e.g. "audio.wav")
-    )
+    # local_build_file = 'temp_audio.mp3'
+    # save(
+    #     audio=audio,               # Audio bytes (returned by generate)
+    #     filename=os.path.join(OZZ_BUILD_dir, local_build_file)               # Filename to save audio to (e.g. "audio.wav")
+    # )
     return True
 
-def generate_audio(query="Hello Story Time Anyone?", voice='Mimi', use_speaker_boost=True, settings_vars={'stability': .71, 'similarity_boost': .5, 'style': 0.0}):
+def generate_audio(query="Hello Story Time Anyone?", voice='Mimi', use_speaker_boost=True, settings_vars={'stability': .71, 'similarity_boost': .5, 'style': 0.0}, model_id='eleven_monolingual_v1'):
     try:
+        # 'eleven_monolingual_v1' # eleven_multilingual_v2, eleven_turbo_v2
         # 'Mimi', #'Charlotte', 'Fin'
         audio = generate(
+            model=model_id,
             text=query,
-            voice=voice, #'Charlotte', 'Fin'
+            voice=voice,
+            # voice=Voice(
+            # voice_id='zrHiDhphv9ZnVXBqCLjz', # mimi
+            # settings=VoiceSettings(stability=0.8, similarity_boost=0.7, style=0.0, use_speaker_boost=True)
+            # ),
         )
-
-        # audio = generate(
-        #     text="Hello! My name is Bella.",
-        #     voice=Voice(
-        #         voice_id='EXAVITQu4vr4xnSDxMaL',
-        #         settings=VoiceSettings(stability=0.71, similarity_boost=0.5, style=0.0, use_speaker_boost=True)
-        #     )
-        # )
 
         return audio
     except Exception as e:
@@ -590,7 +591,7 @@ def return_app_ip(streamlit_ip="http://localhost:8501", ip_address=None):
     ip_address = st.session_state.get('ip_address')
     
     if ip_address:
-        pass
+        return ip_address, streamlit_ip
     else:
         ip_address = get_ip_address()
     
@@ -641,6 +642,8 @@ def LoadMultipleFiles(files):
         data = TextLoader(files)
         pages = data.load()
         return pages
+    else:
+        return None
     
 
 # Function to load all the files and append them into a single documents
@@ -649,7 +652,10 @@ def Directory(directory : str):
     for file_path in os.listdir(directory):
         file_path = os.path.join(directory, file_path)
         document = LoadMultipleFiles(file_path)
-        documents.append(document)
+        if document:
+            documents.append(document)
+        else:
+            print("ERROR: ", file_path)
     return documents
 
 
@@ -658,8 +664,8 @@ def CreateChunks(documents : str):
     chunks = []
     for docs in documents:
         text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=6000,
-        chunk_overlap=100,
+        chunk_size=500,
+        chunk_overlap=50,
         length_function=len
         )
         chunk = text_splitter.split_documents(docs)
@@ -770,54 +776,104 @@ def clean_data(data):
 
 
 
+def generate_image(text="2 cute owls in a forest, Award-Winning Art, Detailed, Photorealistic, Fanart", size="256x256", save_img=True, use_llm_enhance=True, gen_source='replicate'): 
+    
+    if gen_source == 'replicate':
+        # import replicate as rp
+        REPLICATE_API_TOKEN = os.environ.get('replicate_key')
+        replicate = rp.Client(api_token=REPLICATE_API_TOKEN)
+        prompt = generate_image_prompt(text)
 
-def generate_image(text="2 cute owls in a forest, Award-Winning Art, Detailed, Photorealistic, Fanart", size="256x256", save_img=True, use_llm_enhance=True): 
-    openai.api_key=os.getenv("OPENAI_API_KEY")
-    prompt = generate_image_prompt(text)
-    print(prompt)
-    res = openai.Image.create( 
-        # text describing the generated image 
-        prompt=prompt, 
-        # number of images to generate  
-        n=1, 
-        # size of each generated image 
-        size=size, 
-    ) 
-    # returning the URL of one image as  
-    # we are generating only one image 
-    url1 = res["data"][0]["url"]
-    
-    if save_img:
-        fname = save_image(url1)
-    
-    db_name='master_text_image.json'
-    file_path = os.path.join(OZZ_DB, db_name)
+        rr = replicate.run(
+        "stability-ai/stable-diffusion:27b93a2413e7f36cd83da926f3656280b2931564ff050bf9575f1fdf9bcd7478",
+        input={
+            "width": 768,
+            "height": 768,
+            "prompt": prompt,
+            "scheduler": "K_EULER",
+            "num_outputs": 1,
+            "guidance_scale": 7.5,
+            "num_inference_steps": 50
+        }
+        )
+
+        # rr = replicate.run(
+        # "playgroundai/playground-v2-1024px-aesthetic:42fe626e41cc811eaf02c94b892774839268ce1994ea778eba97103fe1ef51b8",
+        # input={
+        #     "width": 1024,
+        #     "height": 1024,
+        #     "prompt": prompt,
+        #     "scheduler": "K_EULER_ANCESTRAL",
+        #     "guidance_scale": 3,
+        #     "apply_watermark": False,
+        #     "negative_prompt": "",
+        #     "num_inference_steps": 50
+        # }
+        # )
+
+        # update to save as gif !!! create gifs from existing images
+        # rr = replicate.run(
+        # "stability-ai/stable-video-diffusion:3f0457e4619daac51203dedb472816fd4af51f3149fa7a9e0b5ffcf1b8172438",
+        # input={
+        #     "cond_aug": 0.02,
+        #     "decoding_t": 7,
+        #     "input_image": "https://replicate.delivery/pbxt/JvLi9smWKKDfQpylBYosqQRfPKZPntuAziesp0VuPjidq61n/rocket.png",
+        #     "video_length": "14_frames_with_svd",
+        #     "sizing_strategy": "maintain_aspect_ratio",
+        #     "motion_bucket_id": 127,
+        #     "frames_per_second": 6
+        # }
+        # )
+
+
+        image_urls = rr
+    else:
+        openai.api_key=os.getenv("OPENAI_API_KEY")
+        prompt = generate_image_prompt(text)
+
+        res = openai.Image.create( 
+            # text describing the generated image 
+            prompt=prompt, 
+            # number of images to generate  
+            n=3, 
+            # size of each generated image 
+            size=size, 
+        ) 
+        # returning the URL of one image as  
+        # we are generating only one image 
+        
+        image_urls = [img["url"] for img in res["data"]]
+       
+    db_name = 'master_text_image.json'
+    MT_Image_path = os.path.join(OZZ_DB, db_name)
     MT_Image = init_text_image_db(db_name)
-    data = text_image_fields(fname, prompt, prompt)
-    MT_Image.append(data)
-    save_json(file_path, MT_Image)
+
+    # Save data for each image in the database
+    image_responses = {}
+    for i, url in enumerate(image_urls):
+        response, file_path = save_image(url, gen_source)
+        image_responses[file_path] = response
+        data = text_image_fields(file_path=file_path, text=prompt)
+        MT_Image.append(data)
+    
+    save_json(MT_Image_path, MT_Image)
+
+    return image_responses
 
 
-def save_image(url1):
+def save_image(url1, gen_source='dalle'):
     response = requests.get(url1) 
     # saving the image in PNG format
     images_len = len(os.listdir(OZZ_db_images))
-    filepath = os.path.join(OZZ_db_images, )
-    fname = f'dalle_img_{images_len}.png'
+    fname = f'{gen_source}_{images_len}.png'
+    filepath = os.path.join(OZZ_db_images, fname)
     with open(filepath, "wb") as f: 
         f.write(response.content) 
-    
-    # # opening the saved image and converting it into "RGBA" format 
-    # # converted image is saved in result 
-    # result = Image.open(fn).convert('RGBA') 
-    # # saving the new image in PNG format 
-    # fn = os.path.join(OZZ_db_images, 'img_rgba.png')
-    # result.save(fn,'PNG')
 
-    return fname
+    return response, fname
 
 
-def generate_image_prompt(query="2 owls sleeping", enhancements=['futuristic']):
+def generate_image_prompt(query="2 owls sleeping", enhancements=[]):
     # Default prompt
     prompt = f"Create an image of {query}."
 
@@ -927,6 +983,20 @@ def upload_to_s3(local_file, bucket, s3_file):
 
 def hoots_and_hootie_keywords():
     return ["hey Hoots", "hey Hoot", "hey Hootie", 'morning Hoots', 'morning Hootie']
+
+
+def hoots_and_hootie_vars(width=350, height=350, self_image="hootsAndHootie.png", face_recon=False, show_video=False, input_text=True, show_conversation=True, no_response_time=3, refresh_ask=True):
+    return {'width':width,
+     'height':height,
+     'self_image':self_image, 
+     'face_recon':face_recon,
+     'show_video':show_video,
+     'input_text':input_text,
+     'show_conversation':show_conversation,
+     'no_response_time':no_response_time,
+     'refresh_ask':refresh_ask}
+
+
 
 # def llm_response(query, chat_history):
 #     memory = ConversationBufferMemory(

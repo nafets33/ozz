@@ -37,6 +37,8 @@ def hoots_and_hootie(width=350, height=350,
         show_conversation=show_conversation,
         no_response_time=no_response_time,
         refresh_ask=refresh_ask,
+        before_trigger={'how are you': 'hoots_waves__272.mp3'},
+        api_audio='http://127.0.0.1:8000/api/data/',
         commands=[{
             "keywords": hoots_and_hootie_keywords(), # keywords are case insensitive
             "api_body": {"keyword": "hey hoots"},
@@ -55,13 +57,11 @@ def ozz():
     set_streamlit_page_config_once()
 
     ip_address, streamlit_ip = return_app_ip()
-    print(ip_address)
 
     if not sign_in_client_user():
         st.stop()
 
     init_user_session_state()
-    print('ss keys', {i:"" for i,v in st.session_state.items()})
     
     refresh_ask = True if 'page_refresh' not in st.session_state else False
     st.session_state['page_refresh'] = True
@@ -73,9 +73,35 @@ def ozz():
 
 
     # START
-    st.title('Hoots & Hootie')
+    cols = st.columns(2)
+    with cols[0]:
+        st.title('Hoots & Hootie')
+    with cols[1]:
+        st.header("Say Hey Hoots OR Hey Hootie")
 
-    hoots_and_hootie(refresh_ask=refresh_ask)
+    width=st.session_state['hh_vars']['width'] if 'hc_vars' in st.session_state else 350
+    height=st.session_state['hh_vars']['height'] if 'hc_vars' in st.session_state else 350
+    self_image=st.session_state['hh_vars']['self_image'] if 'hc_vars' in st.session_state else "hootsAndHootie.png"
+    face_recon=st.session_state['hh_vars']['face_recon'] if 'hc_vars' in st.session_state else False
+    show_video=st.session_state['hh_vars']['show_video'] if 'hc_vars' in st.session_state else False
+    input_text=st.session_state['hh_vars']['input_text'] if 'hc_vars' in st.session_state else True
+    show_conversation=st.session_state['hh_vars']['show_conversation'] if 'hc_vars' in st.session_state else True
+    no_response_time=st.session_state['hh_vars']['no_response_time'] if 'hc_vars' in st.session_state else 3
+    refresh_ask=st.session_state['hh_vars']['refresh_ask'] if 'hc_vars' in st.session_state else False
+    cols = st.columns((1,5,1))
+    with cols[1]:
+        hoots_and_hootie(
+            width=width,
+            height=height,
+            self_image=self_image,
+            face_recon=face_recon,
+            show_video=show_video,
+            input_text=input_text,
+            show_conversation=show_conversation,
+            no_response_time=no_response_time,
+            refresh_ask=refresh_ask,
+            )
+
 if __name__ == '__main__':
     ozz()
 

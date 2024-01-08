@@ -17,6 +17,7 @@ const Dictaphone = ({
   useEffect(() => {
     if (finalTranscript !== "") {
       console.log("Got final result:", finalTranscript);
+      console.log("listening?", listening);
 
       // Add logs to check the conditions
       console.log("listenAfterReply:", listenAfterReply);

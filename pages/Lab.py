@@ -47,10 +47,11 @@ def lab():
 
         # Text input for custom value
         custom_value = st.text_input("Enter custom value:")
-        predefined_options.append(custom_value)
+        if custom_value not in predefined_options:
+            predefined_options.append(custom_value)
 
         # Select box with predefined options
-        db_name = st.selectbox("Select from predefined options:", predefined_options)
+        db_name = st.selectbox("Select DB", predefined_options)
 
         if files is not None:
             if st.sidebar.button('Train'):
@@ -60,6 +61,7 @@ def lab():
                     # load_files = clean_data(data)
                     chunks = CreateChunks(load_files)
                     embeddings = CreateEmbeddings(chunks, os.path.join(PERSIST_PATH, db_name))
+                    st.info("EMBEDDING Created", db_name)
 
 
     # Show all the uploaded files
@@ -71,7 +73,7 @@ def lab():
 
     # Chat Interface
     db_names = os.listdir(PERSIST_PATH)
-    db_name = st.selectbox("Select from predefined options:", db_names)
+    db_name = st.selectbox("Chat with DB: ", db_names)
     query = st.chat_input(placeholder="Enter your query")
     if query is not None:
         with st.chat_message('user'):

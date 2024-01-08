@@ -19,20 +19,24 @@ main_root = ozz_master_root()  # os.getcwd()
 
 def sac_menu_buttons_func(main='Ozz'):
     if main=='Ozz':
-        sac_menu_buttons = sac.buttons([
-            sac.ButtonsItem(label='Ozz', icon='robot'),
-            sac.ButtonsItem(label='Lab', icon='backpack4-fill'),
-            # sac.ButtonsItem(label='Ozz', icon='wechat', href=f'{st.session_state["streamlit_ip"]}/ozz'),
-            sac.ButtonsItem(label='Client Models', disabled=True),
-            sac.ButtonsItem(label='Account', icon='share-fill'),
-        ], 
-        format_func='title', align='end', type='text')
-    elif main == 'Account':
-        sac_menu_buttons = sac.buttons([
-            sac.ButtonsItem(label='account', icon='key'),
-            sac.ButtonsItem(label='Ozz', icon='house'),
-            # sac.ButtonsItem(label='Log Out', icon='key'),
-        ], format_func='title', align='end', type='text')
+        # sac_menu_buttons = sac.buttons([
+        #     sac.ButtonsItem(label='Ozz', icon='robot'),
+        #     sac.ButtonsItem(label='Lab', icon='backpack4-fill'),
+        #     # sac.ButtonsItem(label='Ozz', icon='wechat', href=f'{st.session_state["streamlit_ip"]}/ozz'),
+        #     sac.ButtonsItem(label='Client Models', disabled=True),
+        #     sac.ButtonsItem(label='Account', icon='share-fill'),
+        # ], 
+        # format_func='title', align='end', type='text')
+        sac_menu_buttons = sac.buttons(
+            items=['Ozz', 'Lab', 'Client Models', 'Account'],
+            index=0,
+            format_func='title',
+            align='center',
+            direction='horizontal',
+            radius='lg',
+            # compact=False,
+            return_index=False,
+        )
 
     return sac_menu_buttons
 
@@ -59,8 +63,8 @@ prod = setup_instance(client_username=client_user, switch_env=False, force_db_ro
 master_text_audio=init_text_audio_db()
 
 ip_address, streamlit_ip = return_app_ip() # "http://localhost:8501"
-print(ip_address)
-print([i for i, v in st.session_state.items()])
+# print(ip_address)
+# print([i for i, v in st.session_state.items()])
 
 
 # STARTst.write('Ozz')
@@ -79,3 +83,4 @@ if 'current_youtube_search' in st.session_state and st.session_state['current_yo
 
 st.button("refresh")
 st.session_state['page_refresh_count']+=1
+st.warning(f"page refresh count: , {st.session_state['page_refresh_count']}")
