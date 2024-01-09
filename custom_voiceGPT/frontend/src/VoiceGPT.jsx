@@ -3,6 +3,7 @@ import axios from "axios";
 import { Streamlit } from "streamlit-component-lib";
 import SpeechRecognition from "react-speech-recognition";
 import Dictaphone from "./Dictaphone";
+// import Dictaphone_ss from "./Dictaphone_ss";
 import * as faceapi from "@vladmandic/face-api";
 
 let timer = null;
@@ -287,37 +288,73 @@ const CustomVoiceGPT = (props) => {
   return (
     <>
       <div className="p-2">
-      <div>
-          {imageSrc && imageSrc.toLowerCase().endsWith(".mp4") ? (
-            <video
-              height={height || 100}
-              width={width || 100}
-              controls
-              autoPlay={true} // Use a variable to control autoplay shouldAutoplay
-              loop={false}
-              muted
-            >
-              <source src={imageSrc} type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
-          ) : (
-            <img src={imageSrc} height={height || 100} width={width || 100} />
-          )}
-          {/* Flashing green line indicator */}
-          {apiInProgress && (
-            <div
-              style={{
-                position: 'absolute',
-                top: '10px',
-                left: '0',
-                width: '100%',
-                height: '4px',
-                background: 'linear-gradient(90deg, green, transparent 50%, green)',
-                animation: 'flashLine 1s infinite',
-              }}
-            />
-          )}
-        </div>
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', width: '100%' }}>
+  <div style={{ position: 'relative' }}>
+    {imageSrc && imageSrc.toLowerCase().endsWith(".mp4") ? (
+      <video
+        height={height || 100}
+        width={width || 100}
+        controls
+        autoPlay={true}
+        loop={false}
+        muted
+      >
+        <source src={imageSrc} type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+    ) : (
+      <img src={imageSrc} height={height || 100} width={width || 100} />
+    )}
+    {/* Flashing green line indicator with words */}
+    {apiInProgress && (
+      <div
+        style={{
+          position: 'absolute',
+          top: '10px',
+          left: '0',
+          width: '100%',
+          height: '4px',
+          backgroundImage: 'linear-gradient(90deg, green, transparent 50%, green)',
+          animation: 'flashLine 1s infinite',
+        }}
+      >
+        <div style={{ position: 'absolute', top: '-20px', left: '50%', transform: 'translateX(-50%)', color: 'white', fontSize: '14px' }}>Your words here</div>
+      </div>
+    )}
+  </div>
+  {/* Listen and Listening buttons */}
+  <div style={{ display: 'flex', width: '100%', marginTop: '10px' }}>
+    <button
+      style={{
+        flex: 1,
+        marginRight: '5px',
+        backgroundColor: '#3498db', // Lighter blue color
+        color: 'white',
+        padding: '10px',
+        border: '2px solid #2980b9', // Darker blue border
+        cursor: 'pointer',
+      }}
+      onClick={listenContinuously}
+    >
+      Listen
+    </button>
+    <button
+      style={{
+        flex: 1,
+        marginLeft: '5px',
+        backgroundColor: '#2980b9', // Darker blue color
+        color: 'white',
+        padding: '10px',
+        border: '2px solid #2980b9', // Use the same color for the border
+        cursor: 'pointer',
+      }}
+      onClick={listenContinuously}
+    >
+      Listening
+    </button>
+  </div>
+</div>
+
         <div className="p-2">
           <Dictaphone
             commands={commands}
@@ -328,11 +365,7 @@ const CustomVoiceGPT = (props) => {
             apiInProgress={apiInProgress} // Pass down API in progress
           />
         </div>
-        <div className="form-group">
-          <button className="btn btn-primary" onClick={listenContinuously}>
-            Listen continuously
-          </button>
-        </div>
+
         {input_text && (
           <div className="form-group">
             <input

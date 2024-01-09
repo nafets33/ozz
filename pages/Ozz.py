@@ -72,13 +72,6 @@ def ozz():
     PERSIST_PATH = constants.get('PERSIST_PATH')
 
 
-    # START
-    cols = st.columns(2)
-    with cols[0]:
-        st.title('Hoots & Hootie')
-    with cols[1]:
-        st.header("Say Hey Hoots OR Hey Hootie")
-
     width=st.session_state['hh_vars']['width'] if 'hc_vars' in st.session_state else 350
     height=st.session_state['hh_vars']['height'] if 'hc_vars' in st.session_state else 350
     self_image=st.session_state['hh_vars']['self_image'] if 'hc_vars' in st.session_state else "hootsAndHootie.png"
@@ -88,8 +81,13 @@ def ozz():
     show_conversation=st.session_state['hh_vars']['show_conversation'] if 'hc_vars' in st.session_state else True
     no_response_time=st.session_state['hh_vars']['no_response_time'] if 'hc_vars' in st.session_state else 3
     refresh_ask=st.session_state['hh_vars']['refresh_ask'] if 'hc_vars' in st.session_state else False
-    cols = st.columns((1,5,1))
+    cols = st.columns((5,3,3))
     with cols[1]:
+        user_output = st.empty()
+    with cols[2]:
+        rep_output = st.empty()
+    
+    with cols[0]:
         hoots_and_hootie(
             width=width,
             height=height,
@@ -101,6 +99,16 @@ def ozz():
             no_response_time=no_response_time,
             refresh_ask=refresh_ask,
             )
+        st.write("Say Hey Hoots OR Hey Hootie")
+
+
+    if 'query' in st.session_state:
+        with user_output.container():
+            name = client_user.split("@")[0]
+            st.info(f"{name}: {st.session_state['query']}")
+    if 'resp' in st.session_state:
+        with rep_output.container():
+            st.warning(f"Hoots: {st.session_state['resp']}")
 
 if __name__ == '__main__':
     ozz()

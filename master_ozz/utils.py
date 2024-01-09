@@ -264,7 +264,7 @@ def init_text_audio_db(db_name='master_text_audio.json'):
     master_text_audio_file_path = os.path.join(OZZ_DB, db_name)
     if os.path.exists(master_text_audio_file_path):
         master_text_audio = load_local_json(master_text_audio_file_path)
-        return master_text_audio
+        return db_name, master_text_audio
     
     print("INIT DB")
     audio_db = os.path.join(OZZ_DB, 'audio')
@@ -280,7 +280,7 @@ def init_text_audio_db(db_name='master_text_audio.json'):
     
     save_json(master_text_audio_file_path, master_text_audio)
 
-    return master_text_audio
+    return db_name, master_text_audio
 
 
 def init_text_image_db(db_name='master_text_image.json'):
@@ -407,25 +407,29 @@ def base_content():
 
 
 def save_audio(filename, audio, response, user_query, self_image=False, db_name='master_text_audio.json', s3_filepath=None):
-    ## all saving should happen at end of response return WORKERBEE
-    master_text_audio_file_path = os.path.join(OZZ_DB, db_name)
-    master_text_audio = init_text_audio_db()
-    master_text_audio.append(text_audio_fields(filename, response, user_query, self_image, s3_filepath))
-    save_json(master_text_audio_file_path, master_text_audio)
+    try:
+        ## all saving should happen at end of response return WORKERBEE
+        master_text_audio_file_path = os.path.join(OZZ_DB, db_name)
+        master_text_audio_file_path, master_text_audio = init_text_audio_db()
+        master_text_audio.append(text_audio_fields(filename, response, user_query, self_image, s3_filepath))
+        save_json(master_text_audio_file_path, master_text_audio)
 
-    # audio_db = os.path.join(OZZ_DB, 'audio')
-    # db_file_name = os.path.join(audio_db, filename.split("/")[-1])
-    save(
-        audio=audio,               # Audio bytes (returned by generate)
-        filename=os.path.join(OZZ_db_audio, filename)                # Filename to save audio to (e.g. "audio.wav")
-    )
+        local_path = filename=os.path.join(OZZ_db_audio, filename) 
+        save(
+            audio=audio,               # Audio bytes (returned by generate)
+            filename=local_path                # Filename to save audio to (e.g. "audio.wav")
+        )
+        
+        #upload to s3 bucket
+        print("FIX Master DB FIRST before s3 upload")
+        # upload_to_s3(local_file=local_path, bucket='ozzz', s3_file=s3_filepath)
 
-    # local_build_file = 'temp_audio.mp3'
-    # save(
-    #     audio=audio,               # Audio bytes (returned by generate)
-    #     filename=os.path.join(OZZ_BUILD_dir, local_build_file)               # Filename to save audio to (e.g. "audio.wav")
-    # )
-    return True
+        # del file?
+
+        return local_path
+    except Exception as e:
+        print_line_of_error(e)
+        return False
 
 def generate_audio(query="Hello Story Time Anyone?", voice='Mimi', use_speaker_boost=True, settings_vars={'stability': .71, 'similarity_boost': .5, 'style': 0.0}, model_id='eleven_monolingual_v1'):
     try:
@@ -974,12 +978,12 @@ def upload_to_s3(local_file, bucket, s3_file):
         print("Credentials not available")
         return False
 
-        # Example usage
-        audio_file_path = 'your_audio_file_path.mp3'
-        bucket_name = 'ozzz'
-        s3_key = 'audios/filename.mp3'
+        # # Example usage
+        # audio_file_path = 'your_audio_file_path.mp3'
+        # bucket_name = 'ozzz'
+        # s3_key = 'audios/filename.mp3'
 
-        upload_to_s3(audio_file_path, bucket_name, s3_key)
+        # upload_to_s3(audio_file_path, bucket_name, s3_key)
 
 
 def hoots_and_hootie_keywords():
@@ -998,6 +1002,25 @@ def hoots_and_hootie_vars(width=350, height=350, self_image="hootsAndHootie.png"
      'refresh_ask':refresh_ask}
 
 
+
+# def autoplay_audio(file_path: str):
+#     with open(file_path, "rb") as f:
+#         data = f.read()
+#         b64 = base64.b64encode(data).decode()
+#         md = f"""
+#             <audio controls autoplay="true">
+#             <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
+#             </audio>
+#             """
+#         st.markdown(
+#             md,
+#             unsafe_allow_html=True,
+#         )
+
+
+# st.write("# Auto-playing Audio!")
+
+# autoplay_audio("local_audio.mp3")
 
 # def llm_response(query, chat_history):
 #     memory = ConversationBufferMemory(

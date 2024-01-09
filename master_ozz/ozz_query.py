@@ -191,7 +191,7 @@ def handle_prompt(first_ask, conversation_history):
         You believe is good and moral virture for all.
         You have access to Hoot Couture products and can provide information about products and even help style little kids with great matching outfits and suggestions.
         If you are asked a question about clothing products do you best to provide infomation based on the ask, as you have access to all the products in the store and the details of the products.
-        Please keep your reponses short and clear.
+        Please keep your reponses short and clear, Try to Answer is less then 100 characters.
         Always Take note to SYSTEM INFO: notes will be provided to help better create responses.
         """
         if first_ask:
@@ -232,7 +232,7 @@ def search_for_something(current_query):
 def Scenarios(text : list, current_query : str , conversation_history : list , first_ask=False, session_state={}, audio_file=None, self_image='hootsAndHootie.png', client_user=None):
     scenario_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     OZZ = {}
-    s3_filepath = None
+    s3_filepath = f'{client_user}/'
 
     def scenario_return(response, conversation_history, audio_file, session_state, self_image=None):
         return {'response': response,
@@ -261,7 +261,7 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
     def handle_audio(user_query, response, audio_file=None, self_image=None, s3_filepath=None):
         s = datetime.now()
         
-        master_text_audio = init_text_audio_db()
+        db_name, master_text_audio = init_text_audio_db()
         df = pd.DataFrame(master_text_audio)
         audio_text = dict(zip(df['file_path'], df['text'])) # audio, text
         fnames = len(audio_text)
@@ -284,11 +284,17 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
             filename = f'{fname_image}__{fnames}.mp3'
             audio_file = filename #os.path.join(db_DB_audio, filename)
             print("NEW AUDIO", audio_file)
-            audio = generate_audio(query=response)
+            model_id = 'eleven_monolingual_v1' if len(response) < 100 else 'eleven_turbo_v2'
+            print(model_id)
+            audio = generate_audio(query=response, model_id=model_id)
             print('audiofunc generate:', (datetime.now() - s).total_seconds())
 
             if audio:
-                save_audio(filename, audio, response, user_query, self_image, s3_filepath)
+                s3_filepath = s3_filepath + filename
+                local_path = save_audio(filename, audio, response, user_query, self_image, db_name, s3_filepath)
+                # clean up and delete file WORKERBEE
+
+                # filename, audio, response, user_query, self_image=False, db_name='master_text_audio.json', s3_filepath=None
                 print('audiofunc Saved:', (datetime.now() - s).total_seconds())
             else:
                 audio_file = "techincal_errors.mp3"
@@ -370,7 +376,10 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
             session_state['current_youtube_search'] = search_video_phrase
         
         return current_query, session_state
-    
+
+    def handle_code_blocks(response):
+        return response
+
     print('QUERY ', current_query)
     print('SSTATE ', {i: v for i, v in session_state.items() if i != 'text'})
     user_query = current_query
