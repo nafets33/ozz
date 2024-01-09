@@ -100,7 +100,10 @@ def init_pollen_dbs(db_root, prod, queens_chess_pieces=['queen_king.json'], quee
         if init:
             if os.path.exists(PB_QUEEN_Pickle) == False:
                 print(f"Init {PB_QUEEN_Pickle}")
-                save_json(PB_QUEEN_Pickle, [])
+                if queens_chess_piece == 'session_state.json':
+                    save_json(PB_QUEEN_Pickle, {})
+                else:
+                    save_json(PB_QUEEN_Pickle, [])
 
         if queenKING:
             st.session_state[queens_chess_piece] = PB_QUEEN_Pickle

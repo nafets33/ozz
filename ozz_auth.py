@@ -41,14 +41,14 @@ def register_user(authenticator, con, cur):
             # send user verification code
             send_email(
                 recipient=register_email,
-                subject="PollenQ. Verify Email",
+                subject="Divergent-Thinkers. Verify Email",
                 body=f"""
-            Your PollenQ verification code is {verification_code}
+            Your verification code is {verification_code}
 
             Please enter this code in the website to complete your registration
 
             Thank you,
-            PollenQ
+            Ozz
             """,
             )
             st.success("A verification code has been sent to your email")
@@ -66,12 +66,12 @@ def register_user(authenticator, con, cur):
                 update_db(authenticator, con=con, cur=cur, email=register_email, append_db=True)
                 send_email(
                     recipient=register_email,
-                    subject="Welcome On Board PollenQ!",
+                    subject="Welcome On Board Ozz!",
                     body=f"""
-                You have successful created a PollenQ account. Ensure you keep your login detials safe.
+                You have successful created a Ozz account. Ensure you keep your login detials safe.
 
                 Thank you,
-                PollenQ
+                Divergent Thinkers Team
                 """,
                 )
 
@@ -290,9 +290,11 @@ def signin_main():
         users_allowed_queen_email = kingdom()
         # print(st.session_state["username"])
         if st.session_state["username"] in users_allowed_queen_email:
-            st.session_state["authorized_user"] = True
+            st.session_state["confirmed_user"] = True
         else:
-            st.session_state["authorized_user"] = False
+            st.session_state["confirmed_user"] = False
+        
+        st.session_state["authorized_user"] = True
 
         st.session_state["admin"] = (
             True
