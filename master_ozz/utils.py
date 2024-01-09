@@ -228,7 +228,7 @@ load_dotenv(os.path.join(ozz_master_root(),'.env'))
 set_api_key(os.environ.get("api_elevenlabs"))
 
 
-def text_audio_fields(file_path, text, user_query=None, self_image=None):
+def text_audio_fields(file_path, text, user_query=None, self_image=None, s3_filepath=None):
     if not self_image:
         self_image = file_path.split("/")[-1].split(".")[0] # name of file without extension
 
@@ -236,7 +236,8 @@ def text_audio_fields(file_path, text, user_query=None, self_image=None):
             'text': text, 
             'self_image': self_image,
             'datetime': datetime.now().strftime("%B %d, %Y %H:%M"),
-            'user_query': user_query}
+            'user_query': user_query,
+            's3_filepath': s3_filepath,}
 
 def text_image_fields(file_path, text, user_query=None, self_image=None):
     if not self_image:
@@ -405,11 +406,11 @@ def base_content():
     return main_return
 
 
-def save_audio(filename, audio, response, user_query, self_image=False, db_name='master_text_audio.json'):
+def save_audio(filename, audio, response, user_query, self_image=False, db_name='master_text_audio.json', s3_filepath=None):
     ## all saving should happen at end of response return WORKERBEE
     master_text_audio_file_path = os.path.join(OZZ_DB, db_name)
     master_text_audio = init_text_audio_db()
-    master_text_audio.append(text_audio_fields(filename, response, user_query, self_image))
+    master_text_audio.append(text_audio_fields(filename, response, user_query, self_image, s3_filepath))
     save_json(master_text_audio_file_path, master_text_audio)
 
     # audio_db = os.path.join(OZZ_DB, 'audio')

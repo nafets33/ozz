@@ -25,7 +25,7 @@ def hoots_and_hootie(width=350, height=350,
     custom_voiceGPT(
         api=f"{st.session_state['ip_address']}/api/data/voiceGPT",
         api_key=os.environ.get('ozz_key'),
-        # client_user=client_user,
+        client_user=st.session_state['client_user'],
         self_image=self_image,
         width=width,
         height=height,

@@ -48,15 +48,13 @@ def load_ozz_voice():
     return JSONResponse(content=json_data)
 
 @router.post("/voiceGPT", status_code=status.HTTP_200_OK)
-def load_ozz_voice(api_key=Body(...), text=Body(...), self_image=Body(...), refresh_ask=Body(...), face_data=Body(...)): #, client_user=Body(...)):
+def load_ozz_voice(api_key=Body(...), text=Body(...), self_image=Body(...), refresh_ask=Body(...), face_data=Body(...), client_user=Body(...)):
 
     print(face_data)
     if api_key != os.environ.get("ozz_key"): # fastapi_pollenq_key
         print("Auth Failed", api_key)
         # Log the trader WORKERBEE
         return "NOTAUTH"
-    
-    client_user = 'stefanstapinski@gmail.com'
 
     json_data = ozz_query(text, self_image, refresh_ask, client_user)
     return JSONResponse(content=json_data)

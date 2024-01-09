@@ -229,9 +229,10 @@ def search_for_something(current_query):
     return False
 
 
-def Scenarios(text : list, current_query : str , conversation_history : list , first_ask=False, session_state={}, audio_file=None, self_image='hootsAndHootie.png'):
+def Scenarios(text : list, current_query : str , conversation_history : list , first_ask=False, session_state={}, audio_file=None, self_image='hootsAndHootie.png', client_user=None):
     scenario_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     OZZ = {}
+    s3_filepath = None
 
     def scenario_return(response, conversation_history, audio_file, session_state, self_image=None):
         return {'response': response,
@@ -257,7 +258,7 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
 
         return audio_file
 
-    def handle_audio(user_query, response, audio_file=None, self_image=None):
+    def handle_audio(user_query, response, audio_file=None, self_image=None, s3_filepath=None):
         s = datetime.now()
         
         master_text_audio = init_text_audio_db()
@@ -287,7 +288,7 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
             print('audiofunc generate:', (datetime.now() - s).total_seconds())
 
             if audio:
-                save_audio(filename, audio, response, user_query, self_image)
+                save_audio(filename, audio, response, user_query, self_image, s3_filepath)
                 print('audiofunc Saved:', (datetime.now() - s).total_seconds())
             else:
                 audio_file = "techincal_errors.mp3"
@@ -364,13 +365,11 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
             print("tell a story")
         if "video" in current_query:
             print("search for a video")
-            search_video_phrase = current_query.split(search_phrase)[1]
+            youtube_query = f'{current_query} SYSTEM NOTE: reword this query in the best way for a youtube video search'
+            search_video_phrase = llm_assistant_response(youtube_query, [])
             session_state['current_youtube_search'] = search_video_phrase
         
         return current_query, session_state
-
-    def create():
-        return True
     
     print('QUERY ', current_query)
     print('SSTATE ', {i: v for i, v in session_state.items() if i != 'text'})
@@ -392,7 +391,7 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
         audio_file = resp_func.get('audio_file')
         session_state = resp_func.get('session_state')
         conversation_history.append({"role": "assistant", "content": response, })
-        audio_file = handle_audio(user_query, response, audio_file, self_image)
+        audio_file = handle_audio(user_query, response, audio_file, self_image, s3_filepath)
         return scenario_return(response, conversation_history, audio_file, session_state, self_image)
 
     # Common Phrases # WORKERBEE Add check against audio_text DB
@@ -406,7 +405,7 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
             conversation_history.append({"role": "assistant", "content": response})
             ## find audio file to set to new_audio False
             # return audio file
-            audio_file = handle_audio(user_query, response, audio_file=audio_file, self_image=self_image) 
+            audio_file = handle_audio(user_query, response, audio_file=audio_file, self_image=self_image, s3_filepath=s3_filepath) 
             print('common phrases:', (datetime.now() - s).total_seconds())
             # self_image = 'hoots_waves.gif'
             return scenario_return(response, conversation_history, audio_file, session_state, self_image)
@@ -455,7 +454,7 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
         response = llm_assistant_response(current_query, conversation_history)
 
     conversation_history.append({"role": "assistant", "content": response})
-    audio_file = handle_audio(user_query, response=response, audio_file=audio_file, self_image=self_image)
+    audio_file = handle_audio(user_query, response=response, audio_file=audio_file, self_image=self_image, s3_filepath=s3_filepath)
     
 
     return scenario_return(response, conversation_history, audio_file, session_state, self_image)
@@ -495,101 +494,91 @@ def ozz_query(text, self_image, refresh_ask, client_user):
 
         return text, current_query
 
-    def handle_response(text : str, self_image : str, db_root : str):
-
-        text, current_query = clean_current_query_from_previous_ai_response(text)
-        print(current_query)
-        if len(current_query) <= 1:
-            print("NO RESPONSE RETURN BLANK")
-            # return ozz_query_json_return(text, self_image, audio_file=None, page_direct=None, listen_after_reply=False)
-            current_query = "hello"
-        
-        ## Load Client session and conv history
-        master_conversation_history_file_path = os.path.join(db_root, 'master_conversation_history.json')
-        conversation_history_file_path = os.path.join(db_root, 'conversation_history.json')
-        session_state_file_path = os.path.join(db_root, 'session_state.json')
-        
-        master_conversation_history = load_local_json(master_conversation_history_file_path)
-        conversation_history = load_local_json(conversation_history_file_path)
-        session_state = load_local_json(session_state_file_path)
-
-        first_ask = True if len(text) <= 1 else False
-        print("FIRST ASK: ", first_ask)
-        conversation_history = handle_prompt(first_ask, conversation_history)
-        conversation_history = get_last_eight(conversation_history)
-        
-
-        # Session State
-        if first_ask:
-            conversation_history =  conversation_history.clear() if len(conversation_history) > 0 else conversation_history
-            conversation_history = [] if not conversation_history else conversation_history
-            conversation_history = handle_prompt(True, conversation_history)
-            conversation_history.append({"role": "user", "content": current_query})
-            session_state = client_user_session_state_return(text, response_type='response', returning_question=False)
-        else:
-            session_state = session_state
-            conversation_history.append({"role": "user", "content": current_query})
-        
-        master_conversation_history.append({"role": "user", "content": current_query})
-        
-        # Call the Scenario Function and get the response accordingly
-        scenario_resp = Scenarios(text, current_query, conversation_history, first_ask, session_state, self_image=self_image)
-        response = scenario_resp.get('response')
-        conversation_history = scenario_resp.get('conversation_history')
-        audio_file = scenario_resp.get('audio_file')
-        session_state = scenario_resp.get('session_state')
-        self_image = scenario_resp.get('self_image')
-
-        master_conversation_history.append({"role": "assistant", "content": response})
-
-        print("RESPONSE", response)
-        
-        text[-1].update({'resp': response})
-
-        # audio_file='temp_audio.mp3'
-        
-        session_state['text'] = text
-        
-        if response.endswith("?"):
-            session_state['returning_question'] = True
-            session_state['response_type'] = 'question'
-        else:
-            session_state['returning_question'] = False
-            session_state['response_type'] = 'response'
-    
-        # session_state['returning_question'] = False
-        # session_state['response_type'] = 'response'
-
-        # For saving a chat history for current session in json file
-        save_json(master_conversation_history_file_path, master_conversation_history)
-        save_json(conversation_history_file_path, conversation_history)
-        save_json(session_state_file_path, session_state)
-        
-
-        return {'text': text, 'audio_file': audio_file, 'session_state': session_state, 'self_image': self_image}
-    
-
     db_root = init_clientUser_dbroot(client_username=client_user)
     print("DBROOT: ", db_root)
 
-    resp = handle_response(text, self_image, db_root)
-    text = resp.get('text')
-    audio_file = resp.get('audio_file')
-    session_state = resp.get('session_state')
-    self_image = resp.get('self_image')
 
-    print("AUDIOFILE:", audio_file)
-    print("IMAGE:", self_image)
+
+    text, current_query = clean_current_query_from_previous_ai_response(text) # DEPRECATE
+    print(current_query)
+    if len(current_query) <= 1:
+        print("NO RESPONSE RETURN BLANK")
+        # return ozz_query_json_return(text, self_image, audio_file=None, page_direct=None, listen_after_reply=False)
+        current_query = "hello"
     
-    page_direct= False # if redirect, add redirect page into session_state
+    ## Load Client session and conv history
+    master_conversation_history_file_path = os.path.join(db_root, 'master_conversation_history.json')
+    conversation_history_file_path = os.path.join(db_root, 'conversation_history.json')
+    session_state_file_path = os.path.join(db_root, 'session_state.json')
+    
+    master_conversation_history = load_local_json(master_conversation_history_file_path)
+    conversation_history = load_local_json(conversation_history_file_path)
+    session_state = load_local_json(session_state_file_path)
+
+    first_ask = True if len(text) <= 1 else False
+    print("FIRST ASK: ", first_ask)
+    conversation_history = handle_prompt(first_ask, conversation_history)
+    conversation_history = get_last_eight(conversation_history)
+    
+    # Session State
+    if first_ask:
+        conversation_history =  conversation_history.clear() if len(conversation_history) > 0 else conversation_history
+        conversation_history = [] if not conversation_history else conversation_history
+        conversation_history = handle_prompt(True, conversation_history)
+        conversation_history.append({"role": "user", "content": current_query})
+        session_state = client_user_session_state_return(text, response_type='response', returning_question=False)
+    else:
+        session_state = session_state
+        conversation_history.append({"role": "user", "content": current_query})
+
+
+    storytime = True if session_state['story_time'] else False
+    # # MASTER START ## DENISH
+    # if story__time:
+    #     story_time()
+    # return ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply)
+
+
+    master_conversation_history.append({"role": "user", "content": current_query})
+
+    # Call the Scenario Function and get the response accordingly
+    scenario_resp = Scenarios(text, current_query, conversation_history, first_ask, session_state, self_image=self_image, client_user=client_user)
+    response = scenario_resp.get('response')
+    print("RESPONSE", response)
+    conversation_history = scenario_resp.get('conversation_history')
+    audio_file = scenario_resp.get('audio_file')
+    session_state = scenario_resp.get('session_state')
+    self_image = scenario_resp.get('self_image')
+
+    # Save Data
+    master_conversation_history.append({"role": "assistant", "content": response})
+    text[-1].update({'resp': response})
+    session_state['text'] = text
+    
+    # Question Return?
+    if response.endswith("?"):
+        session_state['returning_question'] = True
+        session_state['response_type'] = 'question'
+    else:
+        session_state['returning_question'] = False
+        session_state['response_type'] = 'response'
+
+    # For saving a chat history for current session in json file
+    save_json(master_conversation_history_file_path, master_conversation_history)
+    save_json(conversation_history_file_path, conversation_history)
+    save_json(session_state_file_path, session_state)
+
     listen_after_reply = session_state['returning_question'] # True if session_state.get('response_type') == 'question' else False
-    print("listen after reply", listen_after_reply)
-    
+
+    page_direct= False # if redirect, add redirect page into session_state
     if not session_state['current_youtube_search']:
         pass
     else:
         page_direct="http://localhost:8501/"
     
+    print("listen after reply", listen_after_reply)
+    print("AUDIOFILE:", audio_file)
+    print("IMAGE:", self_image)
     return ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply)
 
 ## db 

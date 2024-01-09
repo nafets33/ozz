@@ -25,6 +25,7 @@ const CustomVoiceGPT = (props) => {
     refresh_ask,
     before_trigger,
     api_audio,
+    client_user,
   } = kwargs;
   const [imageSrc, setImageSrc] = useState(kwargs.self_image);
   const [message, setMessage] = useState("");
@@ -172,6 +173,7 @@ const CustomVoiceGPT = (props) => {
         self_image: imageSrc,
         face_data: faceData.current,
         refresh_ask: refresh_ask,
+        client_user: client_user,
       };
       console.log("api");
       const { data } = await axios.post(api, body);
@@ -209,7 +211,7 @@ const CustomVoiceGPT = (props) => {
       
       listenContinuously();
       setApiInProgress(false); // Set API in progress to false after completion
-      
+
     } catch (error) {
       console.log("api call on listen failed!", error);
       setApiInProgress(false); // Set API in progress to false on error
