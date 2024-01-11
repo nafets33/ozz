@@ -88,6 +88,7 @@ def ozz():
         rep_output = st.empty()
     
     with cols[0]:
+        st.write("Say Hey Hoots OR Hey Hootie")
         hoots_and_hootie(
             width=width,
             height=height,
@@ -99,7 +100,6 @@ def ozz():
             no_response_time=no_response_time,
             refresh_ask=refresh_ask,
             )
-        st.write("Say Hey Hoots OR Hey Hootie")
 
 
     if 'query' in st.session_state:

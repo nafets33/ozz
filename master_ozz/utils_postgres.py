@@ -25,6 +25,39 @@ def postgre_db_connect(db_params=False):
     conn = psycopg2.connect(**db_params)
     return conn
 
+### START
+# utils.init_pollen_dbs all file creations for users i.e. client_users_db
+# track save
+
+#sneakpeak == client_user_db
+# client_users.db
+#2 masters, audio and images
+
+# update save_json & Appends
+
+def postgre_db_connect(db_params=False):
+    # Host
+    # ec2-3-230-24-12.compute-1.amazonaws.com
+    # Database
+    # dcp3airkvcc1u1
+    # User
+    # jdudpjkxggkbrv
+    # Port
+    # 5432
+    # Password
+    # c9db217ba584b1a549f9b35536fb52b6416b7c387e9cc3c49fab82614efb167f
+    # URI
+    # postgres://jdudpjkxggkbrv:c9db217ba584b1a549f9b35536fb52b6416b7c387e9cc3c49fab82614efb167f@ec2-3-230-24-12.compute-1.amazonaws.com:5432/dcp3airkvcc1u1
+    # Heroku CLI
+    # heroku pg:psql postgresql-cubic-10426 --app ozz
+    conn = psycopg2.connect(**db_params)
+    return conn
+
+
+
+
+
+## utils utils
 def insert_audio(conn, audio_data, title):
     try:
         # Insert the audio data and title into the database
@@ -49,7 +82,6 @@ def create_table_origin_query():
     """
 
     return {'create_video_table': create_table_sql}
-
 
 def confirm_db(tables=['audio_files']):
     conn = postgre_db_connect()
@@ -76,7 +108,6 @@ def confirm_db(tables=['audio_files']):
     
     return True
 
-
 def get_all_titles(conn, table_name):
     try:
         with conn.cursor() as cursor:
@@ -89,7 +120,6 @@ def get_all_titles(conn, table_name):
 
     except Exception as e:
         print(f"Error retrieving titles: {e}")
-
 
 def get_audio_by_title(conn, table_name, selected_title):
     try:

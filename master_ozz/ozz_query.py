@@ -16,7 +16,7 @@ est = pytz.timezone("US/Eastern")
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-from master_ozz.utils import hoots_and_hootie_vars, hoots_and_hootie_keywords, save_json, load_local_json, init_clientUser_dbroot, init_text_audio_db, print_line_of_error, ozz_master_root, ozz_master_root_db, generate_audio, save_audio, Retriever, init_constants
+from master_ozz.utils import init_stories ,hoots_and_hootie_vars, hoots_and_hootie_keywords, save_json, load_local_json, init_clientUser_dbroot, init_text_audio_db, print_line_of_error, ozz_master_root, ozz_master_root_db, generate_audio, save_audio, Retriever, init_constants
 import ipdb
 
 main_root = ozz_master_root()  # os.getcwd()
@@ -210,7 +210,7 @@ def story_time_params():
 def client_user_session_state_return(text, response_type='response', returning_question=False, current_youtube_search=False, max_results=10, story_time={}, hh_vars={}):
     hh_vars = hh_vars if hh_vars else hoots_and_hootie_vars()
 
-    return {'text': text,
+    return {'text': text, # []
             'response_type': response_type,
             'returning_question': returning_question,
             'current_youtube_search': current_youtube_search,
@@ -229,6 +229,27 @@ def search_for_something(current_query):
     return False
 
 
+def calculate_story(current_query):
+    def join_string_columns_optimized(df, col_name='title'):
+    # Use apply along with str.cat to join string columns
+        df['title'] = df.apply(lambda x: x[x.apply(lambda y: isinstance(y, str))].astype(str).str.cat(sep=' '), axis=1)
+
+        return df
+
+    stories = init_stories()
+    query = "tell me more a story about dinasours"
+    dfs_25 = pd.DataFrame(stories.items())
+    dfs_25=join_string_columns_optimized(dfs_25)
+    # analyzer = SentimentIntensityAnalyzer()
+    # query_sentiment = analyzer.polarity_scores(query)['compound']
+    # matched_index = closest_sentiment_match([dfs_25], query_sentiment)
+    winner = None
+    for story in dfs_25['title']:
+        if calculate_similarity(story, current_query) > .95:
+            winner = story
+
+
+### MAIN 
 def Scenarios(text : list, current_query : str , conversation_history : list , first_ask=False, session_state={}, audio_file=None, self_image='hootsAndHootie.png', client_user=None):
     scenario_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     OZZ = {}
@@ -284,7 +305,7 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
             filename = f'{fname_image}__{fnames}.mp3'
             audio_file = filename #os.path.join(db_DB_audio, filename)
             print("NEW AUDIO", audio_file)
-            model_id = 'eleven_monolingual_v1' if len(response) < 100 else 'eleven_turbo_v2'
+            model_id = 'eleven_monolingual_v1' # if len(response) < 300 else 'eleven_turbo_v2'
             print(model_id)
             audio = generate_audio(query=response, model_id=model_id)
             print('audiofunc generate:', (datetime.now() - s).total_seconds())
@@ -472,12 +493,13 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
 
 def ozz_query(text, self_image, refresh_ask, client_user):
     
-    def ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply=False):
+    def ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply=False, session_state=None):
         json_data = {'text': text, 
                     'audio_path': audio_file, 
                     'self_image': self_image, 
                     'page_direct': page_direct, 
-                    'listen_after_reply': listen_after_reply}
+                    'listen_after_reply': listen_after_reply,
+                    'session_state': session_state,}
         return json_data
     
     def clean_current_query_from_previous_ai_response(text):

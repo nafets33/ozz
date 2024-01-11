@@ -100,8 +100,12 @@ def init_pollen_dbs(db_root, prod, queens_chess_pieces=['queen_king.json'], quee
         if init:
             if os.path.exists(PB_QUEEN_Pickle) == False:
                 print(f"Init {PB_QUEEN_Pickle}")
-                if queens_chess_piece == 'session_state.json':
+                if queens_chess_piece == 'session_state.json': # master_conv_history, conv_history
                     save_json(PB_QUEEN_Pickle, {})
+                elif queens_chess_piece == 'master_conv_history.json': # master_conv_history
+                    True
+                elif queens_chess_piece == 'conv_history.json': # master_conv_history
+                    True
                 else:
                     save_json(PB_QUEEN_Pickle, [])
 
@@ -152,7 +156,7 @@ def setup_instance(client_username, switch_env, force_db_root, queenKING, prod=N
         print("INIT CLIENT DB")
         os.mkdir(client_dbs)
 
-    queens_chess_pieces=['queen_king.json', 'conversation_history.json', 'session_state.json', 'master_conversation_history.json']
+    queens_chess_pieces=['conversation_history.json', 'session_state.json', 'master_conversation_history.json']
     try:
         db_root = init_clientUser_dbroot(client_username=client_username, force_db_root=force_db_root, queenKING=queenKING)  # main_root = os.getcwd() // # db_root = os.path.join(main_root, 'db')
         if prod is not None:
@@ -1004,6 +1008,130 @@ def hoots_and_hootie_vars(width=350, height=350, self_image="hootsAndHootie.png"
      'no_response_time':no_response_time,
      'refresh_ask':refresh_ask}
 
+
+def init_stories():
+
+    stories = {
+        "1. Adventure in Candyland": "Embark on a sweet journey through a magical land made of candy!",
+        "2. Talking Animal Friends": "Join kids as they befriend animals who can talk and share amazing stories.",
+        "3. Treasure Hunt in Pirate Cove": "Set sail for a thrilling adventure to find hidden pirate treasures!",
+        "4. Rainbow Kingdom Quest": "Explore a vibrant kingdom filled with rainbow magic and exciting surprises.",
+        "5. Dinosaur Time Travel": "Travel back in time with kids and meet friendly dinosaurs in a prehistoric world.",
+        "6. Magic School Days": "Attend a school where kids learn incredible spells and charms for magical fun.",
+        "7. Friendly Alien Encounter": "Make friends with a kind extraterrestrial visitor and embark on space adventures!",
+        "8. Quest for the Missing Teddy": "Join kids on a mission to find their lost teddy bear in a charming adventure.",
+        "9. Enchanted Forest Expedition": "Discover the wonders of an enchanted forest, meeting magical creatures along the way.",
+        "10. Superhero Training Camp": "Kids attend a camp to develop superpowers and become pint-sized superheroes.",
+        "11. Winter Wonderland Quest": "Explore a snowy wonderland filled with ice castles, snowmen, and winter magic.",
+        "12. Panda Pajama Party": "Join a group of playful pandas for a pajama party full of giggles and games.",
+        "13. Space Adventure Squad": "Become part of a space crew on a mission to explore distant planets and make new friends.",
+        "14. Mermaid Lagoon Discovery": "Dive into an underwater world to meet friendly mermaids and sea creatures.",
+        "15. Robot Friends in Robo-City": "Kids build robot friends and embark on exciting adventures in a futuristic city.",
+        "16. Dragon Egg Quest": "Embark on a quest to find and hatch a magical dragon egg, leading to mythical adventures.",
+        "17. Jungle Safari Expedition": "Join an adventurous safari through the jungle, encountering wild animals and hidden treasures.",
+        "18. Circus Spectacular": "Step into the magical world of a circus with acrobats, clowns, and daring feats.",
+        "19. Detective Puppies Mystery": "A group of adorable detective puppies solves mysteries and cracks cases.",
+        "20. Teddy Bear Tea Party": "Host a delightful tea party with teddy bears, complete with tea, treats, and tales.",
+        "21. Rainbow Unicorn Parade": "Witness a spectacular parade of rainbow-colored unicorns spreading joy and magic.",
+        "22. Pumpkin Patch Harvest": "Visit a magical pumpkin patch where pumpkins come to life, ready for a harvest celebration.",
+        "23. Time-Traveling Playground": "Kids discover a playground that takes them to different time periods for fun adventures.",
+        "24. Cupcake Decorating Extravaganza": "Join a baking competition where kids decorate cupcakes in a whimsical world of sweets.",
+        "25. Moonlight Fairy Dance": "Dance under the moonlight with friendly fairies, creating a magical and enchanting evening.",
+        "26. Galactic Ice Cream Adventure": "Embark on a space journey to collect special ingredients for the ultimate galactic ice cream.",
+        "27. Teddy Bear Hospital": "Kids become doctors for a day, taking care of teddy bears and other stuffed animals.",
+        "28. Jungle Gym Olympics": "Compete in a friendly jungle gym competition with twists, turns, and laughter.",
+        "29. Pirate Pizza Party": "Sail the high seas in search of the perfect pizza recipe for a swashbuckling pizza party.",
+        "30. Underwater Ballet Extravaganza": "Dive into an underwater world where sea creatures put on a mesmerizing ballet performance.",
+        "31. Circus Animal Talent Show": "Animals from the circus showcase their unique talents in a dazzling talent show.",
+        "32. Teddy Bear Picnic Parade": "Join a parade of teddy bears as they march through the forest to a delightful picnic spot.",
+        "33. Penguin Winter Games": "Compete in winter games with adorable penguins, featuring ice-skating and snowball fights.",
+        "34. Enchanted Tea Garden": "Discover a magical tea garden where tea leaves come to life, telling stories and secrets.",
+        "35. Rainbow Kite Festival": "Soar through the sky with colorful kites in a joyful and uplifting kite festival.",
+        "36. Dragonfly Express Adventure": "Hop aboard the Dragonfly Express for a whimsical journey through fantasy landscapes.",
+        "37. Bubblegum Bubble Bonanza": "Join a bubblegum-blowing contest with fantastic bubbles and playful challenges.",
+        "38. Teddy Bear Space Odyssey": "Teddy bears embark on a space odyssey to explore new planets and make cosmic friends.",
+        "39. Candy Cane Forest Expedition": "Venture into a forest made of candy canes, meeting sweet creatures along the way.",
+        "40. Panda Puzzle Party": "Solve puzzles and challenges with a group of clever pandas in a bamboo-filled paradise.",
+        "41. Magic Carpet Ride": "Embark on a magical journey on flying carpets, visiting enchanted lands and meeting magical beings.",
+        "42. Marshmallow Castle Quest": "Kids set out on a quest to build a castle made entirely of marshmallows.",
+        "43. Arctic Penguin Parade": "Join a parade of penguins in the Arctic, showcasing their unique talents and dance moves.",
+        "44. Teddy Bear Spa Day": "Pamper teddy bears with a spa day, featuring bubble baths, massages, and relaxation.",
+        "45. Starry Night Stargazing": "Gaze at the stars on a starry night, uncovering constellations and mythical stories.",
+        "46. Pancake Pancake Party": "Host a pancake party with a twist, where pancakes come to life with personalities.",
+        "47. Mooncake Festival Adventure": "Celebrate the Mooncake Festival with an adventure filled with lanterns and mooncakes.",
+        "48. Robot Toy Parade": "Join a parade of lively robot toys, marching through the city in a joyful celebration.",
+        "49. Teddy Bear Train Adventure": "Hop aboard the Teddy Bear Train for a scenic journey through teddy bear landscapes.",
+        "50. Lullaby Lighthouse": "Visit a magical lighthouse where lullabies are created, soothing all who hear them.",
+        "51. Teddy Bear Talent Show": "Teddy bears showcase their unique talents in a charming and entertaining talent show.",
+        "52. Bubble Bath Beach Day": "Enjoy a day at the bubble bath beach, where waves are made of bubbles and laughter.",
+        "53. Rainbow Slide Spectacle": "Slide down a rainbow slide in a whimsical playground filled with surprises.",
+        "54. Teddy Bear Birthday Bash": "Celebrate a teddy bear's birthday with a grand party featuring games and surprises.",
+        "55. Dragonfly Ballet Recital": "Watch dragonflies perform a delightful ballet recital in a magical garden setting.",
+        "56. Penguin Pizza Party": "Host a pizza party with penguins, complete with snowball fights and sledding.",
+        "57. Jellybean Jungle Safari": "Embark on a safari through a jungle where trees are made of jellybeans and lollipops.",
+        "58. Teddy Bear Train Picnic": "Pack a picnic and board the Teddy Bear Train for a scenic journey through nature.",
+        "59. Bubblegum Bubble Ballet": "Dance along with bubblegum bubbles in a whimsical ballet performance.",
+        "60. Snowflake Symphony": "Listen to a symphony of snowflakes as they create magical music in a winter wonderland.",
+        "61. Pancake Pillow Fort": "Build a pillow fort with pancakes, creating a cozy and delicious play space.",
+        "62. Magic Lantern Moonlit Adventure": "Embark on a moonlit adventure with magical lanterns guiding the way.",
+        "63. Teddy Bear Tea Time": "Host a tea party with teddy bears, complete with tiny cups and delightful treats.",
+        "64. Cupcake Castle Quest": "Embark on a quest to build a castle made entirely of cupcakes, filled with surprises.",
+        "65. Penguin Playground Parade": "Join a parade of penguins in a playful procession through a snowy playground.",
+        "66. Rainbow Popsicle Party": "Celebrate with a popsicle party featuring a rainbow of flavors and frozen fun.",
+        "67. Teddy Bear Space Carnival": "Teddy bears create a space carnival with rides, games, and cosmic treats.",
+        "68. Butterfly Ballet Recital": "Watch butterflies perform a graceful ballet recital in a blooming flower garden.",
+        "69. Ice Cream Island Adventure": "Explore an island made of ice cream, discovering delicious flavors and sweet surprises.",
+        "70. Penguin Pirate Party": "Join penguins for a pirate-themed party with treasure hunts and ship adventures.",
+        "71. Gumball Garden Gathering": "Visit a garden where gumballs grow on trees, creating a colorful and tasty landscape.",
+        "72. Teddy Bear Treetop Tea Party": "Host a treetop tea party with teddy bears, surrounded by branches and laughter.",
+        "73. Rainbow Roller Coaster Ride": "Experience the thrill of a roller coaster ride on a rainbow-colored track.",
+        "74. Penguin Playground Picnic": "Enjoy a picnic with penguins in a snowy playground, filled with snowy fun.",
+        "75. Marshmallow Mountain Expedition": "Embark on a mountain expedition where mountains are made of fluffy marshmallows.",
+        "76. Teddy Bear Treasure Hunt": "Go on a treasure hunt with teddy bears, solving puzzles and finding hidden treasures.",
+        "77. Bubblegum Bubble Bath Day": "Celebrate a day of bubblegum bubble baths, making bath time extra bubbly and fun.",
+        "78. Penguin Painting Party": "Join penguins for a painting party, creating colorful masterpieces on snowy canvases.",
+        "79. Jellybean Jungle Gym Adventure": "Navigate through a jungle gym made of jellybeans, swinging and sliding with joy.",
+        "80. Teddy Bear Toyland Parade": "Participate in a parade through Toyland with teddy bears and playful toys.",
+        "81. Rainbow Robot Rodeo": "Join a robot rodeo with robots performing tricks and stunts in a rainbow-filled arena.",
+        "82. Penguin Pillow Fight": "Engage in a friendly pillow fight with penguins, creating fluffy chaos and laughter.",
+        "83. Gumball Galaxy Adventure": "Embark on a space adventure in a galaxy filled with gumballs and cosmic wonders.",
+        "84. Teddy Bear Train Adventure": "Embark on a train adventure with teddy bears, traveling through magical landscapes.",
+        "85. Cotton Candy Cloud Castle": "Build a castle in the clouds made of cotton candy, creating a sugary and dreamy world.",
+        "86. Penguin Pizza Paradise": "Visit a paradise where pizza grows on trees, creating a delicious and cheesy landscape.",
+        "87. Cupcake Carousel Celebration": "Celebrate on a cupcake carousel, twirling with delightful flavors and sweet decorations.",
+        "88. Teddy Bear Treehouse Tea Time": "Host a tea party in a treehouse with teddy bears, enjoying tea and treetop views.",
+        "89. Rainbow Rocket Launch": "Experience the excitement of a rocket launch in a colorful and vibrant rainbow sky.",
+        "90. Penguin Playground Pancake Party": "Host a pancake party with penguins in a snowy playground, flipping pancakes with glee.",
+        "91. Marshmallow Moonwalk": "Take a moonwalk on marshmallow clouds, bouncing and floating in a sweet and fluffy space.",
+        "92. Teddy Bear Tug-of-War Tournament": "Participate in a tug-of-war tournament with teddy bears, showcasing strength and teamwork.",
+        "93. Bubblegum Bubble Beehive": "Explore a beehive made of bubblegum bubbles, meeting friendly bees and buzzing with joy.",
+        "94. Penguin Painted Playground": "Join penguins in a playground painted with colorful patterns and lively designs.",
+        "95. Jellybean Jumping Jamboree": "Engage in a jumping jamboree on a trampoline made of jellybeans, bouncing with delight.",
+        "96. Teddy Bear Talent Showcase": "Showcase talents in a grand talent show with teddy bears, featuring acts of all kinds.",
+        "97. Rainbow Roller Skating Rink": "Skate in a roller rink with rainbow-colored tracks, gliding and twirling with joy.",
+        "98. Penguin Parade Party": "Celebrate with a parade of penguins, marching through the snow with festive music and dance.",
+        "99. Gumball Garden Gala": "Attend a garden gala where gumballs bloom in vibrant colors, creating a festive and sweet atmosphere.",
+        "100. Teddy Bear Tea Tower": "Build a tower of tea cups with teddy" 
+    }
+
+    return stories
+
+
+
+# Host
+# ec2-3-230-24-12.compute-1.amazonaws.com
+# Database
+# dcp3airkvcc1u1
+# User
+# jdudpjkxggkbrv
+# Port
+# 5432
+# Password
+# c9db217ba584b1a549f9b35536fb52b6416b7c387e9cc3c49fab82614efb167f
+# URI
+# postgres://jdudpjkxggkbrv:c9db217ba584b1a549f9b35536fb52b6416b7c387e9cc3c49fab82614efb167f@ec2-3-230-24-12.compute-1.amazonaws.com:5432/dcp3airkvcc1u1
+# Heroku CLI
+# heroku pg:psql postgresql-cubic-10426 --app ozz
 
 
 # def autoplay_audio(file_path: str):

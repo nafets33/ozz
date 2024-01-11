@@ -154,4 +154,6 @@ werkzeug==3.0.1
 yarl==1.9.4
 youtube-search-python==1.6.6
 zipp==3.17.0
-replicate=0.22.0
+replicate==0.22.0
+google_auth_oauthlib==1.2.0
+vaderSentiment==3.3.2

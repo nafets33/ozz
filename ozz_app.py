@@ -111,7 +111,8 @@ if st.session_state['authentication_status'] != True: ## None or False
     force_db_root = True
     if not sign_in_client_user():
         st.stop()
-
+with st.sidebar:
+    st.write(f"force db, {force_db_root}")
 client_user = st.session_state['client_user']
 prod = setup_instance(client_username=client_user, switch_env=False, force_db_root=force_db_root, queenKING=True, init=True, prod=True)
 
