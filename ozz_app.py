@@ -195,17 +195,17 @@ def listen_and_respond(hey_hooty, self_image, refresh_ask, client_user, phrase_t
 
 
 
-# Buttons
-cols = st.columns(4)
-with cols[0]:
-    ask_hoots_button = st.button("Ask Hoots", use_container_width=True)
+# # Buttons
+# cols = st.columns(4)
+# with cols[0]:
+#     ask_hoots_button = st.button("Ask Hoots", use_container_width=True)
 
-with cols[1]:
-    st.button("Story Time", use_container_width=True)
-with cols[2]:
-    st.button("Directtions", use_container_width=True)
-with cols[3]:
-    st.button("?", use_container_width=True)
+# with cols[1]:
+#     st.button("Story Time", use_container_width=True)
+# with cols[2]:
+#     st.button("Directtions", use_container_width=True)
+# with cols[3]:
+#     st.button("?", use_container_width=True)
 
 st.session_state['page_refresh_count']+=1
 with st.sidebar:
@@ -222,16 +222,16 @@ if 'current_youtube_search' in st.session_state and st.session_state['current_yo
 
 
 
-if ask_hoots_button:
-    ozz_response, response = listen_and_respond(hey_hooty, self_image, refresh_ask, client_user)
-    if response:
-        play_audio(response)
+# if ask_hoots_button:
+#     ozz_response, response = listen_and_respond(hey_hooty, self_image, refresh_ask, client_user)
+#     if response:
+#         play_audio(response)
 
-    if ozz_response.get('listen_after_reply'):
-        with listening.container():
-            st.warning("Speak Up Please")
-        ozz_response, response = listen_and_respond(hey_hooty, self_image, refresh_ask, client_user, phrase_time_limit=5)
-        if response:
-            play_audio(response)
+#     if ozz_response.get('listen_after_reply'):
+#         with listening.container():
+#             st.warning("Speak Up Please")
+#         ozz_response, response = listen_and_respond(hey_hooty, self_image, refresh_ask, client_user, phrase_time_limit=5)
+#         if response:
+#             play_audio(response)
 
 

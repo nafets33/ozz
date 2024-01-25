@@ -8,6 +8,7 @@ const Dictaphone = ({
   noResponseTime = 1,
   show_conversation = true,
   apiInProgress = false, // Receive apiInProgress as a prop
+  listenButton = false,
 }) => {
   const [transcribing, setTranscribing] = useState(true);
   const [clearTranscriptOnListen, setClearTranscriptOnListen] = useState(true);
@@ -41,11 +42,16 @@ const Dictaphone = ({
             const keyword = new RegExp(keywords[j], "i");
             const isKeywordFound = finalTranscript.search(keyword) !== -1;
             console.log("listenAfterReply:", listenAfterReply);
-            if ((isKeywordFound || listenAfterReply) && !apiInProgress) {
+            // console.log("listenButton:", listenButton);
+
+            if ((isKeywordFound || listenAfterReply || listenButton) && !apiInProgress) {
               if (listenAfterReply) {
                 myFunc(finalTranscript, { api_body: { keyword: "" } }, 3);
               } else if (isKeywordFound) {
                 myFunc(finalTranscript, commands[i], 1);
+              }
+              else if (listenButton) {
+                myFunc(finalTranscript, commands[i], 5);
               }
               resetTranscript();
               return;
@@ -58,7 +64,7 @@ const Dictaphone = ({
 
       return () => clearTimeout(timer); // Clear the timer on component unmount or when useEffect runs again
     }
-  }, [finalTranscript, listenAfterReply, commands, noResponseTime, resetTranscript, apiInProgress]);
+  }, [finalTranscript, listenAfterReply, commands, noResponseTime, resetTranscript, apiInProgress, listenButton]);
 
 
   if (!browserSupportsSpeechRecognition) {

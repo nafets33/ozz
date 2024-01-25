@@ -61,7 +61,7 @@ def lab():
                     # load_files = clean_data(data)
                     chunks = CreateChunks(load_files)
                     embeddings = CreateEmbeddings(chunks, os.path.join(PERSIST_PATH, db_name))
-                    st.info("EMBEDDING Created", db_name)
+                    st.info(f"EMBEDDING Created {db_name}")
 
 
     # Show all the uploaded files

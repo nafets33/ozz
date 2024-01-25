@@ -36,6 +36,8 @@ const CustomVoiceGPT = (props) => {
   const [captureVideo, setCaptureVideo] = useState(false);
   const [textString, setTextString] = useState("");
   const [apiInProgress, setApiInProgress] = useState(false); // Added state for API in progress
+  const [listenButton, setlistenButton] = useState(false); // Added state for API in progress
+
 
   const faceData = useRef([]);
   const faceTriggered = useRef(false);
@@ -158,6 +160,13 @@ const CustomVoiceGPT = (props) => {
     setCaptureVideo(false);
   };
 
+  const click_listenButton = () => {
+    setlistenButton(true)
+    listenContinuously()
+    console.log("listening button listen click");
+    console.log(listenButton);
+  };
+
   const myFunc = async (ret, command, type) => {
     setMessage(` (${command["api_body"]["keyword"]}) ${ret},`);
     const text = [...g_anwers, { user: ret }];
@@ -210,12 +219,22 @@ const CustomVoiceGPT = (props) => {
         window.location.href = data["page_direct"];
       }
       
+      if (listenButton) {
+      setlistenButton(false)
+      
+      if (listenAfterReply) {
+        listenContinuously();
+      }
+      }
+      else {
       listenContinuously();
+      }
       setApiInProgress(false); // Set API in progress to false after completion
 
     } catch (error) {
       console.log("api call on listen failed!", error);
       setApiInProgress(false); // Set API in progress to false on error
+      setlistenButton(false)
     }
   };
 
@@ -334,9 +353,9 @@ const CustomVoiceGPT = (props) => {
         border: '2px solid #2980b9', // Darker blue border
         cursor: 'pointer',
       }}
-      onClick={listenContinuously}
+      onClick={click_listenButton}
     >
-      Listen
+      Ask Ozz
     </button>
     <button
       style={{
@@ -363,6 +382,7 @@ const CustomVoiceGPT = (props) => {
             noResponseTime={no_response_time}
             show_conversation={show_conversation}
             apiInProgress={apiInProgress} // Pass down API in progress
+            listenButton={listenButton} // Pass down API in progress
           />
         </div>
 

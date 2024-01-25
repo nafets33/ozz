@@ -162,12 +162,12 @@ def determine_embedding(current_query):
     # print("EMBEDDINGS")
 
     db_name=None
-    our_embeddings_phrases = ['do you have', 'suggest', 'what kind', 'tell me', 'help', 'store', 'how much', 'where is', 'looking for', 'hoot couture', 'hoot couture kids', 'something about the store', 'in the store', 'clothes do you have', 'do you have']
+    our_embeddings_phrases = ["where's", 'do you have', 'suggest', 'what kind', 'tell me', 'help', 'store', 'how much', 'where is', 'looking for', 'hoot couture', 'hoot couture kids', 'something about the store', 'in the store', 'clothes do you have', 'do you have']
     for phrase in our_embeddings_phrases:
         if phrase in current_query:
             print("EMBEDDING FOUND: phrase>> ", phrase)
             our_embeddings = True
-            db_name = 'db1'
+            db_name = 'monroe_center'
             # if phrase == 'mayor' or 'say hi':
             #     if 'mayor' in current_query:
             #         current_query = current_query + "say hi to the mayor and use his full name if you can find it, offer him a cup of tea, and wish him the best of luck with his duties taking care of hoboken, also the best of luck in the upcoming election"
@@ -181,7 +181,7 @@ def determine_embedding(current_query):
 def handle_prompt(first_ask, conversation_history):
     try:
         main_prompt = """
-        Your name is Hoots, you are an owl and you're in school learning about the world. You Live and also work in Hoot Couture, a kids clothing store in Monroe Center, Hoboken New Jersey.
+        Your name is Hoots, you are an owl and you're in school learning about the world. You Live and also work in Hoot Couture, a kids clothing store in Monroe Center.
         You specialize in kids development and story telling, you are learning to become an educator.
         If you don't know an answer or unsure you're answer is correct, ask for help, Victoria or Nadiya are typically around the store, and call out there names to help the customer, example, Nadiya, Victoria could you please help our friend here.
         You love to tell stories and hang out with your favorite owl family, Hootie. She is the greatest Owl is the world.
@@ -189,8 +189,6 @@ def handle_prompt(first_ask, conversation_history):
         Please DO NOT say you're an AI assistant, you are a smart owl.
         You have a great sense of sarcastic humor and you use it well in conversation.
         You believe is good and moral virture for all.
-        You have access to Hoot Couture products and can provide information about products and even help style little kids with great matching outfits and suggestions.
-        If you are asked a question about clothing products do you best to provide infomation based on the ask, as you have access to all the products in the store and the details of the products.
         Please keep your reponses short and clear, Try to Answer is less then 100 characters.
         Always Take note to SYSTEM INFO: notes will be provided to help better create responses.
         """
@@ -247,6 +245,8 @@ def calculate_story(current_query):
     for story in dfs_25['title']:
         if calculate_similarity(story, current_query) > .95:
             winner = story
+
+
 
 
 ### MAIN 
@@ -477,7 +477,7 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
     if db_name:
         print("USE EMBEDDINGS: ", db_name)
         Retriever_db = os.path.join(PERSIST_PATH, db_name)
-        query = conversation_history[0]['content'] + ", " + current_query # ensure prompt
+        query = conversation_history[0]['content'] + ", " + current_query + "SYSTEM INFO: Most questions are about finding the location of the business in monroe center. Please provide them details on how to get there. Always explain were the business is located. E401 for example is the 4th floor, where E522 would be 5th floor"
         response = Retriever(query, Retriever_db).get('result')
     else:
         print("CALL LLM")
@@ -524,6 +524,18 @@ def ozz_query(text, self_image, refresh_ask, client_user):
         text[-1]['user'] = current_query
 
         return text, current_query
+
+    def story_time(current_query: str, text: list, self_image:str, audio_file:str, page_direct:str, listen_after_reply: bool, session_state: dict):
+        page_number = session_state.get('page_number')
+
+
+        if page_number == 0: # Story Time INIT
+            story_ideas = {}
+
+    
+    
+        return ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply)
+
 
     db_root = init_clientUser_dbroot(client_username=client_user)
     print("DBROOT: ", db_root)
