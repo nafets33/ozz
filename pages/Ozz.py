@@ -2,10 +2,11 @@ import streamlit as st
 import os
 from bs4 import BeautifulSoup
 import re
-from master_ozz.utils import ozz_master_root_db, init_user_session_state, hoots_and_hootie_keywords, return_app_ip, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
+from master_ozz.utils import init_text_audio_db, ozz_master_root_db, init_user_session_state, hoots_and_hootie_keywords, return_app_ip, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
 from streamlit_extras.switch_page_button import switch_page
 from dotenv import load_dotenv
 from custom_voiceGPT import custom_voiceGPT, VoiceGPT_options_builder
+import requests
 
 load_dotenv(os.path.join(ozz_master_root(),'.env'))
 #### CHARACTERS ####
@@ -70,10 +71,11 @@ def ozz():
     constants = init_constants()
     DATA_PATH = constants.get('DATA_PATH')
     PERSIST_PATH = constants.get('PERSIST_PATH')
-    embeddings = os.listdir(os.path.join(ozz_master_root(), 'STORAGE'))
-    embeddings = ['None'] + embeddings
-    use_embedding = st.multiselect("use embeddings", options=embeddings)
-    st.session_state['use_embedding'] = use_embedding
+    with st.sidebar:
+        embeddings = os.listdir(os.path.join(ozz_master_root(), 'STORAGE'))
+        embeddings = ['None'] + embeddings
+        use_embedding = st.multiselect("use embeddings", options=embeddings)
+        st.session_state['use_embedding'] = use_embedding
     
     width=st.session_state['hh_vars']['width'] if 'hc_vars' in st.session_state else 350
     height=st.session_state['hh_vars']['height'] if 'hc_vars' in st.session_state else 350
@@ -89,6 +91,8 @@ def ozz():
         user_output = st.empty()
     with cols[2]:
         rep_output = st.empty()
+        selected_audio_file=st.empty()
+        llm_audio=st.empty()
     
     with cols[0]:
         st.write("Say Hey Hoots OR Hey Hootie")
@@ -126,19 +130,17 @@ def ozz():
     # audio_directory = "/path/to/audio/directory"
 
     # Get list of audio files sorted by modification date
+    db_name, master_text_audio=init_text_audio_db()
 
     root_db = ozz_master_root_db()
     db_DB_audio = os.path.join(root_db, 'audio')
     audio_files = list_files_by_date(db_DB_audio)
-    selected_audio_file = st.selectbox("Select Audio File", [os.path.basename(file[0]) for file in audio_files])
-
-    # if selected_audio_file:
-    #     selected_audio_path = os.path.join(audio_directory, selected_audio_file)
-    #     audio_bytes = open(selected_audio_path, "rb").read()
-    #     st.audio(audio_bytes, format="audio/mp3")
-    llm_audio=st.empty()
-    import requests
-    response=requests.get(f"{st.session_state['ip_address']}/api/data/{selected_audio_file}")
+    with selected_audio_file.container():
+        audio_path = st.selectbox("Select Audio File", [os.path.basename(file[0]) for file in audio_files])
+    # st.write(master_text_audio[-1])
+    # st.write([i for i in st.session_state])
+    # st.write(st.session_state['conversation_history.json'])
+    response=requests.get(f"{st.session_state['ip_address']}/api/data/{audio_path}")
     with llm_audio.container():
         # st.info(kw)
         st.audio(response.content, format="audio/mp3")  

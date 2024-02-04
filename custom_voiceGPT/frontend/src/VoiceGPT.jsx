@@ -47,7 +47,7 @@ const CustomVoiceGPT = (props) => {
   const canvasRef = useRef();
   const audioRef = useRef(null);
 
-  const [isListening, setIsListening] = useState(true);
+  const [isListening, setIsListening] = useState(false);
   const [isGreenLightOn, setIsGreenLightOn] = useState(false);
 
 
@@ -266,16 +266,21 @@ const CustomVoiceGPT = (props) => {
 
   const stopListening = () => {
     SpeechRecognition.stopListening();
-  };
+    setIsListening(false);
+  }
+  
   const startListening = () => {
     SpeechRecognition.startListening();
   };
 
-  const listenContinuously = () =>
+  const listenContinuously = () =>{
     SpeechRecognition.startListening({
       continuous: true,
       language: "en-GB",
-    });
+    })
+    setIsListening(true);
+  }
+
   const listenContinuouslyInChinese = () =>
     SpeechRecognition.startListening({
       continuous: true,
@@ -333,11 +338,27 @@ const CustomVoiceGPT = (props) => {
           left: '0',
           width: '100%',
           height: '4px',
+          backgroundImage: 'linear-gradient(90deg, blue, transparent 50%, blue)',
+          animation: 'flashLine 1s infinite',
+        }}
+      >
+        <div style={{ position: 'absolute', top: '-20px', left: '50%', transform: 'translateX(-50%)', color: 'black', fontSize: '14px' }}>One Moment please</div>
+      </div>
+    )}
+    {/* Flashing green line indicator with words */}
+    {isListening && (
+      <div
+        style={{
+          position: 'absolute',
+          top: '10px',
+          left: '0',
+          width: '100%',
+          height: '4px',
           backgroundImage: 'linear-gradient(90deg, green, transparent 50%, green)',
           animation: 'flashLine 1s infinite',
         }}
       >
-        <div style={{ position: 'absolute', top: '-20px', left: '50%', transform: 'translateX(-50%)', color: 'white', fontSize: '14px' }}>Your words here</div>
+        <div style={{ position: 'absolute', top: '-20px', left: '50%', transform: 'translateX(-50%)', color: 'black', fontSize: '14px' }}>Listening</div>
       </div>
     )}
   </div>

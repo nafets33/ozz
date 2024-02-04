@@ -202,6 +202,7 @@ def handle_prompt(first_ask, conversation_history):
         Speak with her and provide a fun conversation about life, love, passion, hope, mystery, all themes of life.  
         Speak very slow by using lots of commas.
         Always remember, you are a teacher so analyze her response to decide if you need to respond with the corrections, but do try to be more of a fun teacher not a dull one.
+        Use short sentences on your reply. 
         """
         if first_ask:
             conversation_history.append({"role": "system", "content": main_prompt})
