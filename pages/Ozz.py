@@ -70,7 +70,7 @@ def ozz():
     constants = init_constants()
     DATA_PATH = constants.get('DATA_PATH')
     PERSIST_PATH = constants.get('PERSIST_PATH')
-    embeddings = os.path.listdir(os.path.join(ozz_master_root(), 'STORAGE'))
+    embeddings = os.listdir(os.path.join(ozz_master_root(), 'STORAGE'))
     embeddings = ['None'] + embeddings
     use_embedding = st.multiselect("use embeddings", options=embeddings)
     st.session_state['use_embedding'] = use_embedding
