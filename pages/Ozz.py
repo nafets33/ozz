@@ -2,7 +2,7 @@ import streamlit as st
 import os
 from bs4 import BeautifulSoup
 import re
-from master_ozz.utils import init_user_session_state, hoots_and_hootie_keywords, return_app_ip, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
+from master_ozz.utils import ozz_master_root_db, init_user_session_state, hoots_and_hootie_keywords, return_app_ip, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
 from streamlit_extras.switch_page_button import switch_page
 from dotenv import load_dotenv
 from custom_voiceGPT import custom_voiceGPT, VoiceGPT_options_builder
@@ -70,8 +70,11 @@ def ozz():
     constants = init_constants()
     DATA_PATH = constants.get('DATA_PATH')
     PERSIST_PATH = constants.get('PERSIST_PATH')
-
-
+    embeddings = os.path.listdir(os.path.join(ozz_master_root(), 'STORAGE'))
+    embeddings = ['None'] + embeddings
+    use_embedding = st.multiselect("use embeddings", options=embeddings)
+    st.session_state['use_embedding'] = use_embedding
+    
     width=st.session_state['hh_vars']['width'] if 'hc_vars' in st.session_state else 350
     height=st.session_state['hh_vars']['height'] if 'hc_vars' in st.session_state else 350
     self_image=st.session_state['hh_vars']['self_image'] if 'hc_vars' in st.session_state else "hootsAndHootie.png"
@@ -110,6 +113,35 @@ def ozz():
         with rep_output.container():
             st.warning(f"Hoots: {st.session_state['resp']}")
 
+    def list_files_by_date(directory):
+        files = []
+        for filename in os.listdir(directory):
+            filepath = os.path.join(directory, filename)
+            if os.path.isfile(filepath):
+                files.append((filepath, os.path.getmtime(filepath)))
+        files.sort(key=lambda x: x[1], reverse=True)
+        return files
+
+    # Path to the directory containing audio files
+    # audio_directory = "/path/to/audio/directory"
+
+    # Get list of audio files sorted by modification date
+
+    root_db = ozz_master_root_db()
+    db_DB_audio = os.path.join(root_db, 'audio')
+    audio_files = list_files_by_date(db_DB_audio)
+    selected_audio_file = st.selectbox("Select Audio File", [os.path.basename(file[0]) for file in audio_files])
+
+    # if selected_audio_file:
+    #     selected_audio_path = os.path.join(audio_directory, selected_audio_file)
+    #     audio_bytes = open(selected_audio_path, "rb").read()
+    #     st.audio(audio_bytes, format="audio/mp3")
+    llm_audio=st.empty()
+    import requests
+    response=requests.get(f"{st.session_state['ip_address']}/api/data/{selected_audio_file}")
+    with llm_audio.container():
+        # st.info(kw)
+        st.audio(response.content, format="audio/mp3")  
 if __name__ == '__main__':
     ozz()
 

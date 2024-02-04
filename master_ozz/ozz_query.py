@@ -10,7 +10,7 @@ import pytz
 import re
 # from collections import deque
 
-
+os.umask(0o000)
 est = pytz.timezone("US/Eastern")
 
 from sklearn.feature_extraction.text import CountVectorizer
@@ -157,10 +157,13 @@ def calculate_similarity(response1, response2):
 
 
 # are we asking LLM to find answer in db or reteriver?
-def determine_embedding(current_query):
+def determine_embedding(current_query, use_embedding=False):
     s = datetime.now()
     # print("EMBEDDINGS")
-
+    if use_embedding:
+        db_name=use_embedding
+        print("embedding", db_name)
+        return db_name, current_query
     db_name=None
     our_embeddings_phrases = ["where's", 'do you have', 'suggest', 'what kind', 'tell me', 'help', 'store', 'how much', 'where is', 'looking for', 'hoot couture', 'hoot couture kids', 'something about the store', 'in the store', 'clothes do you have', 'do you have']
     for phrase in our_embeddings_phrases:
@@ -191,6 +194,14 @@ def handle_prompt(first_ask, conversation_history):
         You believe is good and moral virture for all.
         Please keep your reponses short and clear, Try to Answer is less then 100 characters.
         Always Take note to SYSTEM INFO: notes will be provided to help better create responses.
+        """
+        main_prompt = """
+        You are a smart owl teacher, you teach vicrotia to speak engligh, she only speaks Russian.
+        Only speak something in russian if need to explain something complex. 
+        Victoria speaks level 3 engligh, so always do your best to figure out what she was trying to say and help her with vocabually and senstence, structure.
+        Speak with her and provide a fun conversation about life, love, passion, hope, mystery, all themes of life.  
+        Speak very slow by using lots of commas.
+        Always remember, you are a teacher so analyze her response to decide if you need to respond with the corrections, but do try to be more of a fun teacher not a dull one.
         """
         if first_ask:
             conversation_history.append({"role": "system", "content": main_prompt})
@@ -314,7 +325,7 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
                 s3_filepath = s3_filepath + filename
                 local_path = save_audio(filename, audio, response, user_query, self_image, db_name, s3_filepath)
                 # clean up and delete file WORKERBEE
-
+                os.chmod(local_path, 0o666)
                 # filename, audio, response, user_query, self_image=False, db_name='master_text_audio.json', s3_filepath=None
                 print('audiofunc Saved:', (datetime.now() - s).total_seconds())
             else:
@@ -473,15 +484,27 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
     except Exception as e:
         print_line_of_error(e)
     
-    db_name, current_query = determine_embedding(current_query)
+    if 'use_embedding' not in session_state:
+        use_embedding='mom_test'
+    else:
+        use_embedding=session_state['session_state']
+        
+    use_embedding=False
+    db_name, current_query = determine_embedding(current_query, use_embedding=use_embedding)
+    db_name=False
     if db_name:
         print("USE EMBEDDINGS: ", db_name)
         Retriever_db = os.path.join(PERSIST_PATH, db_name)
-        query = conversation_history[0]['content'] + ", " + current_query + "SYSTEM INFO: Most questions are about finding the location of the business in monroe center. Please provide them details on how to get there. Always explain were the business is located. E401 for example is the 4th floor, where E522 would be 5th floor"
+        query = conversation_history[0]['content'] + ", " + conversation_history[-1].get('role') + conversation_history[-1].get('content') + current_query
         response = Retriever(query, Retriever_db).get('result')
     else:
         print("CALL LLM")
+        cc = context()
+        current_query = current_query+cc
         response = llm_assistant_response(current_query, conversation_history)
+
+
+
 
     conversation_history.append({"role": "assistant", "content": response})
     audio_file = handle_audio(user_query, response=response, audio_file=audio_file, self_image=self_image, s3_filepath=s3_filepath)
@@ -489,7 +512,8 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
 
     return scenario_return(response, conversation_history, audio_file, session_state, self_image)
 
-
+def context():
+    return """"""
 
 def ozz_query(text, self_image, refresh_ask, client_user):
     

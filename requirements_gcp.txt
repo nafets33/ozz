@@ -158,3 +158,4 @@ replicate==0.22.0
 google_auth_oauthlib==1.2.0
 vaderSentiment==3.3.2
 pymongo==4.6.1
+tiktoken==0.5.2
