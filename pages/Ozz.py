@@ -144,6 +144,10 @@ def ozz():
     with llm_audio.container():
         # st.info(kw)
         st.audio(response.content, format="audio/mp3")  
+    
+    # st.write(client_user)
+    if client_user == 'stefanstapinski@gmail.com':
+        st.write(st.session_state)
 if __name__ == '__main__':
     ozz()
 
