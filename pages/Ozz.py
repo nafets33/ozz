@@ -39,7 +39,7 @@ def hoots_and_hootie(width=350, height=350,
         no_response_time=no_response_time,
         refresh_ask=refresh_ask,
         before_trigger={'how are you': 'hoots_waves__272.mp3'},
-        api_audio=f"{st.session_state['ip_address']}/api/data",
+        api_audio=f"{st.session_state['ip_address']}/api/data/",
         commands=[{
             "keywords": hoots_and_hootie_keywords(), # keywords are case insensitive
             "api_body": {"keyword": "hey hoots"},
