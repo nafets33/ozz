@@ -5,7 +5,7 @@ const Dictaphone = ({
   commands,
   myFunc,
   listenAfterReply = false,
-  noResponseTime = 1,
+  no_response_time = 3,
   show_conversation = true,
   apiInProgress = false, // Receive apiInProgress as a prop
   listenButton = false,
@@ -25,8 +25,8 @@ const Dictaphone = ({
       // console.log("Number of words:", finalTranscript.split(" ").length);
 
       // Clear the previous script if a keyword is found or if the transcript exceeds 89 words
-      if (finalTranscript.split(" ").length > 89) {
-        console.log("Transcript exceeds 89 words. Clearing.");
+      if (finalTranscript.split(" ").length > 100000) {
+        console.log("Transcript exceeds 89 words. Clearing You really should call func-api to save .");
         resetTranscript();
         return;
       }
@@ -41,8 +41,6 @@ const Dictaphone = ({
           for (let j = 0; j < keywords.length; j++) {
             const keyword = new RegExp(keywords[j], "i");
             const isKeywordFound = finalTranscript.search(keyword) !== -1;
-            console.log("listenAfterReply:", listenAfterReply);
-            // console.log("listenButton:", listenButton);
 
             if ((isKeywordFound || listenAfterReply || listenButton) && !apiInProgress) {
               if (listenAfterReply) {
@@ -60,11 +58,11 @@ const Dictaphone = ({
         }
         // Waiting for a keyword or API is in progress
         console.log("Waiting for a keyword or API is in progress");
-      }, noResponseTime * 1000);
+      }, no_response_time * 1000);
 
       return () => clearTimeout(timer); // Clear the timer on component unmount or when useEffect runs again
     }
-  }, [finalTranscript, listenAfterReply, commands, noResponseTime, resetTranscript, apiInProgress, listenButton]);
+  }, [finalTranscript, listenAfterReply, commands, no_response_time, resetTranscript, apiInProgress, listenButton]);
 
 
   if (!browserSupportsSpeechRecognition) {
@@ -81,7 +79,7 @@ const Dictaphone = ({
         <div style={{ display: "flex", flexDirection: "column" }}>
           <span>You said: {prevScript}</span>
           <span>Listening: {listening ? "on" : "off"}</span>
-          <span>Clear Transcript On Listen: {clearTranscriptOnListen ? "on" : "off"}</span>
+          {/* Add other conversation messages here */}
         </div>
       )}
     </>

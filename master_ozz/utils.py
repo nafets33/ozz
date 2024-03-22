@@ -102,10 +102,10 @@ def init_pollen_dbs(db_root, prod, queens_chess_pieces=['queen_king.json'], quee
                 print(f"Init {PB_QUEEN_Pickle}")
                 if queens_chess_piece == 'session_state.json': # master_conv_history, conv_history
                     save_json(PB_QUEEN_Pickle, {})
-                elif queens_chess_piece == 'master_conv_history.json': # master_conv_history
-                    True
-                elif queens_chess_piece == 'conv_history.json': # master_conv_history
-                    True
+                elif queens_chess_piece == 'master_conversation_history.json': # master_conv_history
+                    save_json(PB_QUEEN_Pickle, [])
+                elif queens_chess_piece == 'conversation_history.json': # master_conv_history
+                    save_json(PB_QUEEN_Pickle, [])
                 else:
                     save_json(PB_QUEEN_Pickle, [])
 
@@ -151,10 +151,13 @@ def live_sandbox__setup_switch(pq_env, switch_env=False):
         print_line_of_error("live sb switch")
 
 def setup_instance(client_username, switch_env, force_db_root, queenKING, prod=None, init=False):
-    client_dbs = os.path.join(ozz_master_root(), "client_user_dbs")
-    if os.path.exists(client_dbs) == False:
-        print("INIT CLIENT DB")
-        os.mkdir(client_dbs)
+
+    if force_db_root == False:
+        client_dbs = os.path.join(ozz_master_root(), "client_user_dbs")
+        if os.path.exists(client_dbs) == False:
+            print("INIT CLIENT DB")
+            os.mkdir(client_dbs)
+            init=True
 
     queens_chess_pieces=['conversation_history.json', 'session_state.json', 'master_conversation_history.json']
     try:
@@ -189,7 +192,7 @@ def init_user_session_state():
     for k,v in ss_data.items():
         st.session_state[k] = v
     
-    return True
+    return ss_data
 
 #### AUTH UTILS #####
 
@@ -262,10 +265,12 @@ def load_local_json(file_path):
         
     return data
 
-def save_json(db_name, data):
+def save_json(db_name, data, log=True):
     if db_name:
         with open(db_name, 'w') as file:
             json.dump(data, file)
+        if log:
+            print(f'{db_name} saved')
 
 def init_text_audio_db(db_name='master_text_audio.json'):
     master_text_audio_file_path = os.path.join(OZZ_DB, db_name)
@@ -416,7 +421,6 @@ def base_content():
 def save_audio(filename, audio, response, user_query, self_image=False, db_name='master_text_audio.json', s3_filepath=None):
     try:
         ## all saving should happen at end of response return WORKERBEE
-        master_text_audio_file_path = os.path.join(OZZ_DB, db_name)
         master_text_audio_file_path, master_text_audio = init_text_audio_db()
         master_text_audio.append(text_audio_fields(filename, response, user_query, self_image, s3_filepath))
         save_json(master_text_audio_file_path, master_text_audio)
@@ -445,11 +449,11 @@ def generate_audio(query="Hello Story Time Anyone?", voice='Mimi', use_speaker_b
         audio = generate(
             model=model_id,
             text=query,
-            voice=voice,
-            # voice=Voice(
-            # voice_id='zrHiDhphv9ZnVXBqCLjz', # mimi
-            # settings=VoiceSettings(stability=0.8, similarity_boost=0.7, style=0.0, use_speaker_boost=True)
-            # ),
+            # voice=voice,
+            voice=Voice(
+            voice_id= 'L3J0wKSts5TjObrEafQa', #'zrHiDhphv9ZnVXBqCLjz', # mimi
+            settings=VoiceSettings(stability=0.8, similarity_boost=0.7, style=0.0, use_speaker_boost=True)
+            ),
         )
 
         return audio
@@ -571,7 +575,7 @@ def set_streamlit_page_config_once():
         main_root = ozz_master_root()
 
         jpg_root = os.path.join(main_root, "misc")
-        queenbee = os.path.join(jpg_root, "woots_jumps_once.gif")
+        queenbee = os.path.join(jpg_root, "hootsAndHootie.png")
         page_icon = Image.open(queenbee)
         st.set_page_config(
             page_title="Ozz",
@@ -612,7 +616,7 @@ def return_app_ip(streamlit_ip="http://localhost:8501", ip_address=None):
         ip_address = "https://api.divergent-thinkers.com"
         streamlit_ip = ip_address
     else:
-        ip_address = "http://127.0.0.1:8000"
+        ip_address = "http://127.0.0.1:8002"
 
     st.session_state['ip_address'] = ip_address
     st.session_state['streamlit_ip'] = streamlit_ip
@@ -672,12 +676,12 @@ def Directory(directory : str):
 
 
 #Function to create chunks of documents
-def CreateChunks(documents : str):
+def CreateChunks(documents : str, chunk_size=800, chunk_overlap=33):
     chunks = []
     for docs in documents:
         text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=500,
-        chunk_overlap=50,
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
         length_function=len
         )
         chunk = text_splitter.split_documents(docs)
@@ -699,7 +703,7 @@ def CreateEmbeddings(textChunks :str ,persist_directory : str):
 
 
 # Function to fetch the answers from FAISS vector db 
-def Retriever(query : str, persist_directory : str, search_kwards_num=4):
+def Retriever(query : str, persist_directory : str, search_kwards_num=4, score_threshold=.8):
     try:
         s = datetime.now()
 
@@ -707,7 +711,8 @@ def Retriever(query : str, persist_directory : str, search_kwards_num=4):
         # memory = ConversationBufferMemory()
         # embeddings = HuggingFaceInstructEmbeddings(model_name=EMBEDDING_MODEL_NAME)
         vectordb = FAISS.load_local(persist_directory,embeddings=embeddings)
-        retriever = vectordb.as_retriever(search_type="mmr", search_kwargs={"k": search_kwards_num})
+        retriever = vectordb.as_retriever(search_type="mmr", search_kwargs={'score_threshold': score_threshold,
+                                                                            "k": search_kwards_num})
 
         # For OpenAI ChatGPT Model
         qa_chain = RetrievalQA.from_chain_type(llm=ChatOpenAI(model='gpt-3.5-turbo-16k',max_tokens=10000), chain_type='stuff', retriever=retriever, return_source_documents=True)
@@ -742,11 +747,17 @@ def MergeIndexes(db_locations : list, new_location : str = None):
 
 def sign_in_client_user():
     if 'client_user' not in st.session_state:
-        st.info("Enter email to continue")
+        st.info("Want to Talk To the Creator?")
         with st.form("Your Name, use Email"):
-            enter_name = st.text_input('email')
+            enter_name = st.text_input('Your Name')
+            password = st.text_input('password')
             if st.form_submit_button('save'):
+                if password != os.environ.get('kings_guest_pw'):
+                    st.error("No Soup for you, Wrong Password")
+                    return False
+                st.session_state['ozz_guest'] = True
                 st.session_state['client_user'] = enter_name
+                st.session_state['password'] = password
                 st.rerun()
         return False
     else:
@@ -993,8 +1004,8 @@ def upload_to_s3(local_file, bucket, s3_file):
         # upload_to_s3(audio_file_path, bucket_name, s3_key)
 
 
-def hoots_and_hootie_keywords():
-    return ["hey Hoots", "hey Hoot", "hey Hootie", 'morning Hoots', 'morning Hootie']
+def hoots_and_hootie_keywords(phrases=["hey Hoots", "hey Hoot", "hey Hootie", 'morning Hoots', 'morning Hootie']):
+    return phrases
 
 
 def hoots_and_hootie_vars(width=350, height=350, self_image="hootsAndHootie.png", face_recon=False, show_video=False, input_text=True, show_conversation=True, no_response_time=3, refresh_ask=True):

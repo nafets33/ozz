@@ -38,7 +38,7 @@ app.add_middleware(
 @app.get("/", status_code=status.HTTP_200_OK, tags=["API Check"])
 def check():
     return {
-        "message": "Hello World!"
+        "message": "Hello Ozz"
     }
 
 # from starlette.responses import Response
@@ -73,4 +73,4 @@ if __name__ == '__main__':
     # ip_address = get_ip_address()
     # print("IP Address:", ip_address)
     ip_address = "127.0.0.1"
-    uvicorn.run(app, host=ip_address, port=8000) # '10.3.144.157'
+    uvicorn.run(app, host=ip_address, port=8002) # '10.3.144.157'

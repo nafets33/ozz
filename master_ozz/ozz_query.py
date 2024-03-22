@@ -122,7 +122,6 @@ def copy_and_replace_rename(source_path, destination_directory, build_file_name=
     except Exception as e:
         print(f"An error occurred: {e}")
 
-
 def process_response(response):
     # Convert the response to lowercase
     response_lower = response.lower()
@@ -157,7 +156,7 @@ def calculate_similarity(response1, response2):
 
 
 # are we asking LLM to find answer in db or reteriver?
-def determine_embedding(current_query, use_embedding=False):
+def determine_embedding(current_query, use_embedding=None):
     s = datetime.now()
     # print("EMBEDDINGS")
     if use_embedding:
@@ -183,27 +182,39 @@ def determine_embedding(current_query, use_embedding=False):
 
 def handle_prompt(first_ask, conversation_history):
     try:
+        # main_prompt = """
+        # Your name is Hoots, you are an owl and you're in school learning about the world. You Live and also work in Hoot Couture, a kids clothing store in Monroe Center.
+        # You specialize in kids development and story telling, you are learning to become an educator.
+        # If you don't know an answer or unsure you're answer is correct, ask for help, Victoria or Nadiya are typically around the store, and call out there names to help the customer, example, Nadiya, Victoria could you please help our friend here.
+        # You love to tell stories and hang out with your favorite owl family, Hootie. She is the greatest Owl is the world.
+        # You love to have a cup of tea, the british way, sit down with anyone who may be around and tell stories. Please always tell short stories for little kids.
+        # Please DO NOT say you're an AI assistant, you are a smart owl.
+        # You have a great sense of sarcastic humor and you use it well in conversation.
+        # You believe is good and moral virture for all.
+        # Please keep your reponses short and clear, Try to Answer is less then 100 characters.
+        # Always Take note to SYSTEM INFO: notes will be provided to help better create responses.
+        # """
+        # main_prompt = """
+        # You are a smart owl teacher, you teach vicrotia to speak engligh, she only speaks Russian.
+        # Only speak something in russian if need to explain something complex. 
+        # Victoria speaks level 3 engligh, so always do your best to figure out what she was trying to say and help her with vocabually and senstence, structure.
+        # Speak with her and provide a fun conversation about life, love, passion, hope, mystery, all themes of life.  
+        # Speak very slow by using lots of commas.
+        # Always remember, you are a teacher so analyze her response to decide if you need to respond with the corrections, but do try to be more of a fun teacher not a dull one.
+        # DO NOT reply with more then 2-3 sentences. 
+        # """
+
         main_prompt = """
-        Your name is Hoots, you are an owl and you're in school learning about the world. You Live and also work in Hoot Couture, a kids clothing store in Monroe Center.
-        You specialize in kids development and story telling, you are learning to become an educator.
-        If you don't know an answer or unsure you're answer is correct, ask for help, Victoria or Nadiya are typically around the store, and call out there names to help the customer, example, Nadiya, Victoria could you please help our friend here.
-        You love to tell stories and hang out with your favorite owl family, Hootie. She is the greatest Owl is the world.
-        You love to have a cup of tea, the british way, sit down with anyone who may be around and tell stories. Please always tell short stories for little kids.
-        Please DO NOT say you're an AI assistant, you are a smart owl.
-        You have a great sense of sarcastic humor and you use it well in conversation.
-        You believe is good and moral virture for all.
-        Please keep your reponses short and clear, Try to Answer is less then 100 characters.
+        You are Stefan Stapinski's current conscienceness and the context provided is information about stefan, Use this context information to speak on behalf of Stefan in the 1st person. You are taking to someone who wants to know about stefan and interview him for a job. 
+        Never Lie and do not make up anything, if you do not know the answer to something, say that you don't know or having trouble getting that information.
+        Each Response is also being spoken by Stefan's real voice, which he cloned using Eleven Labs.
+        Be nice and sound calm and cool, use light hearted phrases. 
+        Don't ask how you may be of assistance or how you can assist, instead ask how they are doing or whats going on or something like this.
+        Do NOT use the embedding context to help answer the question if the users question or response is not relevent to the embedding context. For Example, if the user responses with, thanks for asking, you do not need embedding context, you may answer this question with context and just be polite and friendly. 
+        Try to respond with less then 500 characters.
         Always Take note to SYSTEM INFO: notes will be provided to help better create responses.
         """
-        main_prompt = """
-        You are a smart owl teacher, you teach vicrotia to speak engligh, she only speaks Russian.
-        Only speak something in russian if need to explain something complex. 
-        Victoria speaks level 3 engligh, so always do your best to figure out what she was trying to say and help her with vocabually and senstence, structure.
-        Speak with her and provide a fun conversation about life, love, passion, hope, mystery, all themes of life.  
-        Speak very slow by using lots of commas.
-        Always remember, you are a teacher so analyze her response to decide if you need to respond with the corrections, but do try to be more of a fun teacher not a dull one.
-        DO NOT reply with more then 2-3 sentences. 
-        """
+
         if first_ask:
             conversation_history.append({"role": "system", "content": main_prompt})
         else:
@@ -217,7 +228,7 @@ def handle_prompt(first_ask, conversation_history):
 def story_time_params():
     return True
 
-def client_user_session_state_return(text, response_type='response', returning_question=False, current_youtube_search=False, max_results=10, story_time={}, hh_vars={}):
+def client_user_session_state_return(text, response_type='response', returning_question=False, current_youtube_search=False, max_results=10, story_time={}, hh_vars={}, use_embeddings=[]):
     hh_vars = hh_vars if hh_vars else hoots_and_hootie_vars()
 
     return {'text': text, # []
@@ -227,6 +238,7 @@ def client_user_session_state_return(text, response_type='response', returning_q
             'max_results': max_results,
             'story_time': story_time,
             'hh_vars': hh_vars,
+            'use_embeddings': use_embeddings,
             }
 
 
@@ -262,7 +274,7 @@ def calculate_story(current_query):
 
 
 ### MAIN 
-def Scenarios(text : list, current_query : str , conversation_history : list , first_ask=False, session_state={}, audio_file=None, self_image='hootsAndHootie.png', client_user=None):
+def Scenarios(text : list, current_query : str , conversation_history : list , first_ask=False, session_state={}, audio_file=None, self_image='hootsAndHootie.png', client_user=None, use_embeddings=None):
     scenario_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     OZZ = {}
     s3_filepath = f'{client_user}/'
@@ -439,33 +451,39 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
     # Common Phrases # WORKERBEE Add check against audio_text DB
     # print("common phrases")
     s = datetime.now()
-    for query, response in common_phrases.items():
-        if query.lower() == current_query.lower():
-            print("QUERY already found in db: ", query)
+    # for query, response in common_phrases.items():
+    #     if query.lower() == current_query.lower():
+    #         print("QUERY already found in db: ", query)
 
-            # Appending the response from json file
-            conversation_history.append({"role": "assistant", "content": response})
-            ## find audio file to set to new_audio False
-            # return audio file
-            audio_file = handle_audio(user_query, response, audio_file=audio_file, self_image=self_image, s3_filepath=s3_filepath) 
-            print('common phrases:', (datetime.now() - s).total_seconds())
-            # self_image = 'hoots_waves.gif'
-            return scenario_return(response, conversation_history, audio_file, session_state, self_image)
+    #         # Appending the response from json file
+    #         conversation_history.append({"role": "assistant", "content": response})
+    #         ## find audio file to set to new_audio False
+    #         # return audio file
+    #         audio_file = handle_audio(user_query, response, audio_file=audio_file, self_image=self_image, s3_filepath=s3_filepath) 
+    #         print('common phrases:', (datetime.now() - s).total_seconds())
+    #         # self_image = 'hoots_waves.gif'
+    #         return scenario_return(response, conversation_history, audio_file, session_state, self_image)
 
     # # If query was already ASKED find audio and don't call LLM # WORKERBEE
-    # master_text_audio = init_text_audio_db()
-    # df = pd.DataFrame(master_text_audio)
+    self_image_name = self_image.split('.')[0]
+    master_text_audio_name, master_text_audio = init_text_audio_db()
+    df = pd.DataFrame(master_text_audio)
+    # ipdb.set_trace()
+    if len(df) > 0:
+        df = df[(df['self_image']==self_image_name) & (df['text']==current_query)]
     # audio_text = dict(zip(df['text'], df['file_path'])) # audio, text
+    if len(df) == 1:
     # if current_query in audio_text.keys():
-    #     response = audio_text[current_query]
-    #     # Appending the response from json file
-    #     conversation_history.append({"role": "assistant", "content": response})
-    #     ## find audio file to set to new_audio False
-    #     # return audio file
-    #     audio_file = handle_audio(user_query, response, audio_file=audio_file, self_image=self_image) 
-    #     print('common phrases:', (datetime.now() - s).total_seconds())
-    #     # self_image = 'hoots_waves.gif'
-    #     return scenario_return(response, conversation_history, audio_file, session_state, self_image)
+        # response = audio_text[current_query]
+        response = df.iloc[-1].get('text')
+        # Appending the response from json file
+        conversation_history.append({"role": "assistant", "content": response})
+        ## find audio file to set to new_audio False
+        # return audio file
+        audio_file = handle_audio(user_query, response, audio_file=audio_file, self_image=self_image) 
+        print('common phrases:', (datetime.now() - s).total_seconds())
+        # self_image = 'hoots_waves.gif'
+        return scenario_return(response, conversation_history, audio_file, session_state, self_image)
 
 
     # LLM
@@ -485,22 +503,22 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
     except Exception as e:
         print_line_of_error(e)
     
-    if 'use_embedding' not in session_state:
-        use_embedding='mom_test'
-    else:
-        use_embedding=session_state['session_state']
-        
-    use_embedding=False
+    use_embedding = use_embeddings[0] if use_embeddings else None
     db_name, current_query = determine_embedding(current_query, use_embedding=use_embedding)
-    db_name=False
+    if first_ask:
+        llm_query = "SYSTEM INFO: this is your first interaction, be polite and ask them a question on what they want to talk about, work, physics, basketball, AI, investments, family, fun."
+    else:
+        llm_query = "SYSTEM INFO: this is not your first interaction, be more percise with answers, don't ask how there days is going or other introduction questions. Do not respond in more then 223 characters. Do not repeat the users question back unless you are not understanding the question. If the current ask is about your previous response not making sense of being wrong, make excuses that you may get some information wrong because of not understanding the question well enough."
+    
     if db_name:
         print("USE EMBEDDINGS: ", db_name)
         Retriever_db = os.path.join(PERSIST_PATH, db_name)
-        query = conversation_history[0]['content'] + ", " + conversation_history[-1].get('role') + conversation_history[-1].get('content') + current_query
+        query = conversation_history[0]['content'] + ", " + conversation_history[-1].get('role') + conversation_history[-1].get('content') + current_query + llm_query
         response = Retriever(query, Retriever_db).get('result')
     else:
-        print("CALL LLM")
+        print("CALL LLM - GPT")
         cc = context()
+        print("conv history length", len(conversation_history))
         current_query = current_query+cc
         response = llm_assistant_response(current_query, conversation_history)
 
@@ -516,7 +534,7 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
 def context():
     return """"""
 
-def ozz_query(text, self_image, refresh_ask, client_user):
+def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False):
     
     def ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply=False, session_state=None):
         json_data = {'text': text, 
@@ -562,9 +580,16 @@ def ozz_query(text, self_image, refresh_ask, client_user):
         return ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply)
 
 
-    db_root = init_clientUser_dbroot(client_username=client_user)
+    db_root = init_clientUser_dbroot(client_username=client_user, force_db_root=force_db_root)
     print("DBROOT: ", db_root)
 
+
+    # ipdb.set_trace()
+    # handle character from self_image
+    # handle command type, if you don't know command type you need to ask?
+    # if 'this is a command' in current_query or "please do this": ## handle command requests:
+    #     if "save this" in current_query:
+    #         save_json()
 
 
     text, current_query = clean_current_query_from_previous_ai_response(text) # DEPRECATE
@@ -574,12 +599,16 @@ def ozz_query(text, self_image, refresh_ask, client_user):
         # return ozz_query_json_return(text, self_image, audio_file=None, page_direct=None, listen_after_reply=False)
         current_query = "hello"
     
-    ## Load Client session and conv history
+    ## Load Client session and conv history # based on character
     master_conversation_history_file_path = os.path.join(db_root, 'master_conversation_history.json')
     conversation_history_file_path = os.path.join(db_root, 'conversation_history.json')
     session_state_file_path = os.path.join(db_root, 'session_state.json')
     
     master_conversation_history = load_local_json(master_conversation_history_file_path)
+    df_mch = pd.DataFrame(master_conversation_history)
+    if len(df_mch) > 0:
+        cl_user_questions = len(df_mch[df_mch['client_user'] == client_user])
+        print('stop len', cl_user_questions)
     conversation_history = load_local_json(conversation_history_file_path)
     session_state = load_local_json(session_state_file_path)
 
@@ -589,12 +618,14 @@ def ozz_query(text, self_image, refresh_ask, client_user):
     conversation_history = get_last_eight(conversation_history)
     
     # Session State
+    use_embeddings=session_state.get('use_embeddings')
+    print("USE EMBED", use_embeddings)
     if first_ask:
         conversation_history =  conversation_history.clear() if len(conversation_history) > 0 else conversation_history
         conversation_history = [] if not conversation_history else conversation_history
         conversation_history = handle_prompt(True, conversation_history)
         conversation_history.append({"role": "user", "content": current_query})
-        session_state = client_user_session_state_return(text, response_type='response', returning_question=False)
+        session_state = client_user_session_state_return(text, response_type='response', returning_question=False, use_embeddings=use_embeddings)
     else:
         session_state = session_state
         conversation_history.append({"role": "user", "content": current_query})
@@ -607,10 +638,10 @@ def ozz_query(text, self_image, refresh_ask, client_user):
     # return ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply)
 
 
-    master_conversation_history.append({"role": "user", "content": current_query})
+    master_conversation_history.append({"role": "user", "content": current_query, 'client_user': client_user})
 
     # Call the Scenario Function and get the response accordingly
-    scenario_resp = Scenarios(text, current_query, conversation_history, first_ask, session_state, self_image=self_image, client_user=client_user)
+    scenario_resp = Scenarios(text, current_query, conversation_history, first_ask, session_state, self_image=self_image, client_user=client_user, use_embeddings=use_embeddings)
     response = scenario_resp.get('response')
     print("RESPONSE", response)
     conversation_history = scenario_resp.get('conversation_history')
@@ -619,7 +650,7 @@ def ozz_query(text, self_image, refresh_ask, client_user):
     self_image = scenario_resp.get('self_image')
 
     # Save Data
-    master_conversation_history.append({"role": "assistant", "content": response})
+    master_conversation_history.append({"role": "assistant", "content": response, "self_image": self_image, 'datetime': return_timestamp_string()})
     text[-1].update({'resp': response})
     session_state['text'] = text
     
