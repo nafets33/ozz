@@ -570,6 +570,49 @@ def conversational_phrases(your_name, Hobby, Interest, Location, City, Place):
             )
 
 
+def common_phrases_for_Questions():
+    return [
+    "What time",
+    "Where are",
+    "Can I",
+    "How many",
+    "Is it",
+    "Do you",
+    "Who is",
+    "Why did",
+    "Will you",
+    "Are we",
+    "Could you",
+    "When will",
+    "Should I",
+    "Did you",
+    "Would you",
+    "Have you",
+    "May I",
+    "Are they",
+    "Is there",
+    "Do we",
+    "Can we",
+    "How much",
+    "Should we",
+    "Where is",
+    "Will it",
+    "Did he",
+    "Who are",
+    "Can you",
+    "Could I",
+    "Have we",
+    "Did she",
+    "Will they",
+    "Would he",
+    "When did",
+    "Should they",
+    "Is he",
+    "Are you",
+    "Where can",
+]
+
+
 def set_streamlit_page_config_once():
     try:
         main_root = ozz_master_root()
@@ -616,7 +659,7 @@ def return_app_ip(streamlit_ip="http://localhost:8501", ip_address=None):
         ip_address = "https://api.divergent-thinkers.com"
         streamlit_ip = ip_address
     else:
-        ip_address = "http://127.0.0.1:8002"
+        ip_address = "http://127.0.0.1:8000"
 
     st.session_state['ip_address'] = ip_address
     st.session_state['streamlit_ip'] = streamlit_ip
@@ -676,7 +719,7 @@ def Directory(directory : str):
 
 
 #Function to create chunks of documents
-def CreateChunks(documents : str, chunk_size=800, chunk_overlap=33):
+def CreateChunks(documents : str, chunk_size=250, chunk_overlap=10):
     chunks = []
     for docs in documents:
         text_splitter = RecursiveCharacterTextSplitter(
@@ -797,6 +840,37 @@ def clean_data(data):
         # If it's not HTML, just clean the text
         return clean_text(data)
 
+def preprocessing(df): # df must be set as key content columns >> File name, contents
+    #Removing unwanted characters
+    for i in range(df.shape[0]):
+        df['contents'][i] = df['contents'][i].replace('\n', '')
+        df['contents'][i] = re.sub(r'\(.*?\)', '', df['contents'][i])
+        df['contents'][i] = re.sub('[\(\[].*?[\)\]]', '', df['contents'][i])
+
+    prompt_column = []
+    completion_column = []
+
+    num_parts = (-df['contents'].map(len).max()//-1000)
+
+    for i in df['File name']:
+        for part_num in range(num_parts):
+            prompt_column.append(i.lower() + " part" + str(part_num+1))
+
+    for j in df['contents']:
+        
+        split_data = j.split('.')
+        avg_len = len(split_data)//num_parts + 1
+        for part_num in range(num_parts - 1):
+            completion_column.append('.'.join(split_data[part_num*avg_len:(part_num+1)*avg_len]))
+
+        completion_column.append('.'.join(split_data[(num_parts - 1)*avg_len:]))
+
+    df_cleaned = pd.DataFrame()
+    df_cleaned['File name'] = prompt_column
+    df_cleaned['contents'] = completion_column
+
+            
+    return df_cleaned[df_cleaned['contents'] != '']
 
 
 def generate_image(text="2 cute owls in a forest, Award-Winning Art, Detailed, Photorealistic, Fanart", size="256x256", save_img=True, use_llm_enhance=True, gen_source='replicate'): 

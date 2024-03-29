@@ -104,7 +104,7 @@ def ozz():
     if self_image == 'stefan.png':
         cols = st.columns((5,3))
         with cols[0]:
-            st.header("Welcome to Stefans ~Conscience...")
+            st.header(f"Welcome {client_user} to Stefans ~Conscience...")
 
         embedding_default = ['stefan']
         user_session_state['use_embeddings'] = embedding_default
@@ -114,16 +114,15 @@ def ozz():
         with cols[0]:
             st.markdown(f''':yellow[{text}]''')
 
-        with st.expander("Ways to chat with Stefan", True):
-            cols = st.columns((4,2))
+        with st.expander("3 Ways to chat with Stefan", True):
+            cols = st.columns((3,2))
             with cols[0]:
-                st.write("You have 3 options to Chat")
-                st.write("1: Click And Ask Button: Each time you click you can speak your question")
-                st.write("2: Conversational Mode Button: Once you click, use Keyword 'Stefan', ex: 'Stefan How Are you today' (If stefan responds with a question you can directly answer it and don't need to say his name)")
-                st.write("3: Chat Form: Type your questions and hit enter")
+                st.info("1: RECOMMENDED --> Click And Ask Button: Each time you click you can speak your question")
+                st.info("2: Conversational Mode Button: Once you click, use Keyword 'Stefan', ex: 'Stefan How Are you today' (If stefan responds with a question you can directly answer it and don't need to say his name)")
+                st.info("3: Chat Form: Type your questions and hit enter")
             with cols[1]:
-                text="Please note: Responses may not understand question context which may result in inchorent manner. The LLM that uses RAG (i.e. this one) needs extra context to undestand each new query from user"
-                st.info(text)
+                st.warning("Please note: Sometimes questions may be misunderstood and the response may result in inchorent manner.")
+                st.warning("The LLM that uses RAG (i.e. this one) needs extra context to undestand each new query from user, Having responses tailor more accurately requires more engineering")
         
     with st.sidebar:
         embeddings = os.listdir(os.path.join(ozz_master_root(), 'STORAGE'))

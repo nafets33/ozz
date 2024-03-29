@@ -515,16 +515,19 @@ const CustomVoiceGPT = (props) => {
   
         {/* Input text section */}
         {input_text && (
-          <div className="form-group">
-            <input
-              className="form-control"
-              type="text"
-              placeholder="Chat with Me"
-              value={textString}
-              onChange={handleInputText}
-              onKeyDown={handleOnKeyDown}
-            />
-          </div>
+          <>
+            <div className="form-group">
+              <input
+                className="form-control"
+                type="text"
+                placeholder="Chat with Me"
+                value={textString}
+                onChange={handleInputText}
+                onKeyDown={handleOnKeyDown}
+              />
+            </div>
+            <hr style={{ margin: '20px 0' }} /> {/* Add a solid line */}
+          </>
         )}
   
       </div>

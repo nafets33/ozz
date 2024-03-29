@@ -109,7 +109,7 @@ json_voiceGPT_data={
 self_image = st.sidebar.selectbox("Speak To", options=['stefan', 'hootsAndHootie'], key='self_image')
 
 # with cols[1]:
-st.header(f"Welcome to {self_image}'s virtual reality, what would you like to talk about?")
+st.header(f"Welcome {client_user} to {self_image}'s virtual reality, what would you like to talk about?")
 
 if force_db_root and 'ozz_guest' in st.session_state:
     switch_page('ozz')

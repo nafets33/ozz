@@ -16,7 +16,7 @@ est = pytz.timezone("US/Eastern")
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-from master_ozz.utils import init_stories ,hoots_and_hootie_vars, hoots_and_hootie_keywords, save_json, load_local_json, init_clientUser_dbroot, init_text_audio_db, print_line_of_error, ozz_master_root, ozz_master_root_db, generate_audio, save_audio, Retriever, init_constants
+from master_ozz.utils import init_stories ,hoots_and_hootie_vars, common_phrases_for_Questions, hoots_and_hootie_keywords, save_json, load_local_json, init_clientUser_dbroot, init_text_audio_db, print_line_of_error, ozz_master_root, ozz_master_root_db, generate_audio, save_audio, Retriever, init_constants
 import ipdb
 
 main_root = ozz_master_root()  # os.getcwd()
@@ -84,7 +84,7 @@ def llm_assistant_response(message,conversation_history):
     # response = Retriever(message, PERSIST_PATH)
     s = datetime.now()
     try:
-        conversation_history.append({"role": "user", "content": message})
+        # conversation_history.append({"role": "user", "content": message})
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=conversation_history,
@@ -180,7 +180,7 @@ def determine_embedding(current_query, use_embedding=None):
     # print('detemine embedding:', (datetime.now() - s).total_seconds())
     return db_name, current_query
 
-def handle_prompt(first_ask, conversation_history):
+def handle_prompt(first_ask, conversation_history, system_info=False):
     try:
         # main_prompt = """
         # Your name is Hoots, you are an owl and you're in school learning about the world. You Live and also work in Hoot Couture, a kids clothing store in Monroe Center.
@@ -205,18 +205,22 @@ def handle_prompt(first_ask, conversation_history):
         # """
 
         main_prompt = """
-        You are Stefan Stapinski's current conscienceness and the context provided is information about stefan, Use this context information to speak on behalf of Stefan in the 1st person. You are taking to someone who wants to know about stefan and interview him for a job. 
-        Never Lie and do not make up anything, if you do not know the answer to something, say that you don't know or having trouble getting that information.
+        You are Stefan Stapinski's current conscienceness and the context provided is information about stefan, Use this context information to speak on behalf of Stefan in the 1st person. 
+        Never Lie and do not make up anything, if you do not know the answer, say that you don't know or having trouble getting that information.
         Each Response is also being spoken by Stefan's real voice, which he cloned using Eleven Labs.
-        Be nice and sound calm and cool, use light hearted phrases. 
-        Don't ask how you may be of assistance or how you can assist, instead ask how they are doing or whats going on or something like this.
-        Do NOT use the embedding context to help answer the question if the users question or response is not relevent to the embedding context. For Example, if the user responses with, thanks for asking, you do not need embedding context, you may answer this question with context and just be polite and friendly. 
-        Try to respond with less then 500 characters.
-        Always Take note to SYSTEM INFO: notes will be provided to help better create responses.
+        Be nice and sound calm and cool.
+        Don't ask how you may be of assistance or how you can assist.
+        Try to respond with less then 300 characters.
+        Do not repeat the users question back unless you are questioning them about the question.
+        You are interested in possible job opportunities if they fit well with your skill set.
+        If you are asked about joining another company or about a job position, do your best to answer the question as if you are applying for that job and provide answers to why you would work well at the position offered.
         """
-
+        
         if first_ask:
             conversation_history.append({"role": "system", "content": main_prompt})
+        if system_info:
+            main_prompt = conversation_history[0].get('content')
+            conversation_history[0] = {"role": "system", "content": main_prompt + system_info}
         else:
             conversation_history[0] = {"role": "system", "content": main_prompt}
 
@@ -274,7 +278,7 @@ def calculate_story(current_query):
 
 
 ### MAIN 
-def Scenarios(text : list, current_query : str , conversation_history : list , first_ask=False, session_state={}, audio_file=None, self_image='hootsAndHootie.png', client_user=None, use_embeddings=None):
+def Scenarios(text : list, current_query : str , conversation_history : list , first_ask=False, session_state={}, audio_file=None, self_image='hootsAndHootie.png', client_user=None, use_embeddings=None, df_master_audio=None, check_for_story=False):
     scenario_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     OZZ = {}
     s3_filepath = f'{client_user}/'
@@ -438,15 +442,17 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
         session_state['current_youtube_search'] = False
 
     ### WATER FALL RESPONSE ###
-    resp_func = story_response(current_query, session_state)
-    if resp_func.get('response'):
-        print("func response found")
-        response = resp_func.get('response')
-        audio_file = resp_func.get('audio_file')
-        session_state = resp_func.get('session_state')
-        conversation_history.append({"role": "assistant", "content": response, })
-        audio_file = handle_audio(user_query, response, audio_file, self_image, s3_filepath)
-        return scenario_return(response, conversation_history, audio_file, session_state, self_image)
+    # check_for_story
+    if check_for_story:
+        resp_func = story_response(current_query, session_state)
+        if resp_func.get('response'):
+            print("func response found")
+            response = resp_func.get('response')
+            audio_file = resp_func.get('audio_file')
+            session_state = resp_func.get('session_state')
+            conversation_history.append({"role": "assistant", "content": response, })
+            audio_file = handle_audio(user_query, response, audio_file, self_image, s3_filepath)
+            return scenario_return(response, conversation_history, audio_file, session_state, self_image)
 
     # Common Phrases # WORKERBEE Add check against audio_text DB
     # print("common phrases")
@@ -464,18 +470,8 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
     #         # self_image = 'hoots_waves.gif'
     #         return scenario_return(response, conversation_history, audio_file, session_state, self_image)
 
-    # # If query was already ASKED find audio and don't call LLM # WORKERBEE
-    self_image_name = self_image.split('.')[0]
-    master_text_audio_name, master_text_audio = init_text_audio_db()
-    df = pd.DataFrame(master_text_audio)
-    # ipdb.set_trace()
-    if len(df) > 0:
-        df = df[(df['self_image']==self_image_name) & (df['text']==current_query)]
-    # audio_text = dict(zip(df['text'], df['file_path'])) # audio, text
-    if len(df) == 1:
-    # if current_query in audio_text.keys():
-        # response = audio_text[current_query]
-        response = df.iloc[-1].get('text')
+    if len(df_master_audio) == 1:
+        response = df_master_audio.iloc[-1].get('text')
         # Appending the response from json file
         conversation_history.append({"role": "assistant", "content": response})
         ## find audio file to set to new_audio False
@@ -488,32 +484,30 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
 
     # LLM
     print("LLM")
-    try:
-        assistant = [v['content'] for v in conversation_history if v['role'] == 'assistant']
-        questions=0
-        if len(assistant) > 0:
-            for as_resp in assistant:
-                if "?" in as_resp:
-                    questions+=1
-        do_not_reply_as_a_question = True if questions > 1 else False
-        print("do_not_reply_as_a_question", do_not_reply_as_a_question)
+    # try: ## force not responding with a question
+    #     assistant = [v['content'] for v in conversation_history if v['role'] == 'assistant']
+    #     questions=0
+    #     if len(assistant) > 0:
+    #         for as_resp in assistant:
+    #             if "?" in as_resp:
+    #                 questions+=1
+    #     do_not_reply_as_a_question = True if questions > 1 else False
+    #     print("do_not_reply_as_a_question", do_not_reply_as_a_question)
 
-        if do_not_reply_as_a_question:
-            current_query = current_query + " SYSTEM INFO: do not respond with a question and remove this statement from your return response"
-    except Exception as e:
-        print_line_of_error(e)
+    #     if do_not_reply_as_a_question:
+    #         current_query = "do not respond with a question"  + current_query
+   
+    # except Exception as e:
+    #     print_line_of_error(e)
     
     use_embedding = use_embeddings[0] if use_embeddings else None
     db_name, current_query = determine_embedding(current_query, use_embedding=use_embedding)
-    if first_ask:
-        llm_query = "SYSTEM INFO: this is your first interaction, be polite and ask them a question on what they want to talk about, work, physics, basketball, AI, investments, family, fun."
-    else:
-        llm_query = "SYSTEM INFO: this is not your first interaction, be more percise with answers, don't ask how there days is going or other introduction questions. Do not respond in more then 223 characters. Do not repeat the users question back unless you are not understanding the question. If the current ask is about your previous response not making sense of being wrong, make excuses that you may get some information wrong because of not understanding the question well enough."
-    
+
     if db_name:
         print("USE EMBEDDINGS: ", db_name)
         Retriever_db = os.path.join(PERSIST_PATH, db_name)
-        query = conversation_history[0]['content'] + ", " + conversation_history[-1].get('role') + conversation_history[-1].get('content') + current_query + llm_query
+        query = conversation_history[0]['content'] + " below is the user's request, question or statement, always response appropriately. " + current_query 
+        print(query)
         response = Retriever(query, Retriever_db).get('result')
     else:
         print("CALL LLM - GPT")
@@ -521,8 +515,6 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
         print("conv history length", len(conversation_history))
         current_query = current_query+cc
         response = llm_assistant_response(current_query, conversation_history)
-
-
 
 
     conversation_history.append({"role": "assistant", "content": response})
@@ -534,7 +526,7 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
 def context():
     return """"""
 
-def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False):
+def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, page_direct=False, listen_after_reply=False):
     
     def ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply=False, session_state=None):
         json_data = {'text': text, 
@@ -545,7 +537,7 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False):
                     'session_state': session_state,}
         return json_data
     
-    def clean_current_query_from_previous_ai_response(text):
+    def clean_current_query_from_previous_ai_response(text, split_query_by=['stefan', 'stephen', 'stephanie', 'stephan']):
         # take previous ai response and remove if it found in current_query
         # if 'assistant' in last_text:
         current_query = text[-1]['user'] # user query
@@ -558,9 +550,10 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False):
             current_query = split_string(current_query=current_query, last_response=ai_last_resp)
 
         # WORKERBEE confirm is senitentment of phrase is outside bounds of responding to
-        for kword in hoots_and_hootie_keywords():
-            if kword in current_query:
-                current_query = current_query.split(kword)[1]
+        lower_query = current_query.lower() 
+        for kword in split_query_by:
+            if kword in lower_query:
+                current_query = lower_query.split(kword)[1]
                 break
 
         # reset user with cleaned reponse
@@ -568,7 +561,7 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False):
 
         return text, current_query
 
-    def story_time(current_query: str, text: list, self_image:str, audio_file:str, page_direct:str, listen_after_reply: bool, session_state: dict):
+    def story_time(current_query: str, text: list, self_image:str, audio_file:str, page_direct:bool, listen_after_reply: bool, session_state: dict):
         page_number = session_state.get('page_number')
 
 
@@ -584,7 +577,6 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False):
     print("DBROOT: ", db_root)
 
 
-    # ipdb.set_trace()
     # handle character from self_image
     # handle command type, if you don't know command type you need to ask?
     # if 'this is a command' in current_query or "please do this": ## handle command requests:
@@ -599,49 +591,88 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False):
         # return ozz_query_json_return(text, self_image, audio_file=None, page_direct=None, listen_after_reply=False)
         current_query = "hello"
     
+    first_ask = True if len(text) <= 1 else False
+    print("FIRST ASK: ", first_ask)
+
+    common_phrases_ = common_phrases_for_Questions()
+
     ## Load Client session and conv history # based on character
     master_conversation_history_file_path = os.path.join(db_root, 'master_conversation_history.json')
     conversation_history_file_path = os.path.join(db_root, 'conversation_history.json')
     session_state_file_path = os.path.join(db_root, 'session_state.json')
-    
+    # load db
     master_conversation_history = load_local_json(master_conversation_history_file_path)
+    conversation_history = load_local_json(conversation_history_file_path)
+    session_state = load_local_json(session_state_file_path)
+
+    # handle prompt 1 and ensure light conv history
+    conversation_history = handle_prompt(first_ask, conversation_history, system_info=False)
+    conversation_history = get_last_eight(conversation_history)
+
+    # check master    
     df_mch = pd.DataFrame(master_conversation_history)
     if len(df_mch) > 0:
         cl_user_questions = len(df_mch[df_mch['client_user'] == client_user])
         print('stop len', cl_user_questions)
-    conversation_history = load_local_json(conversation_history_file_path)
-    session_state = load_local_json(session_state_file_path)
+        if cl_user_questions > 8:
+            # return good bye message 
+            response = "Hey sorry but you've reached the max number of questions to ask. Talking to me literally costs money...time is money after all even with computers. Maybe next time we can speak for real. "
+            # Appending the response from json file
+            conversation_history.append({"role": "assistant", "content": response})
+            
+            # return audio file
+            audio_file = 'stefan_max_conv_len.mp3' # handle_audio(user_query, response, audio_file=audio_file, self_image=self_image)
 
-    first_ask = True if len(text) <= 1 else False
-    print("FIRST ASK: ", first_ask)
-    conversation_history = handle_prompt(first_ask, conversation_history)
-    conversation_history = get_last_eight(conversation_history)
+            text[-1].update({'resp': response})
+            session_state['text'] = text
+            master_conversation_history.append({"role": "assistant", "content": response, "self_image": self_image, 'datetime': return_timestamp_string()})
+            session_state['returning_question'] = False
+            session_state['response_type'] = 'response'
+            listen_after_reply = session_state['returning_question']
+
+            # For saving a chat history for current session in json file
+            save_json(master_conversation_history_file_path, master_conversation_history)
+            save_json(conversation_history_file_path, conversation_history)
+            save_json(session_state_file_path, session_state)
+            return ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply)
     
+    if cl_user_questions == 5:
+        system_info = " Please tell the user that they have 5 more questions remaining before you need to leave"
+        conversation_history = handle_prompt(first_ask, conversation_history, system_info=system_info)
+
+    # # If query was already ASKED find audio and don't call LLM # WORKERBEE
+    self_image_name = self_image.split('.')[0]
+    master_text_audio_name, master_text_audio = init_text_audio_db()
+    df_master_audio = pd.DataFrame(master_text_audio)
+    if len(df_master_audio) > 0:
+        df_master_audio = df_master_audio[(df_master_audio['self_image']==self_image_name) & (df_master_audio['text']==current_query)]
+
+
     # Session State
     use_embeddings=session_state.get('use_embeddings')
     print("USE EMBED", use_embeddings)
+
     if first_ask:
+        system_info = " this is your first interaction, be polite and ask them a question on what they want to talk about, work, physics, basketball, AI, investments, family, fun. "
+        conversation_history = handle_prompt(first_ask, conversation_history, system_info=system_info)
+
         conversation_history =  conversation_history.clear() if len(conversation_history) > 0 else conversation_history
         conversation_history = [] if not conversation_history else conversation_history
         conversation_history = handle_prompt(True, conversation_history)
         conversation_history.append({"role": "user", "content": current_query})
         session_state = client_user_session_state_return(text, response_type='response', returning_question=False, use_embeddings=use_embeddings)
     else:
+        system_info = " this is not your first interaction, be more percise with answers, don't ask how there days is going or other introduction questions "
+        conversation_history = handle_prompt(first_ask, conversation_history, system_info=system_info)
         session_state = session_state
         conversation_history.append({"role": "user", "content": current_query})
 
-
     storytime = True if session_state['story_time'] else False
-    # # MASTER START ## DENISH
-    # if story__time:
-    #     story_time()
-    # return ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply)
-
 
     master_conversation_history.append({"role": "user", "content": current_query, 'client_user': client_user})
 
     # Call the Scenario Function and get the response accordingly
-    scenario_resp = Scenarios(text, current_query, conversation_history, first_ask, session_state, self_image=self_image, client_user=client_user, use_embeddings=use_embeddings)
+    scenario_resp = Scenarios(text, current_query, conversation_history, first_ask, session_state, self_image=self_image, client_user=client_user, use_embeddings=use_embeddings, df_master_audio=df_master_audio)
     response = scenario_resp.get('response')
     print("RESPONSE", response)
     conversation_history = scenario_resp.get('conversation_history')
