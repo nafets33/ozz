@@ -636,9 +636,9 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
             save_json(session_state_file_path, session_state)
             return ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply)
     
-    if cl_user_questions == 5:
-        system_info = " Please tell the user that they have 5 more questions remaining before you need to leave"
-        conversation_history = handle_prompt(first_ask, conversation_history, system_info=system_info)
+        if cl_user_questions == 5:
+            system_info = " Please tell the user that they have 5 more questions remaining before you need to leave"
+            conversation_history = handle_prompt(first_ask, conversation_history, system_info=system_info)
 
     # # If query was already ASKED find audio and don't call LLM # WORKERBEE
     self_image_name = self_image.split('.')[0]
@@ -670,7 +670,7 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
     storytime = True if session_state['story_time'] else False
 
     master_conversation_history.append({"role": "user", "content": current_query, 'client_user': client_user})
-
+    
     # Call the Scenario Function and get the response accordingly
     scenario_resp = Scenarios(text, current_query, conversation_history, first_ask, session_state, self_image=self_image, client_user=client_user, use_embeddings=use_embeddings, df_master_audio=df_master_audio)
     response = scenario_resp.get('response')
