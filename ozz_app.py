@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 import re
 from dotenv import load_dotenv
 from ozz_auth import signin_main
-from master_ozz.utils import hoots_and_hootie_keywords, init_user_session_state, setup_instance, return_app_ip, init_text_audio_db, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
+from master_ozz.utils import load_local_json, init_user_session_state, setup_instance, return_app_ip, init_text_audio_db, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
 from master_ozz.ozz_query import ozz_query
 from pages.Ozz import ozz
 from pages.Lab import lab
@@ -18,6 +18,7 @@ from pydub import AudioSegment
 import io
 import time
 from streamlit_extras.switch_page_button import switch_page
+import pandas as pd
 
 print("OZZ START")
 
@@ -85,27 +86,6 @@ cols = st.columns(2)
 with st.sidebar:
     sac_menu = sac_menu_buttons_func()
 
-width=st.session_state['hh_vars']['width'] if 'hc_vars' in st.session_state else 350
-height=st.session_state['hh_vars']['height'] if 'hc_vars' in st.session_state else 350
-self_image=st.session_state['hh_vars']['self_image'] if 'hc_vars' in st.session_state else "hootsAndHootie.png"
-face_recon=st.session_state['hh_vars']['face_recon'] if 'hc_vars' in st.session_state else False
-show_video=st.session_state['hh_vars']['show_video'] if 'hc_vars' in st.session_state else False
-input_text=st.session_state['hh_vars']['input_text'] if 'hc_vars' in st.session_state else True
-show_conversation=st.session_state['hh_vars']['show_conversation'] if 'hc_vars' in st.session_state else True
-no_response_time=st.session_state['hh_vars']['no_response_time'] if 'hc_vars' in st.session_state else 3
-refresh_ask=st.session_state['hh_vars']['refresh_ask'] if 'hc_vars' in st.session_state else False
-
-json_voiceGPT_data={
-'api:': f"{st.session_state['ip_address']}/api/data/voiceGPT",
-'api_key:': os.environ.get('ozz_key'),
-'text': {},
-'refresh_ask': refresh_ask,
-'face_data': [],
-'client_user:': st.session_state['client_user'],
-'self_image:': self_image,
-}
-
-
 self_image = st.sidebar.selectbox("Speak To", options=['stefan', 'hootsAndHootie'], key='self_image')
 
 # with cols[1]:
@@ -127,5 +107,23 @@ if 'current_youtube_search' in st.session_state and st.session_state['current_yo
     youtube()
 
 
+if st.session_state.get('admin'):
+    constants = init_constants()
+    OZZ_DB = constants.get('OZZ_DB')
+    db_root = os.path.join(OZZ_DB, 'sneakpeak')
+    master_conversation_history_file_path = os.path.join(db_root, 'master_conversation_history.json')
+    # conversation_history_file_path = os.path.join(db_root, 'conversation_history.json')
+    # session_state_file_path = os.path.join(db_root, 'session_state.json')
+    master_text_audio_filepath = os.path.join(OZZ_DB, 'master_text_audio.json') 
+    # load db
+    master_text_audio = load_local_json(master_text_audio_filepath)
+    sp_mastet_conv_history = load_local_json(master_conversation_history_file_path)
 
+    with st.expander("SneakPeak Master Conv"):
+        df_mch = pd.DataFrame(sp_mastet_conv_history)
+        st.dataframe(df_mch)
+    with st.expander("Master Text Audio"):
+        # check master    
+        df_mch = pd.DataFrame(master_text_audio)
+        st.dataframe(df_mch)
 

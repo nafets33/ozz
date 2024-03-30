@@ -28,8 +28,7 @@ def hoots_and_hootie(width=350, height=350,
     else:
         phrases = hoots_and_hootie_keywords()
     force_db_root = True if 'force_db_root' in st.session_state and st.session_state['force_db_root'] else False
-    print(force_db_root)
-    print(st.session_state['client_user'])
+
     custom_voiceGPT(
         api=f"{st.session_state['ip_address']}/api/data/voiceGPT",
         api_key=os.environ.get('ozz_key'),
