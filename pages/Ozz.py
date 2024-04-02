@@ -7,7 +7,9 @@ from streamlit_extras.switch_page_button import switch_page
 from dotenv import load_dotenv
 from custom_voiceGPT import custom_voiceGPT, VoiceGPT_options_builder
 import requests
-from custom_button import cust_Button
+import base64
+
+# from custom_button import cust_Button
 load_dotenv(os.path.join(ozz_master_root(),'.env'))
 #### CHARACTERS ####
 
@@ -18,7 +20,8 @@ def hoots_and_hootie(width=350, height=350,
                      input_text=True, 
                      show_conversation=True, 
                      no_response_time=3,
-                     refresh_ask=True):
+                     refresh_ask=True,
+                     use_embeddings=[],):
     
     to_builder = VoiceGPT_options_builder.create()
     to = to_builder.build()
@@ -47,6 +50,7 @@ def hoots_and_hootie(width=350, height=350,
         force_db_root=force_db_root,
         before_trigger={'how are you': 'hoots_waves__272.mp3'},
         api_audio=f"{st.session_state['ip_address']}/api/data/",
+        # use_embeddings=use_embeddings,
         commands=[{
             "keywords": phrases, # keywords are case insensitive
             "api_body": {"keyword": "hey hoots"},
@@ -91,7 +95,7 @@ def ozz():
 
     width=st.session_state['hh_vars']['width'] if 'hc_vars' in st.session_state else 350
     height=st.session_state['hh_vars']['height'] if 'hc_vars' in st.session_state else 350
-    self_image=st.session_state['hh_vars']['self_image'] if 'hc_vars' in st.session_state else f"{characters[0]}.png"
+    self_image=st.session_state['hh_vars']['self_image'] if 'hc_vars' in st.session_state else f"{st.session_state.get('self_image')}.png"
     face_recon=st.session_state['hh_vars']['face_recon'] if 'hc_vars' in st.session_state else False
     show_video=st.session_state['hh_vars']['show_video'] if 'hc_vars' in st.session_state else False
     input_text=st.session_state['hh_vars']['input_text'] if 'hc_vars' in st.session_state else True
@@ -103,7 +107,7 @@ def ozz():
     if self_image == 'stefan.png':
         cols = st.columns((5,3))
         with cols[0]:
-            st.header(f"Welcome {client_user} to Stefans ~Conscience...")
+            st.header(f"Stefans '''~Conscience'''...")
 
         embedding_default = ['stefan']
         user_session_state['use_embeddings'] = embedding_default
@@ -112,24 +116,19 @@ def ozz():
         text="...Well sort of, it's WIP...Responses may be delay'd, ⚡faster-thinking and processing always costs more 💰"
         with cols[0]:
             st.markdown(f''':yellow[{text}]''')
+    else:
+        embedding_default = []
+        user_session_state['use_embeddings'] = embedding_default
+        save_json(session_state_file_path, user_session_state)
 
-        with st.expander("3 Ways to chat with Stefan", True):
-            cols = st.columns((3,2))
-            with cols[0]:
-                st.info("1: RECOMMENDED --> Click And Ask Button: Each time you click you can speak your question")
-                st.info("2: Conversational Mode Button: Once you click, use Keyword 'Stefan', ex: 'Stefan How Are you today' (If stefan responds with a question you can directly answer it and don't need to say his name)")
-                st.info("3: Chat Form: Type your questions and hit enter")
-            with cols[1]:
-                st.warning("Please note: Sometimes questions may be misunderstood and the response may result in inchorent manner.")
-                st.warning("The LLM that uses RAG (i.e. this one) needs extra context to undestand each new query from user, Having responses tailor more accurately requires more engineering")
-        
+
     with st.sidebar:
         embeddings = os.listdir(os.path.join(ozz_master_root(), 'STORAGE'))
         embeddings = ['None'] + embeddings
-        use_embedding = st.multiselect("use embeddings", default=embedding_default, options=embeddings)
-        st.session_state['use_embedding'] = use_embedding
+        use_embeddings = st.multiselect("use embeddings", default=embedding_default, options=embeddings)
+        st.session_state['use_embedding'] = use_embeddings
         if st.button("save"):
-            user_session_state['use_embeddings'] = use_embedding
+            user_session_state['use_embeddings'] = use_embeddings
             save_json(session_state_file_path, user_session_state)
             st.info("saved")
     
@@ -153,6 +152,7 @@ def ozz():
         show_conversation=show_conversation,
         no_response_time=no_response_time,
         refresh_ask=refresh_ask,
+        use_embeddings=use_embeddings,
         )
 
 
@@ -183,7 +183,19 @@ def ozz():
     with llm_audio.container():
         # st.info(kw)
         st.audio(response.content, format="audio/mp3")  
-    import base64
+
+
+    with st.expander("3 Ways to chat with Stefan", True):
+        cols = st.columns((3,2))
+        with cols[0]:
+            st.info("1: RECOMMENDED --> Click And Ask Button: Each time you click you can speak your question")
+            st.info("2: Conversational Mode Button: Once you click, use Keyword 'Stefan', ex: 'Stefan How Are you today' (If stefan responds with a question you can directly answer it and don't need to say his name)")
+            st.info("3: Chat Form: Type your questions and hit enter")
+        with cols[1]:
+            st.error("Please note: Sometimes questions may be misunderstood and the response may result in inchorent manner.")
+            st.warning("The LLM that uses RAG (i.e. this one) needs extra context to undestand each new query from user, Having responses tailor more accurately requires more engineering")
+    
+
 
     def local_gif(gif_path, width="33", height="33", sidebar=False, url=False):
         if url:

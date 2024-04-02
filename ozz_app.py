@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 import re
 from dotenv import load_dotenv
 from ozz_auth import signin_main
-from master_ozz.utils import load_local_json, init_user_session_state, setup_instance, return_app_ip, init_text_audio_db, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
+from master_ozz.utils import ozz_characters, load_local_json, init_user_session_state, setup_instance, return_app_ip, init_text_audio_db, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
 from master_ozz.ozz_query import ozz_query
 from pages.Ozz import ozz
 from pages.Lab import lab
@@ -78,18 +78,20 @@ ip_address, streamlit_ip = return_app_ip() # "http://localhost:8501"
 init_user_session_state()
 
 if 'ozz_guest' in st.session_state:
-    st.info("Welcome to Divergent Thinkers, you are granted to interview Stefan, Follow Instructions")
+    st.info("Welcome to Divergent Thinkers, you are granted to speak with Stefan, Follow Instructions")
     st.session_state['hh_vars']['self_image'] = 'stefan.png'
 
-cols = st.columns(2)
+cols = st.columns((3,2))
 
 with st.sidebar:
     sac_menu = sac_menu_buttons_func()
 
-self_image = st.sidebar.selectbox("Speak To", options=['stefan', 'hootsAndHootie'], key='self_image')
+characters = ozz_characters()
+st.session_state['characters'] = characters
+self_image = st.sidebar.selectbox("Speak To", options=characters.keys(), key='self_image')
 
 # with cols[1]:
-st.header(f"Welcome {client_user} to {self_image}'s virtual reality, what would you like to talk about?")
+#     st.header(f"Welcome {client_user} to {self_image}'s virtual reality, what would you like to talk about?")
 
 if force_db_root and 'ozz_guest' in st.session_state:
     switch_page('ozz')

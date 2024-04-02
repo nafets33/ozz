@@ -221,7 +221,9 @@ def init_constants():
             'PERSIST_PATH':PERSIST_PATH,
             'OZZ_BUILD_dir': OZZ_BUILD_dir,
             "OZZ_db_audio": OZZ_db_audio,
-            "OZZ_db_images": OZZ_db_images}
+            "OZZ_db_images": OZZ_db_images,
+            "ROOT_PATH": ROOT_PATH,
+            "OZZ_DB": OZZ_DB,}
 
 ROOT_PATH = ozz_master_root()
 OZZ_DB = ozz_master_root_db()
@@ -442,7 +444,7 @@ def save_audio(filename, audio, response, user_query, self_image=False, db_name=
         print_line_of_error(e)
         return False
 
-def generate_audio(query="Hello Story Time Anyone?", voice='Mimi', use_speaker_boost=True, settings_vars={'stability': .71, 'similarity_boost': .5, 'style': 0.0}, model_id='eleven_monolingual_v1'):
+def generate_audio(query="Hello Story Time Anyone?", voice_id='zrHiDhphv9ZnVXBqCLjz', use_speaker_boost=True, settings_vars={'stability': .71, 'similarity_boost': .5, 'style': 0.0}, model_id='eleven_monolingual_v1'):
     try:
         # 'eleven_monolingual_v1' # eleven_multilingual_v2, eleven_turbo_v2
         # 'Mimi', #'Charlotte', 'Fin'
@@ -451,8 +453,8 @@ def generate_audio(query="Hello Story Time Anyone?", voice='Mimi', use_speaker_b
             text=query,
             # voice=voice,
             voice=Voice(
-            voice_id= 'L3J0wKSts5TjObrEafQa', #'zrHiDhphv9ZnVXBqCLjz', # mimi
-            settings=VoiceSettings(stability=0.8, similarity_boost=0.7, style=0.0, use_speaker_boost=True)
+            voice_id= voice_id, #'zrHiDhphv9ZnVXBqCLjz', # mimi
+            settings=VoiceSettings(stability=0.8, similarity_boost=0.7, style=0.0, use_speaker_boost=use_speaker_boost)
             ),
         )
 
@@ -746,7 +748,7 @@ def CreateEmbeddings(textChunks :str ,persist_directory : str):
 
 
 # Function to fetch the answers from FAISS vector db 
-def Retriever(query : str, persist_directory : str, search_kwards_num=4, score_threshold=.8):
+def Retriever(query : str, persist_directory : str, search_kwards_num=4, score_threshold=.8, return_only_text=False):
     try:
         s = datetime.now()
 
@@ -756,7 +758,10 @@ def Retriever(query : str, persist_directory : str, search_kwards_num=4, score_t
         vectordb = FAISS.load_local(persist_directory,embeddings=embeddings)
         retriever = vectordb.as_retriever(search_type="mmr", search_kwargs={'score_threshold': score_threshold,
                                                                             "k": search_kwards_num})
-
+        if return_only_text:
+            all_text = [i.page_content for i in retriever]
+            return all_text
+        
         # For OpenAI ChatGPT Model
         qa_chain = RetrievalQA.from_chain_type(llm=ChatOpenAI(model='gpt-3.5-turbo-16k',max_tokens=10000), chain_type='stuff', retriever=retriever, return_source_documents=True)
 
@@ -807,6 +812,47 @@ def sign_in_client_user():
         return True
 
 
+def ozz_characters(population=['stefan', 'hootsAndHootie']): # class
+    my_characters = {}
+    def char_attributes(split_query_by, voice_id, main_prompt, conv_rules):
+        return {'split_query_by':split_query_by, 'voice_id':voice_id, 
+                'main_prompt':main_prompt, 
+                'conv_rules': conv_rules}
+    # voice_ids = {'stefan': 'L3J0wKSts5TjObrEafQa', 'mimi': 'zrHiDhphv9ZnVXBqCLjz'}
+    for char in population:
+        if char == 'stefan':
+            split_query_by=['stefan', 'stephen', 'stephanie', 'stephan']
+            voice_id = 'L3J0wKSts5TjObrEafQa'
+            # main_prompt = # this really shoudl be groups, nice, safety like how to create a main prompt
+            main_prompt = """
+            You are Stefan Stapinski's current conscienceness and the context provided is information about stefan, Use this context information to speak on behalf of Stefan in the 1st person. 
+            Never Lie and do not make up anything, if you do not know the answer, say that you don't know or having trouble getting that information.
+            Each Response is also being spoken by Stefan's real voice, which he cloned using Eleven Labs.
+            Be nice and sound calm and cool.
+            Don't ask how you may be of assistance or how you can assist.
+            Try to respond with less then 300 characters.
+            Do not repeat the users question back unless you are questioning them about the question.
+            """
+            conv_rules={}
+        elif char == 'hootsAndHootie':
+            split_query_by=['hey hoots', 'hey hootie', 'hoots']
+            voice_id = 'zrHiDhphv9ZnVXBqCLjz'
+            main_prompt = """
+            Your name is Hoots, you are an owl and you're in school learning about the world.
+            You specialize in kids development and story telling, you are learning to become an educator.
+            If you don't know an answer or unsure you're answer is correct, ask for help, Victoria or Nadiya are typically around the store, and call out there names to help the customer, example, Nadiya, Victoria could you please help our friend here.
+            You love to tell stories and hang out with your favorite owl family, Hootie. She is the greatest Owl is the world.
+            You love to have a cup of tea, the british way, sit down with anyone who may be around and tell stories. Please always tell short stories for little kids.
+            Please do not say you're an AI assistant, you are a smart owl.
+            You have a great sense of sarcastic humor and you use it well in conversation.
+            You believe is good and moral virture for all.
+            Please keep your reponses short and clear, Try to Answer is less then 300 characters.
+            """
+            conv_rules={}
+
+        my_characters[char] = char_attributes(split_query_by, voice_id, main_prompt, conv_rules)
+
+    return my_characters
 
 # TRAINING FUNCTIONS #
 
