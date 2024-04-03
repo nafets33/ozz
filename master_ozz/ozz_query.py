@@ -588,33 +588,34 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
     # check master    
     df_mch = pd.DataFrame(master_conversation_history)
     if len(df_mch) > 0:
-        cl_user_questions = len(df_mch[df_mch['client_user'] == client_user])
-        print('stop len', cl_user_questions)
-        if cl_user_questions > 8 and client_user != 'stefanstapinski@gmail.com':
-            # return good bye message 
-            response = "Hey sorry but you've reached the max number of questions to ask. Talking to me literally costs money...time is money after all even with computers. Maybe next time we can speak for real. "
-            # Appending the response from json file
-            conversation_history.append({"role": "assistant", "content": response})
-            
-            # return audio file
-            audio_file = 'stefan_max_conv_len.mp3' # handle_audio(user_query, response, audio_file=audio_file, self_image=self_image)
+        if 'client_user' in df_mch.columns:
+            cl_user_questions = len(df_mch[df_mch['client_user'] == client_user])
+            print('stop len', cl_user_questions)
+            if cl_user_questions > 8 and client_user != 'stefanstapinski@gmail.com':
+                # return good bye message 
+                response = "Hey sorry but you've reached the max number of questions to ask. Talking to me literally costs money...time is money after all even with computers. Maybe next time we can speak for real. "
+                # Appending the response from json file
+                conversation_history.append({"role": "assistant", "content": response})
+                
+                # return audio file
+                audio_file = 'stefan_max_conv_len.mp3' # handle_audio(user_query, response, audio_file=audio_file, self_image=self_image)
 
-            text[-1].update({'resp': response})
-            session_state['text'] = text
-            master_conversation_history.append({"role": "assistant", "content": response, "self_image": self_image, 'datetime': return_timestamp_string()})
-            session_state['returning_question'] = False
-            session_state['response_type'] = 'response'
-            listen_after_reply = session_state['returning_question']
+                text[-1].update({'resp': response})
+                session_state['text'] = text
+                master_conversation_history.append({"role": "assistant", "content": response, "self_image": self_image, 'datetime': return_timestamp_string()})
+                session_state['returning_question'] = False
+                session_state['response_type'] = 'response'
+                listen_after_reply = session_state['returning_question']
 
-            # For saving a chat history for current session in json file
-            save_json(master_conversation_history_file_path, master_conversation_history)
-            save_json(conversation_history_file_path, conversation_history)
-            save_json(session_state_file_path, session_state)
-            return ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply)
-    
-        if cl_user_questions == 5:
-            system_info = " Please tell the user that they have 5 more questions remaining before you need to leave"
-            conversation_history = handle_prompt(self_image, conversation_history, system_info=system_info)
+                # For saving a chat history for current session in json file
+                save_json(master_conversation_history_file_path, master_conversation_history)
+                save_json(conversation_history_file_path, conversation_history)
+                save_json(session_state_file_path, session_state)
+                return ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply)
+        
+            if cl_user_questions == 5:
+                system_info = " Please tell the user that they have 5 more questions remaining before you need to leave"
+                conversation_history = handle_prompt(self_image, conversation_history, system_info=system_info)
 
     # # If query was already ASKED find audio and don't call LLM # WORKERBEE
     self_image_name = self_image.split('.')[0]
