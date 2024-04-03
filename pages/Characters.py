@@ -185,7 +185,7 @@ def ozz():
         st.audio(response.content, format="audio/mp3")  
 
 
-    with st.expander("3 Ways to chat with Stefan", True):
+    with st.expander("3 Ways to chat", True):
         cols = st.columns((3,2))
         with cols[0]:
             st.info("1: RECOMMENDED --> Click And Ask Button: Each time you click you can speak your question")

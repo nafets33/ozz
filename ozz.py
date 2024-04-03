@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from ozz_auth import signin_main
 from master_ozz.utils import ozz_characters, load_local_json, init_user_session_state, setup_instance, return_app_ip, init_text_audio_db, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
 from master_ozz.ozz_query import ozz_query
-from pages.Ozz import ozz
+from pages.Characters import ozz
 from pages.Lab import lab
 from pages.YouTube import youtube
 import speech_recognition as sr
@@ -94,7 +94,7 @@ self_image = st.sidebar.selectbox("Speak To", options=characters.keys(), key='se
 #     st.header(f"Welcome {client_user} to {self_image}'s virtual reality, what would you like to talk about?")
 
 if force_db_root and 'ozz_guest' in st.session_state:
-    switch_page('ozz')
+    switch_page('Characters')
 
 st.session_state['page_refresh_count']+=1
 with st.sidebar:
@@ -110,6 +110,7 @@ if 'current_youtube_search' in st.session_state and st.session_state['current_yo
 
 
 if st.session_state.get('admin'):
+    st.warning("ADMIN")
     constants = init_constants()
     OZZ_DB = constants.get('OZZ_DB')
     db_root = os.path.join(OZZ_DB, 'sneakpeak')
