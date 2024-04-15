@@ -209,7 +209,7 @@ def handle_prompt(self_image, conversation_history, system_info=False):
 def story_time_params():
     return True
 
-def client_user_session_state_return(text, response_type='response', returning_question=False, current_youtube_search=False, max_results=10, story_time={}, hh_vars={}, use_embeddings=[]):
+def client_user_session_state_return(text, response_type='response', returning_question=False, current_youtube_search=False, max_results=10, story_time={}, hh_vars={}, use_embeddings=[], session_listen=False, command=False,):
     hh_vars = hh_vars if hh_vars else hoots_and_hootie_vars()
 
     return {'text': text, # []
@@ -220,6 +220,8 @@ def client_user_session_state_return(text, response_type='response', returning_q
             'story_time': story_time,
             'hh_vars': hh_vars,
             'use_embeddings': use_embeddings,
+            'session_listen': session_listen,
+            'command': command,
             }
 
 
@@ -251,11 +253,30 @@ def calculate_story(current_query):
         if calculate_similarity(story, current_query) > .95:
             winner = story
 
+def determine_command(current_query):
+    lower_query = current_query.lower()
+    # command_types = {'create confluence':'create confluence', 'edit confluence':'edit confluence', 'save sharepoint':'save sharepoint', 'create email':'create email', 'save session':'save session'}
+    # for commandkey, command in command_types.items():
+    if 'create' in lower_query and 'confluence' in lower_query:
+        return 'create_confluence'
 
+    return False
 
+def handle_commands(command, session_state):
+    if command == 'create_confluence':
+        if session_state.get('page_title'):
+            pass
+        else:
+            return "You Need a Title"
+    
+    return True
+
+def ai_create_name_for_session(master_conversation_history):
+    # 
+    return True
 
 ### MAIN 
-def Scenarios(text : list, current_query : str , conversation_history : list , first_ask=False, session_state={}, audio_file=None, self_image='hootsAndHootie.png', client_user=None, use_embeddings=None, df_master_audio=None, check_for_story=False):
+def Scenarios(text: list, current_query: str , conversation_history: list , master_conversation_history: list, session_state={}, audio_file=None, self_image='hootsAndHootie.png', client_user=None, use_embeddings=None, df_master_audio=None, check_for_story=False):
     scenario_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     OZZ = {}
     s3_filepath = f'{client_user}/'
@@ -411,9 +432,50 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
         return response
 
     print('QUERY ', current_query)
-    print('SSTATE ', {i: v for i, v in session_state.items() if i != 'text'})
+    # print('SSTATE ', {i: v for i, v in session_state.items() if i != 'text'})
+    
     user_query = current_query
-    # For first we will always check if anything user asked is like common phrases and present in our local json file then give response to that particular query
+
+    # WATERFALL OF QUERY RESPONSE
+    ## checks (limit)
+    ## check commands
+
+    # Scenario Limit
+    df_mch = pd.DataFrame(master_conversation_history)
+    if len(df_mch) > 0:
+        if 'client_user' in df_mch.columns:
+            cl_user_questions = len(df_mch[df_mch['client_user'] == client_user])
+            print('stop len', cl_user_questions)
+            if cl_user_questions > 8 and client_user != 'stefanstapinski@gmail.com':
+                # return good bye message 
+                response = "Hey sorry but you've reached the max number of questions to ask. Talking to me literally costs money...time is money after all even with computers. Maybe next time we can speak for real. "
+                # Appending the response from json file
+                conversation_history.append({"role": "assistant", "content": response})
+                
+                # return audio file
+                audio_file = 'stefan_max_conv_len.mp3' # handle_audio(user_query, response, audio_file=audio_file, self_image=self_image)
+
+                text[-1].update({'resp': response})
+                session_state['text'] = text
+                master_conversation_history.append({"role": "assistant", "content": response, "self_image": self_image, 'datetime': return_timestamp_string()})
+                session_state['returning_question'] = False
+                session_state['response_type'] = 'response'
+                listen_after_reply = session_state['returning_question']
+
+                return scenario_return(response, conversation_history, audio_file, session_state, self_image)
+        
+            if cl_user_questions == 5:
+                system_info = " Please tell the user that they have 5 more questions remaining before you need to leave"
+                conversation_history = handle_prompt(self_image, conversation_history, system_info=system_info)
+
+    command = determine_command(current_query)
+    if command != False:
+        print("COMMAND FOUND ", command)
+
+    # check for command or ongoing command
+    # if session_state.get('command'):
+        # have we satisfied command? If so move on to execution
+        # if session_state.get('command_')
 
     # Appending the user question from json file
     search_phrase = search_for_something(current_query)
@@ -481,6 +543,11 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
     # except Exception as e:
     #     print_line_of_error(e)
     
+    # respond in JSON format
+    provide_data_in_format = 'an empty dictionary'
+    system_info = f" Please Respond in JSON format, use keys, 'response' to return text response and the key 'data' as a list of {provide_data_in_format}. Please seperate the keys by a comma in the JSON format return"
+    conversation_history = handle_prompt(self_image, conversation_history, system_info=" Please Respond in JSON format, use keys, 'response' to return text response and the key 'data' as an empty list. Please seperate the keys by a comma in the JSON format return")
+
     use_embedding = use_embeddings[0] if use_embeddings else None
     db_name, current_query = determine_embedding(current_query, use_embedding=use_embedding)
 
@@ -492,18 +559,20 @@ def Scenarios(text : list, current_query : str , conversation_history : list , f
         response = Retriever(query, Retriever_db).get('result')
     else:
         print("CALL LLM - GPT")
-        print("conv history length", len(conversation_history))
         current_query = current_query
         response = llm_assistant_response(current_query, conversation_history)
-
-
+    
+    print("RESPONSE JSON: ", response)
+    r = json.loads(response)
+    response = r.get('response')
+    
     conversation_history.append({"role": "assistant", "content": response})
     audio_file = handle_audio(user_query, response=response, audio_file=audio_file, self_image=self_image, s3_filepath=s3_filepath)
     
 
     return scenario_return(response, conversation_history, audio_file, session_state, self_image)
 
-def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, page_direct=False, listen_after_reply=False):
+def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, page_direct=False, listen_after_reply=False, session_listen=False):
     
     def ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply=False, session_state=None):
         json_data = {'text': text, 
@@ -549,7 +618,6 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
     
         return ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply)
 
-
     db_root = init_clientUser_dbroot(client_username=client_user, force_db_root=force_db_root)
 
     # handle character from self_image
@@ -558,8 +626,6 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
     #     if "save this" in current_query:
     #         save_json()
     self_image_name = self_image.split('.')[0]
-    print(characters)
-    print(self_image_name)
     split_query_by = characters[self_image_name].get('split_query_by')
     text, current_query = clean_current_query_from_previous_ai_response(text, split_query_by)
     print(current_query)
@@ -579,43 +645,15 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
     # load db
     master_conversation_history = load_local_json(master_conversation_history_file_path)
     conversation_history = load_local_json(conversation_history_file_path)
+    
+    # Session State
     session_state = load_local_json(session_state_file_path)
+    session_state['session_listen'] = session_listen
+    use_embeddings=session_state.get('use_embeddings')
 
     # handle prompt 1 and ensure light conv history
     conversation_history = handle_prompt(self_image, conversation_history, system_info=False)
     conversation_history = get_last_eight(conversation_history)
-
-    # check master    
-    df_mch = pd.DataFrame(master_conversation_history)
-    if len(df_mch) > 0:
-        if 'client_user' in df_mch.columns:
-            cl_user_questions = len(df_mch[df_mch['client_user'] == client_user])
-            print('stop len', cl_user_questions)
-            if cl_user_questions > 8 and client_user != 'stefanstapinski@gmail.com':
-                # return good bye message 
-                response = "Hey sorry but you've reached the max number of questions to ask. Talking to me literally costs money...time is money after all even with computers. Maybe next time we can speak for real. "
-                # Appending the response from json file
-                conversation_history.append({"role": "assistant", "content": response})
-                
-                # return audio file
-                audio_file = 'stefan_max_conv_len.mp3' # handle_audio(user_query, response, audio_file=audio_file, self_image=self_image)
-
-                text[-1].update({'resp': response})
-                session_state['text'] = text
-                master_conversation_history.append({"role": "assistant", "content": response, "self_image": self_image, 'datetime': return_timestamp_string()})
-                session_state['returning_question'] = False
-                session_state['response_type'] = 'response'
-                listen_after_reply = session_state['returning_question']
-
-                # For saving a chat history for current session in json file
-                save_json(master_conversation_history_file_path, master_conversation_history)
-                save_json(conversation_history_file_path, conversation_history)
-                save_json(session_state_file_path, session_state)
-                return ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply)
-        
-            if cl_user_questions == 5:
-                system_info = " Please tell the user that they have 5 more questions remaining before you need to leave"
-                conversation_history = handle_prompt(self_image, conversation_history, system_info=system_info)
 
     # # If query was already ASKED find audio and don't call LLM # WORKERBEE
     self_image_name = self_image.split('.')[0]
@@ -625,10 +663,7 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
         df_master_audio = df_master_audio[(df_master_audio['self_image']==self_image_name) & (df_master_audio['text']==current_query)]
 
 
-    # Session State
-    use_embeddings=session_state.get('use_embeddings')
     print("USE EMBED", use_embeddings)
-    
     if first_ask:
         system_info = " this is your first interaction, be polite and ask them a question on what they want to talk about, work, physics, basketball, AI, investments, family, fun. "
         conversation_history = handle_prompt(self_image, conversation_history, system_info=system_info)
@@ -646,19 +681,20 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
 
     storytime = True if session_state['story_time'] else False
 
-    master_conversation_history.append({"role": "user", "content": current_query, 'client_user': client_user})
-
     # Call the Scenario Function and get the response accordingly
-    scenario_resp = Scenarios(text, current_query, conversation_history, first_ask, session_state, self_image=self_image, client_user=client_user, use_embeddings=use_embeddings, df_master_audio=df_master_audio)
+    scenario_resp = Scenarios(text, current_query, conversation_history, master_conversation_history, session_state, self_image=self_image, client_user=client_user, use_embeddings=use_embeddings, df_master_audio=df_master_audio)
     response = scenario_resp.get('response')
-    print("RESPONSE", response)
+    # print("RESPONSE", response)
     conversation_history = scenario_resp.get('conversation_history')
     audio_file = scenario_resp.get('audio_file')
     session_state = scenario_resp.get('session_state')
     self_image = scenario_resp.get('self_image')
 
     # Save Data
-    master_conversation_history.append({"role": "assistant", "content": response, "self_image": self_image, 'datetime': return_timestamp_string()})
+    # def save_response(text, current_query, response, client_user, self_image, session_state, master_conversation_history)
+    session_listen = session_state.get('session_listen')
+    master_conversation_history.append({"role": "user", "content": current_query, 'client_user': client_user, 'session': session_listen})
+    master_conversation_history.append({"role": "assistant", "content": response, "self_image": self_image, 'datetime': return_timestamp_string(), 'session': session_listen})
     text[-1].update({'resp': response})
     session_state['text'] = text
     
@@ -669,23 +705,23 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
     else:
         session_state['returning_question'] = False
         session_state['response_type'] = 'response'
+    listen_after_reply = session_state['returning_question'] # True if session_state.get('response_type') == 'question' else False
+    
+    page_direct= False # if redirect, add redirect page into session_state
+    if not session_state['current_youtube_search']:
+        pass
+    else:
+        page_direct="http://localhost:8501/"
 
     # For saving a chat history for current session in json file
     save_json(master_conversation_history_file_path, master_conversation_history)
     save_json(conversation_history_file_path, conversation_history)
     save_json(session_state_file_path, session_state)
 
-    listen_after_reply = session_state['returning_question'] # True if session_state.get('response_type') == 'question' else False
-
-    page_direct= False # if redirect, add redirect page into session_state
-    if not session_state['current_youtube_search']:
-        pass
-    else:
-        page_direct="http://localhost:8501/"
-    
     print("listen after reply", listen_after_reply)
     print("AUDIOFILE:", audio_file)
     print("IMAGE:", self_image)
+    
     return ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply)
 
 ## db 

@@ -32,6 +32,7 @@ from langchain.memory import ConversationBufferMemory
 from langchain.prompts import PromptTemplate
 import openai
 
+import argparse
 
 from pydub import AudioSegment
 
@@ -853,6 +854,13 @@ def ozz_characters(population=['stefan', 'hootsAndHootie']): # class
         my_characters[char] = char_attributes(split_query_by, voice_id, main_prompt, conv_rules)
 
     return my_characters
+
+
+def ozzapi_script_Parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument ('-ip', default='127.0.0.1')
+    parser.add_argument ('-port', default='8000')
+    return parser
 
 # TRAINING FUNCTIONS #
 

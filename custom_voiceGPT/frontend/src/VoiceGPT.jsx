@@ -43,6 +43,7 @@ const CustomVoiceGPT = (props) => {
   const [speaking, setSpeakingInProgress] = useState(false); // Added state for API in progress
 
   const [listenButton, setlistenButton] = useState(false); // Added state for API in progress
+  const [session_listen, setsession_listen] = useState(false);
 
 
   const faceData = useRef([]);
@@ -58,7 +59,6 @@ const CustomVoiceGPT = (props) => {
 
   const [buttonName, setButtonName] = useState("Click and Ask");
   const [buttonName_listen, setButtonName_listen] = useState("Listening");
-
 
   useEffect(() => {
     if (self_image) {
@@ -133,6 +133,15 @@ const CustomVoiceGPT = (props) => {
     })
     setIsListening(true)
   }
+
+  const listenSession = () =>{
+    if (session_listen) {
+    setsession_listen(false)
+  }
+  else{
+    setsession_listen(true)
+  }
+    }
 
   const listenContinuouslyInChinese = () =>
     SpeechRecognition.startListening({
@@ -291,6 +300,7 @@ const CustomVoiceGPT = (props) => {
         refresh_ask: refresh_ask,
         client_user: client_user,
         force_db_root:force_db_root,
+        session_listen:session_listen,
       };
       console.log("api");
       const { data } = await axios.post(api, body);
@@ -445,6 +455,23 @@ const CustomVoiceGPT = (props) => {
                 <div style={{ position: 'relative', top: '-20px', left: '50%', transform: 'translateX(-50%)', color: 'black', fontSize: '14px' }}>{buttonName_listen}</div>
               </div>
             )}
+            {/* Listening Session */}
+            {session_listen && (
+              <div
+                style={{
+                  position: 'relative',
+                  top: '-10px', /* Adjusted top position */
+                  right: '50', /* Added right position */
+                  left: '0',
+                  width: '50%', /* Adjusted width to show only to the right side */
+                  height: '10px',
+                  backgroundImage: 'linear-gradient(90deg, orange, transparent 50%, orange)',
+                  animation: 'flashLine 1s infinite',
+                }}
+              >
+                <div style={{ position: 'relative', top: '-20px', left: '50%', transform: 'translateX(-50%)', color: 'black', fontSize: '14px' }}>Session Started</div>
+              </div>
+            )}
           </div>
   
           {/* Message section */}
@@ -497,6 +524,20 @@ const CustomVoiceGPT = (props) => {
             onClick={listenContinuously}
           >
             Conversational Mode
+          </button>
+          <button
+            style={{
+              flex: 1,
+              marginLeft: '5px',
+              backgroundColor: '#2980b9',
+              color: 'white',
+              padding: '10px',
+              border: '2px solid #2980b9',
+              cursor: 'pointer',
+            }}
+            onClick={listenSession}
+          >
+            Start A Session
           </button>
         </div>
   

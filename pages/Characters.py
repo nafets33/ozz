@@ -194,7 +194,7 @@ def ozz():
         with cols[1]:
             st.error("Please note: Sometimes questions may be misunderstood and the response may result in inchorent manner.")
             st.warning("The LLM that uses RAG (i.e. this one) needs extra context to undestand each new query from user, Having responses tailor more accurately requires more engineering")
-    
+        st.error("Character Speach ONLY works on Desktop and does not work on Mobile")
 
 
     def local_gif(gif_path, width="33", height="33", sidebar=False, url=False):
