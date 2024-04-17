@@ -5,6 +5,7 @@ import SpeechRecognition from "react-speech-recognition";
 import Dictaphone from "./Dictaphone";
 // import Dictaphone_ss from "./Dictaphone_ss";
 import * as faceapi from "@vladmandic/face-api";
+import DOMPurify from 'dompurify';
 
 let timer = null;
 let faceTimer = null;
@@ -281,6 +282,9 @@ const CustomVoiceGPT = (props) => {
     console.log(listenButton);
   };
 
+  function isHTML(str) {
+    return /^</.test(str);
+  }
 
   const myFunc = async (ret, command, type) => {
     setMessage(` (${command["api_body"]["keyword"]}) ${ret},`);
@@ -477,17 +481,17 @@ const CustomVoiceGPT = (props) => {
           {/* Message section */}
         {/* Conversation history */}
         <div style={{ flex: 1, overflowY: 'auto', maxHeight: '400px' }}>
-          {show_conversation === true && (
-            <>
-              <div> You: {message}</div>
-              {answers.map((answer, idx) => (
-                <div key={idx} style={{ marginBottom: '5px' }}>
-                  <div style={{ backgroundColor: answer.resp ? '#f2f2f2' : 'lightblue', padding: '5px', borderRadius: '5px' }}>
-                    -user: {answer.user}
-                  </div>
-                  <div style={{ backgroundColor: answer.resp ? 'lightyellow' : '#f2f2f2', padding: '5px', borderRadius: '5px' }}>
-                    -resp: {answer.resp ? answer.resp : "thinking..."}
-                  </div>
+      {show_conversation === true && (
+        <>
+          <div> You: {message}</div>
+          {answers.map((answer, idx) => (
+            <div key={idx} style={{ marginBottom: '5px' }}>
+              <div style={{ backgroundColor: answer.resp ? '#f2f2f2' : 'lightblue', padding: '5px', borderRadius: '5px' }}>
+                -user: <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(answer.user) }} />
+              </div>
+              <div style={{ backgroundColor: answer.resp ? 'lightyellow' : '#f2f2f2', padding: '5px', borderRadius: '5px' }}>
+                -resp: <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(answer.resp || "thinking...") }} />
+              </div>
                 </div>
               ))}
             </>
