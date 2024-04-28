@@ -542,11 +542,6 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
    
     # except Exception as e:
     #     print_line_of_error(e)
-    
-    # respond in JSON format
-    provide_data_in_format = 'an empty dictionary'
-    system_info = f" Please Respond in JSON format, use keys, 'response' to return text response and the key 'data' as a list of {provide_data_in_format}. Please seperate the keys by a comma in the JSON format return"
-    conversation_history = handle_prompt(self_image, conversation_history, system_info=" Please Respond in JSON format, use keys, 'response' to return text response and the key 'data' as an empty list. Please seperate the keys by a comma in the JSON format return")
 
     use_embedding = use_embeddings[0] if use_embeddings else None
     db_name, current_query = determine_embedding(current_query, use_embedding=use_embedding)
@@ -562,9 +557,6 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
         current_query = current_query
         response = llm_assistant_response(current_query, conversation_history)
     
-    print("RESPONSE JSON: ", response)
-    r = json.loads(response)
-    response = r.get('response')
     
     conversation_history.append({"role": "assistant", "content": response})
     audio_file = handle_audio(user_query, response=response, audio_file=audio_file, self_image=self_image, s3_filepath=s3_filepath)

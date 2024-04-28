@@ -24,6 +24,23 @@ def lab():
     DATA_PATH = constants.get('DATA_PATH')
     PERSIST_PATH = constants.get('PERSIST_PATH')
 
+    def delete_files_in_directory(directory):
+        try:
+            # List all files in the directory
+            files = os.listdir(directory)
+            
+            # Iterate over each file and delete it
+            for file in files:
+                file_path = os.path.join(directory, file)
+                os.remove(file_path)
+            
+            print("All files deleted successfully.")
+        except Exception as e:
+            print(f"An error occurred: {e}")
+
+    with st.sidebar:
+        if st.button("Clear DATA files"):
+            delete_files_in_directory(DATA_PATH)
 
     with st.sidebar:
     # with ozz_lab_lab:
@@ -31,7 +48,7 @@ def lab():
         
         # Store all the files
         if not os.path.exists(DATA_PATH):
-                os.mkdir(DATA_PATH)
+            os.mkdir(DATA_PATH)
 
         # Iterating over files and saving it 
         for file in files:
