@@ -94,7 +94,7 @@ self_image = st.sidebar.selectbox("Speak To", options=characters.keys(), key='se
 #     st.header(f"Welcome {client_user} to {self_image}'s virtual reality, what would you like to talk about?")
 
 if force_db_root and 'ozz_guest' in st.session_state:
-    switch_page('Characters')
+    switch_page('stefan')
 
 st.session_state['page_refresh_count']+=1
 with st.sidebar:
