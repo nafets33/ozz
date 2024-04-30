@@ -1,13 +1,14 @@
 import streamlit as st
 import os
 from bs4 import BeautifulSoup
-import re
-from master_ozz.utils import save_json, init_text_audio_db, ozz_master_root_db, init_user_session_state, hoots_and_hootie_keywords, return_app_ip, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
+from ozz_auth import signin_main
+from master_ozz.utils import setup_instance, save_json, init_text_audio_db, ozz_master_root_db, init_user_session_state, hoots_and_hootie_keywords, return_app_ip, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, ozz_characters, CreateEmbeddings, Retriever, init_constants
 from streamlit_extras.switch_page_button import switch_page
 from dotenv import load_dotenv
 from custom_voiceGPT import custom_voiceGPT, VoiceGPT_options_builder
 import requests
 import base64
+import ipdb
 
 # from custom_button import cust_Button
 load_dotenv(os.path.join(ozz_master_root(),'.env'))
@@ -78,13 +79,33 @@ def ozz():
     
     set_streamlit_page_config_once()
 
-    ip_address, streamlit_ip = return_app_ip()
 
-    if not sign_in_client_user():
-        st.stop()
+    force_db_root=False
+    if 'authentication_status' not in st.session_state or st.session_state['authentication_status'] != True: ## None or False
+        force_db_root = True
+        if not sign_in_client_user():
+            st.stop()
+    st.session_state['force_db_root'] = True if force_db_root else False
 
-    user_session_state = init_user_session_state()
+    with st.sidebar:
+        st.write(f"force db, {force_db_root}")
+            
+    client_user = st.session_state['client_user']
+    st.write(f"welcome {client_user}")
+    prod = setup_instance(client_username=client_user, switch_env=False, force_db_root=force_db_root, queenKING=True, init=True, prod=True)
+    user_session_state=init_user_session_state()
 
+    ip_address, streamlit_ip = return_app_ip() # "http://localhost:8501"
+
+
+    characters = ozz_characters()
+    st.session_state['characters'] = characters
+    self_image = st.sidebar.selectbox("Speak To", options=characters.keys(), key='self_image')
+
+
+    if 'ozz_guest' in st.session_state:
+        st.info("Welcome to Divergent Thinkers, you are granted to speak with Stefan, Follow Instructions")
+        st.session_state['hh_vars']['self_image'] = 'stefan.png'
 
     root_db = ozz_master_root_db()
     db_DB_audio = os.path.join(root_db, 'audio')

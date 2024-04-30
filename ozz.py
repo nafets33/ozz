@@ -52,16 +52,20 @@ def sac_menu_buttons_func(main='Ozz'):
 
 set_streamlit_page_config_once()
 
-if 'page_refresh_count' not in st.session_state:
-    st.session_state['page_refresh_count'] = 0
-print(st.session_state['page_refresh_count'])
 
-authenticator = signin_main()
+with st.sidebar:
+    authenticator = signin_main()
+
+
 force_db_root=False
-if st.session_state['authentication_status'] != True: ## None or False
+if 'authentication_status' not in st.session_state or st.session_state['authentication_status'] != True: ## None or False
     force_db_root = True
     if not sign_in_client_user():
         st.stop()
+
+if force_db_root and 'ozz_guest' in st.session_state:
+    switch_page('stefan')
+
 st.session_state['force_db_root'] = True if force_db_root else False
 
 with st.sidebar:
@@ -71,8 +75,6 @@ client_user = st.session_state['client_user']
 st.write(f"welcome {client_user}")
 prod = setup_instance(client_username=client_user, switch_env=False, force_db_root=force_db_root, queenKING=True, init=True, prod=True)
 
-db_name, master_text_audio=init_text_audio_db()
-
 ip_address, streamlit_ip = return_app_ip() # "http://localhost:8501"
 
 init_user_session_state()
@@ -81,20 +83,29 @@ if 'ozz_guest' in st.session_state:
     st.info("Welcome to Divergent Thinkers, you are granted to speak with Stefan, Follow Instructions")
     st.session_state['hh_vars']['self_image'] = 'stefan.png'
 
-cols = st.columns((3,2))
 
-with st.sidebar:
-    sac_menu = sac_menu_buttons_func()
 
 characters = ozz_characters()
 st.session_state['characters'] = characters
 self_image = st.sidebar.selectbox("Speak To", options=characters.keys(), key='self_image')
 
+
+if 'page_refresh_count' not in st.session_state:
+    st.session_state['page_refresh_count'] = 0
+print(st.session_state['page_refresh_count'])
+
+
+db_name, master_text_audio=init_text_audio_db()
+
+cols = st.columns((3,2))
+
+with st.sidebar:
+    sac_menu = sac_menu_buttons_func()
+
 # with cols[1]:
 #     st.header(f"Welcome {client_user} to {self_image}'s virtual reality, what would you like to talk about?")
 
-if force_db_root and 'ozz_guest' in st.session_state:
-    switch_page('stefan')
+
 
 st.session_state['page_refresh_count']+=1
 with st.sidebar:
