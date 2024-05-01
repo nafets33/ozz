@@ -135,7 +135,7 @@ def ozz():
     no_response_time=st.session_state['hh_vars']['no_response_time'] if 'hc_vars' in st.session_state else 3
     refresh_ask=st.session_state['hh_vars']['refresh_ask'] if 'hc_vars' in st.session_state else False
 
-    tabs = st.tabs(['Talk To Stefan', 'Cool Things I Build', 'Resume'])
+    tabs = st.tabs(['Talk To Stefan', 'Cool Things I Build'])
 
 
     embedding_default = []
@@ -220,12 +220,12 @@ def ozz():
 
 
 
-    with tabs[2]:
-        # resume()
-        from streamlit_pdf_viewer import pdf_viewer
-        # file_ = os.path.join(root_db, 'Stefan Stapinski Resume_2024.pdf')
-        file_ = os.path.join(ozz_master_root(), 'pollen/Stefan Stapinski Resume_2024.pdf')
-        pdf_viewer(file_)
+    # with tabs[2]:
+    #     # resume()
+    #     from streamlit_pdf_viewer import pdf_viewer
+    #     # file_ = os.path.join(root_db, 'Stefan Stapinski Resume_2024.pdf')
+    #     file_ = os.path.join(ozz_master_root(), 'pollen/Stefan Stapinski Resume_2024.pdf')
+    #     pdf_viewer(file_)
 
     # Path to the directory containing audio files
     # audio_directory = "/path/to/audio/directory"
