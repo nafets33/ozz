@@ -722,7 +722,7 @@ def Directory(directory : str):
 
 
 #Function to create chunks of documents
-def CreateChunks(documents : str, chunk_size=250, chunk_overlap=10):
+def CreateChunks(documents : str, chunk_size=500, chunk_overlap=20):
     chunks = []
     for docs in documents:
         text_splitter = RecursiveCharacterTextSplitter(

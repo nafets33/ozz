@@ -69,14 +69,15 @@ def lab():
 
         # Select box with predefined options
         db_name = st.selectbox("Train DB", predefined_options)
-
+        chunk_size = st.number_input('chunk size', min_value=100, max_value=800, value=500)
+        chunk_overlap = st.number_input('chunk overlap', min_value=10, max_value=100, value=20)
         if files is not None:
             if st.sidebar.button('Train'):
                 with st.sidebar.status("Training Model..."):
                     load_files = Directory(DATA_PATH)
                     # clean data WORKERBEE
                     # load_files = clean_data(data)
-                    chunks = CreateChunks(load_files)
+                    chunks = CreateChunks(load_files, chunk_size, chunk_overlap)
                     embeddings = CreateEmbeddings(chunks, os.path.join(PERSIST_PATH, db_name))
                     st.info(f"EMBEDDING Created {db_name}")
 
