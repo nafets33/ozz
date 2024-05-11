@@ -2,7 +2,7 @@ import streamlit as st
 import os
 from bs4 import BeautifulSoup
 import re
-from master_ozz.utils import return_app_ip, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
+from master_ozz.utils import llm_assistant_response, ozz_characters,handle_prompt, get_last_eight, return_app_ip, init_clientUser_dbroot, load_local_json, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
 from streamlit_extras.switch_page_button import switch_page
 from dotenv import load_dotenv
 
@@ -63,12 +63,12 @@ def lab():
         predefined_options = os.listdir(PERSIST_PATH)
 
         # Text input for custom value
-        custom_value = st.text_input("Enter custom value:")
+        custom_value = st.text_input("Add New DB Name")
         if custom_value not in predefined_options:
             predefined_options.append(custom_value)
 
         # Select box with predefined options
-        db_name = st.selectbox("Select DB", predefined_options)
+        db_name = st.selectbox("Train DB", predefined_options)
 
         if files is not None:
             if st.sidebar.button('Train'):
@@ -87,30 +87,76 @@ def lab():
         st.write('You have no files uploaded.')
     else:
         selected_file = st.sidebar.selectbox(label="Uploaded Files", options=file_names)
+    return_only_text = True if st.toggle("text query only", True) else False
+
+    db_root = init_clientUser_dbroot(client_username=client_user)
+    score_threshold = st.number_input("score_threshold", min_value=0.0, max_value=1.0,value=.6)
+    search_kwards_num = st.number_input("search_kwards_num", min_value=1, max_value=33,value=8)
+
+    ## Load Client session and conv history # based on character
+    master_conversation_history_file_path = os.path.join(db_root, 'master_conversation_history.json')
+    conversation_history_file_path = os.path.join(db_root, 'conversation_history.json')
+    session_state_file_path = os.path.join(db_root, 'session_state.json')
+    
+    # load db
+    conversation_history = load_local_json(conversation_history_file_path)
+
+    # master_conversation_history = load_local_json(master_conversation_history_file_path)
+    conversation_history = get_last_eight(conversation_history, num_items=4)
+    st.write(conversation_history)
+
+    characters = ozz_characters()
+
+    first_ask = True if 'refresh_count' in st.session_state and st.session_state['refresh_count'] > 0 else False
+    if first_ask:
+        system_info = " this is your first interaction, be polite and ask them a question on what they want to talk about, work, physics, basketball, AI, investments, family, fun. "
+        conversation_history =  conversation_history.clear() if len(conversation_history) > 0 else conversation_history
+
+    st.session_state['refresh_count'] = 1
 
     # Chat Interface
     db_names = os.listdir(PERSIST_PATH)
-    db_name = st.selectbox("Chat with DB: ", db_names)
+    db_name = st.selectbox("Chat with DB: ", db_names, index=db_names.index('stefan'))
     query = st.chat_input(placeholder="Enter your query")
+    import ipdb
     if query is not None:
         with st.chat_message('user'):
             st.write(query)
 
         # Exception or error handling of response
         try:
+            llm_result ={}
             if query:
+                source_documents={}
                 with st.spinner("Searching..."):
                     Retriever_db = os.path.join(PERSIST_PATH, db_name)
-                    response = Retriever(query, Retriever_db)
+                    if return_only_text:
+                        r_response = Retriever(query, Retriever_db, search_kwards_num=search_kwards_num, score_threshold=score_threshold, return_only_text=return_only_text )
+                        source_documents = [i.page_content for i in source_documents]
+                        # Handle Prompt
+                        conversation_history = handle_prompt(characters, "stefan", conversation_history)
+                        st.write(conversation_history)
+                        current_query = query + f""". Use the following information below to try and answer the above query. 
+                        If the informaiton is not relevant to the above query then do not lie and ask the user if they could be more specific in their ask. 
+                        {source_documents}
+                        """
+                        conversation_history.append({"role": "user", "content": current_query})
+                        llm_response = llm_assistant_response(conversation_history)
+                        llm_result['llm_result'] = llm_response
 
+            # if return_only_text == False:
             with st.chat_message('ai'):
-                query = response["query"]
-                result = response["result"]
-                source_documents = response.get("source_documents")
-
-                st.write(result)
+                response = Retriever(query, Retriever_db, search_kwards_num=4, score_threshold=score_threshold, return_only_text=False)
+                query = response.get("query")
+                result = response.get("result")
+                llm_result = llm_result.get('llm_result')
+                st.write("LLM: ", llm_result)
+                ret_source_documents = response.get("source_documents")
+                st.write(ret_source_documents)
+                
+                st.write("RETRIEVER ", result)
                 st.markdown("###### Here are top 3 search results",unsafe_allow_html=True)
-                for index, document in enumerate(source_documents):
+                for index, document in enumerate(r_response):
                     with st.status(f"Document {index+1}"):
                         page_content = document.page_content
                         formatted_content = ' '.join(line.strip() for line in page_content.split('\n'))

@@ -746,10 +746,58 @@ def CreateEmbeddings(textChunks :str ,persist_directory : str):
     vector_store.save_local(persist_directory)
     return vector_store
 
+def get_last_eight(lst=[], num_items=8):
+    if len(lst) <= 1:
+        return lst
+
+    max_items = min(len(lst), num_items)
+
+    return [lst[0]] + lst[-(max_items - 1):]
+
+
+
+def handle_prompt(characters, self_image, conversation_history, system_info=False):
+    try:
+        
+        self_image_name = self_image.split('.')[0]
+        main_prompt = characters[self_image_name].get('main_prompt')
+        
+        if len(conversation_history) == 0: # FIRST ASK
+            conversation_history.append({"role": "system", "content": main_prompt})
+        
+        if system_info:
+            main_prompt = conversation_history[0].get('content')
+            conversation_history[0] = {"role": "system", "content": main_prompt + system_info}
+        else:
+            conversation_history[0] = {"role": "system", "content": main_prompt}
+
+        return conversation_history
+    except Exception as e:
+        print_line_of_error(e)
+
+
+
+def llm_assistant_response(conversation_history):
+
+    # response = Retriever(message, PERSIST_PATH)
+    s = datetime.now()
+    try:
+        # conversation_history.append({"role": "user", "content": message})
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=conversation_history,
+            api_key=os.getenv('ozz_api_key')
+        )
+        assistant_reply = response.choices[0].message["content"]
+        print('LLM Call:', (datetime.now() - s).total_seconds())
+
+        return assistant_reply
+    except Exception as e:
+        print(e)
 
 
 # Function to fetch the answers from FAISS vector db 
-def Retriever(query : str, persist_directory : str, search_kwards_num=4, score_threshold=.8, return_only_text=False):
+def Retriever(query : str, persist_directory : str, search_kwards_num=8, score_threshold=.6, return_only_text=False):
     try:
         s = datetime.now()
 
@@ -760,8 +808,8 @@ def Retriever(query : str, persist_directory : str, search_kwards_num=4, score_t
         retriever = vectordb.as_retriever(search_type="mmr", search_kwargs={'score_threshold': score_threshold,
                                                                             "k": search_kwards_num})
         if return_only_text:
-            all_text = [i.page_content for i in retriever]
-            return all_text
+            docs = retriever.get_relevant_documents(query)
+            return docs
         
         # For OpenAI ChatGPT Model
         qa_chain = RetrievalQA.from_chain_type(llm=ChatOpenAI(model='gpt-3.5-turbo-16k',max_tokens=10000), chain_type='stuff', retriever=retriever, return_source_documents=True)
@@ -831,7 +879,7 @@ def ozz_characters(population=['stefan', 'hootsAndHootie']): # class
             Each Response is also being spoken by Stefan's real voice, which he cloned using Eleven Labs.
             Be nice and sound calm and cool.
             Don't ask how you may be of assistance or how you can assist.
-            Try to respond with less then 300 characters.
+            Try to respond with less then 500 characters but if more detailed is required you can exceed but only up to a max of 1000 characters. 
             Do not repeat the users question back unless you are questioning them about the question.
             """
             conv_rules={}
@@ -927,7 +975,7 @@ def preprocessing(df): # df must be set as key content columns >> File name, con
     return df_cleaned[df_cleaned['contents'] != '']
 
 
-def generate_image(text="2 cute owls in a forest, Award-Winning Art, Detailed, Photorealistic, Fanart", size="256x256", save_img=True, use_llm_enhance=True, gen_source='replicate'): 
+def generate_image(text="2 cute owls in a forest, Award-Winning Art, Detailed, Photorealistic, Fanart", size="1024x1024", save_img=True, use_llm_enhance=True, gen_source='replicate'): 
     
     if gen_source == 'replicate':
         # import replicate as rp
@@ -986,9 +1034,10 @@ def generate_image(text="2 cute owls in a forest, Award-Winning Art, Detailed, P
             # text describing the generated image 
             prompt=prompt, 
             # number of images to generate  
-            n=3, 
+            n=1, 
             # size of each generated image 
             size=size, 
+            model="dall-e-3"
         ) 
         # returning the URL of one image as  
         # we are generating only one image 

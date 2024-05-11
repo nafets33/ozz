@@ -8,6 +8,7 @@ import pandas as pd
 from datetime import datetime
 import pytz
 import re
+import copy
 # from collections import deque
 
 os.umask(0o000)
@@ -16,7 +17,7 @@ est = pytz.timezone("US/Eastern")
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-from master_ozz.utils import ozz_characters, init_stories ,hoots_and_hootie_vars, common_phrases_for_Questions, hoots_and_hootie_keywords, save_json, load_local_json, init_clientUser_dbroot, init_text_audio_db, print_line_of_error, ozz_master_root, ozz_master_root_db, generate_audio, save_audio, Retriever, init_constants
+from master_ozz.utils import llm_assistant_response, get_last_eight, ozz_characters, init_stories ,hoots_and_hootie_vars, common_phrases_for_Questions, hoots_and_hootie_keywords, save_json, load_local_json, init_clientUser_dbroot, init_text_audio_db, print_line_of_error, ozz_master_root, ozz_master_root_db, generate_audio, save_audio, Retriever, init_constants
 import ipdb
 
 main_root = ozz_master_root()  # os.getcwd()
@@ -80,23 +81,6 @@ def split_string(current_query, last_response):
 def return_timestamp_string(format="%Y-%m-%d %H-%M-%S %p {}".format(est), tz=est):
     return datetime.now(tz).strftime(format)
 # Setting up the llm for conversation with conversation history
-def llm_assistant_response(message,conversation_history):
-
-    # response = Retriever(message, PERSIST_PATH)
-    s = datetime.now()
-    try:
-        # conversation_history.append({"role": "user", "content": message})
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=conversation_history,
-            api_key=os.getenv('ozz_api_key')
-        )
-        assistant_reply = response.choices[0].message["content"]
-        print('LLM Call:', (datetime.now() - s).total_seconds())
-
-        return assistant_reply
-    except Exception as e:
-        print(e)
 
 def copy_and_replace_rename(source_path, destination_directory, build_file_name='temp_audio'):
     try:
@@ -542,20 +526,28 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
    
     # except Exception as e:
     #     print_line_of_error(e)
-
+    
     use_embedding = use_embeddings[0] if use_embeddings else None
     db_name, current_query = determine_embedding(current_query, use_embedding=use_embedding)
-
+    return_only_text=False
     if db_name:
         print("USE EMBEDDINGS: ", db_name)
         Retriever_db = os.path.join(PERSIST_PATH, db_name)
-        query = conversation_history[0]['content'] + " below is the user's request, question or statement, always response appropriately. " + current_query 
-        print(query)
-        response = Retriever(query, Retriever_db).get('result')
+        response = Retriever(current_query, Retriever_db, return_only_text=True)
+        if return_only_text:
+            llm_convHistory = copy.deepcopy(conversation_history)
+            source_documents = [i.page_content for i in response]
+            current_query = current_query + f""". Use the following information below to try and answer the above query. 
+            If the informaiton is not relevant to the above query then do not lie and ask the user if they could be more specific in their ask. 
+            {source_documents}
+            """
+            llm_convHistory.append({"role": "user", "content": current_query})
+            response = llm_assistant_response(llm_convHistory)
+
     else:
         print("CALL LLM - GPT")
         current_query = current_query
-        response = llm_assistant_response(current_query, conversation_history)
+        response = llm_assistant_response(conversation_history)
     
     
     conversation_history.append({"role": "assistant", "content": response})
