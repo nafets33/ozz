@@ -206,14 +206,14 @@ def ozz():
     with tabs[1]:
         pollen = os.path.join(ozz_master_root(), 'pollen')
         fis = ['1', '2', '3']
-        st.write("# My Latest Project, A AI Portfolio Manager 🤯🤖")
+        st.write("# My Latest Project, A AI Portfolio Manager 🤖")
         for fi in fis:
             if fi == '1':
                 msg = "# 1. Setup A Portfolio♛"
             elif fi == '2':
                 msg = "# 2. Watch it Make Money🤑"
             elif fi == '3':
-                msg = "# 3. Trade alongside and Work Together, We talk a lot about investments and life"
+                msg = "# 3. Trade alongside and Work Together, Manage your Investments with AI"
 
             st.write(msg)
             st.image(os.path.join(pollen, f'{fi}.png'))

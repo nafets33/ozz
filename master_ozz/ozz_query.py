@@ -533,7 +533,7 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
     if db_name:
         print("USE EMBEDDINGS: ", db_name)
         Retriever_db = os.path.join(PERSIST_PATH, db_name)
-        response = Retriever(current_query, Retriever_db, return_only_text=True)
+        response = Retriever(current_query, Retriever_db, return_only_text=return_only_text)
         if return_only_text:
             llm_convHistory = copy.deepcopy(conversation_history)
             source_documents = [i.page_content for i in response]
@@ -543,6 +543,8 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
             """
             llm_convHistory.append({"role": "user", "content": current_query})
             response = llm_assistant_response(llm_convHistory)
+        else:
+            response = response.get('result')
 
     else:
         print("CALL LLM - GPT")
