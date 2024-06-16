@@ -179,3 +179,7 @@ wrapt==1.16.0
 yarl==1.9.4
 youtube-search-python==1.6.6
 zipp==3.17.0
+streamlit-antd-components==0.2.4
+streamlit-player==0.1.5
+streamlit-extras==0.2.7
+google-search-results
