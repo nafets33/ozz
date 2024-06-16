@@ -1,5 +1,5 @@
 from master_ozz import ozz_router
-from master_ozz.utils import ozz_master_root, get_ip_address
+from master_ozz.utils import ozz_master_root, get_ip_address, ozzapi_script_Parser
 from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -7,6 +7,7 @@ import uvicorn
 from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from starlette.responses import RedirectResponse
 from starlette.requests import Request
+import argparse
 
 # from fastapi import APIRouter
 # router = APIRouter() 
@@ -38,7 +39,7 @@ app.add_middleware(
 @app.get("/", status_code=status.HTTP_200_OK, tags=["API Check"])
 def check():
     return {
-        "message": "Hello World!"
+        "message": "Hello Ozz"
     }
 
 # from starlette.responses import Response
@@ -70,7 +71,10 @@ def check():
 
 
 if __name__ == '__main__':
-    # ip_address = get_ip_address()
-    # print("IP Address:", ip_address)
-    ip_address = "127.0.0.1"
-    uvicorn.run(app, host=ip_address, port=8000) # '10.3.144.157'
+
+    parser = ozzapi_script_Parser()
+    namespace = parser.parse_args()
+    ip_address = namespace.ip
+    port=int(namespace.port)
+
+    uvicorn.run(app, host=ip_address, port=port) # '10.3.144.157'

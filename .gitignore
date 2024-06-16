@@ -6,9 +6,11 @@ __pycache__/
 # C extensions
 *.so
 
+client_user_dbs/
+ozz_db/
+
 # Distribution / packaging
 .Python
-build/
 develop-eggs/
 dist/
 downloads/
