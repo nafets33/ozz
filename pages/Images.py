@@ -30,6 +30,10 @@ def gen_images():
     DATA_PATH = constants.get('DATA_PATH')
     PERSIST_PATH = constants.get('PERSIST_PATH')
     OZZ_db_images = constants.get('OZZ_db_images')
+    images_ = os.listdir(OZZ_db_images)
+
+
+
 
     # START
     st.title('Create Images')
@@ -49,6 +53,13 @@ def gen_images():
                 file_path_ = os.path.join(OZZ_db_images, file_path)
                 st.image(file_path_, caption=f'Generated Image {file_path}', use_column_width=True)
             col_count+=1
+
+    st.header("Saved Images")
+    self_image = st.sidebar.selectbox("Select Image", options=images_, key='pic')
+    if self_image:
+        file_path = os.path.join(OZZ_db_images, self_image)
+        if os.path.exists(file_path):
+            st.image(file_path, caption=f'Saved Image {file_path}', use_column_width=True)
 
 if __name__ == '__main__':
     gen_images()
