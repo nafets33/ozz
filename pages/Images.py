@@ -31,6 +31,7 @@ def gen_images():
     PERSIST_PATH = constants.get('PERSIST_PATH')
     OZZ_db_images = constants.get('OZZ_db_images')
     images_ = os.listdir(OZZ_db_images)
+    images_ = sorted(images_, key=lambda x: os.path.getmtime(os.path.join(OZZ_db_images, x)), reverse=True)
 
 
 
