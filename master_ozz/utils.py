@@ -784,7 +784,7 @@ def llm_assistant_response(conversation_history):
     try:
         # conversation_history.append({"role": "user", "content": message})
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o", # gpt-3.5-turbo
             messages=conversation_history,
             api_key=os.getenv('ozz_api_key')
         )
@@ -1027,7 +1027,7 @@ def generate_image(text="2 cute owls in a forest, Award-Winning Art, Detailed, P
 
         image_urls = rr
     else:
-        openai.api_key=os.getenv("OPENAI_API_KEY")
+        openai.api_key=os.getenv("ozz_api_key")
         prompt = generate_image_prompt(text)
 
         res = openai.Image.create( 

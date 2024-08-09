@@ -2,9 +2,10 @@ import streamlit as st
 import os
 from bs4 import BeautifulSoup
 import re
-from master_ozz.utils import init_user_session_state, generate_image, return_app_ip, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
+from master_ozz.utils import init_text_image_db, init_user_session_state, generate_image, return_app_ip, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
 from streamlit_extras.switch_page_button import switch_page
 from dotenv import load_dotenv
+import pandas as pd
 
 load_dotenv(os.path.join(ozz_master_root(),'.env'))
 #### CHARACTERS ####
@@ -27,6 +28,7 @@ def gen_images():
     client_user = st.session_state['client_user']
 
     constants = init_constants()
+    OZZ_DB = constants.get('OZZ_DB')
     DATA_PATH = constants.get('DATA_PATH')
     PERSIST_PATH = constants.get('PERSIST_PATH')
     OZZ_db_images = constants.get('OZZ_db_images')
@@ -61,6 +63,10 @@ def gen_images():
         file_path = os.path.join(OZZ_db_images, self_image)
         if os.path.exists(file_path):
             st.image(file_path, caption=f'Saved Image {file_path}', use_column_width=True)
+
+    MT_Image = init_text_image_db('master_text_image.json')
+    df = pd.DataFrame(MT_Image)
+    st.write(df)
 
 if __name__ == '__main__':
     gen_images()
