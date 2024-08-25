@@ -1,5 +1,5 @@
 from master_ozz import ozz_router
-from master_ozz.utils import ozz_master_root, get_ip_address, ozzapi_script_Parser
+from master_ozz.utils import ozz_master_root, return_app_ip, ozzapi_script_Parser
 from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -71,10 +71,15 @@ def check():
 
 
 if __name__ == '__main__':
+    ip_address, streamlit_ip = return_app_ip()
+    ip_address = ip_address.split("//")[-1]
+    host = ip_address.split(":")[0]
+    port = int(ip_address.split(":")[-1])
+    
+    # update to handle both
+    # parser = ozzapi_script_Parser()
+    # namespace = parser.parse_args()
+    # ip_address = namespace.ip # 127.0.0.1
+    # port=int(namespace.port) # 8000
 
-    parser = ozzapi_script_Parser()
-    namespace = parser.parse_args()
-    ip_address = namespace.ip
-    port=int(namespace.port)
-
-    uvicorn.run(app, host=ip_address, port=port) # '10.3.144.157'
+    uvicorn.run(app, host=host, port=port) # '10.3.144.157'

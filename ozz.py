@@ -55,8 +55,6 @@ set_streamlit_page_config_once()
 
 with st.sidebar:
     authenticator = signin_main()
-
-
 force_db_root=False
 if 'authentication_status' not in st.session_state or st.session_state['authentication_status'] != True: ## None or False
     force_db_root = True

@@ -4,6 +4,8 @@ from bs4 import BeautifulSoup
 import re
 from master_ozz.utils import llm_assistant_response, ozz_characters,handle_prompt, get_last_eight, return_app_ip, init_clientUser_dbroot, load_local_json, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
 from streamlit_extras.switch_page_button import switch_page
+from ozz_auth import all_page_auth_signin
+ 
 from dotenv import load_dotenv
 
 
@@ -15,8 +17,7 @@ def lab():
     ip_address, streamlit_ip = return_app_ip()
     print(ip_address)
 
-    if not sign_in_client_user():
-        st.stop()
+    auth_ = all_page_auth_signin()
 
     client_user = st.session_state['client_user']
 
@@ -134,6 +135,7 @@ def lab():
                     if return_only_text:
                         r_response = Retriever(query, Retriever_db, search_kwards_num=search_kwards_num, score_threshold=score_threshold, return_only_text=return_only_text )
                         source_documents = [i.page_content for i in source_documents]
+                        print(source_documents)
                         # Handle Prompt
                         conversation_history = handle_prompt(characters, "stefan", conversation_history)
                         st.write(conversation_history)

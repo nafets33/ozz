@@ -71,6 +71,27 @@ def return_db_root(client_username):
 
     return db_root
 
+
+def sign_in_client_user():
+    if 'client_user' not in st.session_state:
+        st.info("Want to Talk To the Creator?")
+        with st.form("Your Name, use Email"):
+            enter_name = st.text_input('Your Name')
+            password = st.text_input('password')
+            if st.form_submit_button('save'):
+                if password != os.environ.get('kings_guest_pw'):
+                    st.error("No Soup for you, Wrong Password")
+                    return False
+                st.session_state['ozz_guest'] = True
+                st.session_state['client_user'] = enter_name
+                st.session_state['password'] = password
+                st.rerun()
+        return False
+    else:
+        return True
+
+
+
 def init_clientUser_dbroot(client_username, force_db_root=False, queenKING=False):
 
     if force_db_root:
@@ -648,8 +669,8 @@ def get_ip_address():
     return ip_address
 
 
-def return_app_ip(streamlit_ip="http://localhost:8501", ip_address=None):
-    
+def return_app_ip(streamlit_ip=os.environ.get('streamlit_ip'), ip_address=os.environ.get('local_fastapi_address')):
+    port = os.environ.get('local_fastapi_address').split("//")[-1]
     ip_address = st.session_state.get('ip_address')
     
     if ip_address:
@@ -662,7 +683,7 @@ def return_app_ip(streamlit_ip="http://localhost:8501", ip_address=None):
         ip_address = "https://api.divergent-thinkers.com"
         streamlit_ip = ip_address
     else:
-        ip_address = "http://127.0.0.1:8000"
+        ip_address = os.environ.get('local_fastapi_address')
 
     st.session_state['ip_address'] = ip_address
     st.session_state['streamlit_ip'] = streamlit_ip
@@ -755,7 +776,6 @@ def get_last_eight(lst=[], num_items=8):
     return [lst[0]] + lst[-(max_items - 1):]
 
 
-
 def handle_prompt(characters, self_image, conversation_history, system_info=False):
     try:
         
@@ -793,15 +813,16 @@ def llm_assistant_response(conversation_history):
 
         return assistant_reply
     except Exception as e:
-        print(e)
+        print_line_of_error(e)
 
 
 # Function to fetch the answers from FAISS vector db 
 def Retriever(query : str, persist_directory : str, search_kwards_num=8, score_threshold=.6, return_only_text=False):
     try:
+
         s = datetime.now()
 
-        embeddings = OpenAIEmbeddings()
+        embeddings = OpenAIEmbeddings(api_key=os.environ.get('ozz_api_key'))
         # memory = ConversationBufferMemory()
         # embeddings = HuggingFaceInstructEmbeddings(model_name=EMBEDDING_MODEL_NAME)
         vectordb = FAISS.load_local(persist_directory,embeddings=embeddings)
@@ -812,7 +833,7 @@ def Retriever(query : str, persist_directory : str, search_kwards_num=8, score_t
             return docs
         
         # For OpenAI ChatGPT Model
-        qa_chain = RetrievalQA.from_chain_type(llm=ChatOpenAI(model='gpt-3.5-turbo-16k',max_tokens=10000), chain_type='stuff', retriever=retriever, return_source_documents=True)
+        qa_chain = RetrievalQA.from_chain_type(llm=ChatOpenAI(model='gpt-4o',max_tokens=10000), chain_type='stuff', retriever=retriever, return_source_documents=True, openai_api_key=os.environ.get('ozz_api_key'))
 
         result = qa_chain({"query": query})
 
@@ -840,25 +861,6 @@ def MergeIndexes(db_locations : list, new_location : str = None):
     # Return the merged database or we can store it as new db name as well 
     # dbPrimary.save_local(new_location)  Location where we have to save the merged database  
     return dbPrimary.docstore._dict
-
-
-def sign_in_client_user():
-    if 'client_user' not in st.session_state:
-        st.info("Want to Talk To the Creator?")
-        with st.form("Your Name, use Email"):
-            enter_name = st.text_input('Your Name')
-            password = st.text_input('password')
-            if st.form_submit_button('save'):
-                if password != os.environ.get('kings_guest_pw'):
-                    st.error("No Soup for you, Wrong Password")
-                    return False
-                st.session_state['ozz_guest'] = True
-                st.session_state['client_user'] = enter_name
-                st.session_state['password'] = password
-                st.rerun()
-        return False
-    else:
-        return True
 
 
 def ozz_characters(population=['stefan', 'hootsAndHootie']): # class
@@ -975,7 +977,7 @@ def preprocessing(df): # df must be set as key content columns >> File name, con
     return df_cleaned[df_cleaned['contents'] != '']
 
 
-def generate_image(text="2 cute owls in a forest, Award-Winning Art, Detailed, Photorealistic, Fanart", size="1024x1024", save_img=True, use_llm_enhance=True, gen_source='replicate'): 
+def generate_image(text="2 cute owls in a forest, Award-Winning Art, Detailed, Photorealistic, Fanart", size="1024x1024", save_img=True, use_llm_enhance=True, gen_source='replicate', image_name=None): 
     
     if gen_source == 'replicate':
         # import replicate as rp
@@ -1051,7 +1053,7 @@ def generate_image(text="2 cute owls in a forest, Award-Winning Art, Detailed, P
     # Save data for each image in the database
     image_responses = {}
     for i, url in enumerate(image_urls):
-        response, file_path = save_image(url, gen_source)
+        response, file_path = save_image(url, gen_source, image_name)
         image_responses[file_path] = response
         data = text_image_fields(file_path=file_path, text=prompt)
         MT_Image.append(data)
@@ -1061,11 +1063,16 @@ def generate_image(text="2 cute owls in a forest, Award-Winning Art, Detailed, P
     return image_responses
 
 
-def save_image(url1, gen_source='dalle'):
+def save_image(url1, gen_source='dalle', image_name=None):
     response = requests.get(url1) 
-    # saving the image in PNG format
-    images_len = len(os.listdir(OZZ_db_images))
-    fname = f'{gen_source}_{images_len}.png'
+    if image_name:
+        fname = f'{image_name}.png'
+    else:
+        date = str(datetime.now())
+        hash_name = hash_string(date)
+        # saving the image in PNG format
+        fname = f'{gen_source}_{hash_name}.png'
+    
     filepath = os.path.join(OZZ_db_images, fname)
     with open(filepath, "wb") as f: 
         f.write(response.content) 

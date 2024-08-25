@@ -529,7 +529,7 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
     
     use_embedding = use_embeddings[0] if use_embeddings else None
     db_name, current_query = determine_embedding(current_query, use_embedding=use_embedding)
-    return_only_text=False
+    return_only_text=True
     if db_name:
         print("USE EMBEDDINGS: ", db_name)
         Retriever_db = os.path.join(PERSIST_PATH, db_name)

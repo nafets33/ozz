@@ -7,7 +7,7 @@ import streamlit_authenticator as stauth
 import smtplib
 import ssl
 from email.message import EmailMessage
-from master_ozz.utils import print_line_of_error, ozz_master_root, setup_instance, kingdom
+from master_ozz.utils import print_line_of_error, ozz_master_root, setup_instance, kingdom, sign_in_client_user
 import ipdb
 
 # from QueenHive import init_pollen_dbs
@@ -15,6 +15,15 @@ import ipdb
 main_root = ozz_master_root()  # os.getcwd()  # hive root
 load_dotenv(os.path.join(main_root, ".env"))
 
+def all_page_auth_signin(force_db_root=None):
+    with st.sidebar:
+        authenticator = signin_main()
+    
+    if 'authentication_status' not in st.session_state or st.session_state['authentication_status'] != True: ## None or False
+        force_db_root = True
+        if not sign_in_client_user():
+            st.stop()
+    return {'authenticator': authenticator}
 
 def register_user(authenticator, con, cur):
     # write_flying_bee(54, 54)
@@ -123,7 +132,6 @@ PollenQ
             st.error("Email not found")
     except Exception as e:
         st.error(e)
-
 
 def send_email(recipient, subject, body):
 

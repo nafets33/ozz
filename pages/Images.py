@@ -1,4 +1,6 @@
 import streamlit as st
+from ozz_auth import all_page_auth_signin
+
 import os
 from bs4 import BeautifulSoup
 import re
@@ -16,10 +18,7 @@ def gen_images():
     # load_dotenv(os.path.join(main_root, ".env"))
     set_streamlit_page_config_once()
 
-    ip_address, streamlit_ip = return_app_ip()
-
-    if not sign_in_client_user():
-        st.stop()
+    auth_ = all_page_auth_signin()
 
     init_user_session_state()
     
@@ -43,10 +42,13 @@ def gen_images():
 
     # st.image(fn)
     gen_im_text = st.text_input("generate Images")
-    gen_source = st.selectbox('image gen source', options=['replicate', 'dalle'], index=['replicate', 'dalle'].index('replicate'))
+    gen_source = st.selectbox('image gen source', options=['replicate', 'dalle'], index=['replicate', 'dalle'].index('dalle'))
     # Assuming you call the function somewhere in your Streamlit script
+    image_name = st.text_input("Image Name")
+    image_name = None if len(image_name) == 0 else image_name
+    print(image_name)
     if st.button("generate images"):
-        image_responses = generate_image(text=gen_im_text, gen_source=gen_source)
+        image_responses = generate_image(text=gen_im_text, gen_source=gen_source, image_name=image_name)
 
         # Display the images in your Streamlit app
         cols = st.columns(3)
