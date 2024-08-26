@@ -4,7 +4,7 @@ from ozz_auth import all_page_auth_signin
 import os
 from bs4 import BeautifulSoup
 import re
-from master_ozz.utils import init_text_image_db, init_user_session_state, generate_image, return_app_ip, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
+from master_ozz.utils import init_text_image_db, init_user_session_state, generate_image, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
 from streamlit_extras.switch_page_button import switch_page
 from dotenv import load_dotenv
 import pandas as pd

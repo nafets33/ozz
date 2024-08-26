@@ -72,9 +72,13 @@ def check():
 
 if __name__ == '__main__':
     ip_address, streamlit_ip = return_app_ip()
-    ip_address = ip_address.split("//")[-1]
-    host = ip_address.split(":")[0]
-    port = int(ip_address.split(":")[-1])
+    if ip_address == "https://api.divergent-thinkers.com":
+        host = '127.0.0.1'
+        port=8000
+    else:
+        ip_address = ip_address.split("//")[-1]
+        host = ip_address.split(":")[0]
+        port = int(ip_address.split(":")[-1])
     
     # update to handle both
     # parser = ozzapi_script_Parser()

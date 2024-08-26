@@ -679,7 +679,7 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
     # Save Data
     # def save_response(text, current_query, response, client_user, self_image, session_state, master_conversation_history)
     session_listen = session_state.get('session_listen')
-    master_conversation_history.append({"role": "user", "content": current_query, 'client_user': client_user, 'session': session_listen})
+    master_conversation_history.append({"role": "user", "content": current_query, 'client_user': client_user, 'datetime': return_timestamp_string(), 'session': session_listen, })
     master_conversation_history.append({"role": "assistant", "content": response, "self_image": self_image, 'datetime': return_timestamp_string(), 'session': session_listen})
     text[-1].update({'resp': response})
     session_state['text'] = text

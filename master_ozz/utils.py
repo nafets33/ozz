@@ -670,7 +670,6 @@ def get_ip_address():
 
 
 def return_app_ip(streamlit_ip=os.environ.get('streamlit_ip'), ip_address=os.environ.get('local_fastapi_address')):
-    port = os.environ.get('local_fastapi_address').split("//")[-1]
     ip_address = st.session_state.get('ip_address')
     
     if ip_address:
