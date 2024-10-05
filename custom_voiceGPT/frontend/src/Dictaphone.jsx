@@ -9,6 +9,7 @@ const Dictaphone = ({
   show_conversation = true,
   apiInProgress = false, // Receive apiInProgress as a prop
   listenButton = false,
+  session_listen=false,
 }) => {
   const [transcribing, setTranscribing] = useState(true);
   const [clearTranscriptOnListen, setClearTranscriptOnListen] = useState(true);
@@ -17,15 +18,20 @@ const Dictaphone = ({
 
   useEffect(() => {
     if (finalTranscript !== "") {
+      // Add logs to check the conditions
       console.log("Got final result:", finalTranscript);
       console.log("listening?", listening);
-
-      // Add logs to check the conditions
       console.log("listenAfterReply:", listenAfterReply);
-      // console.log("Number of words:", finalTranscript.split(" ").length);
 
       // Clear the previous script if a keyword is found or if the transcript exceeds 89 words
-      if (finalTranscript.split(" ").length > 100000) {
+      if (session_listen && finalTranscript.split(" ").length > 500000){
+        console.log("Transcript exceeds X words");
+        myFunc(finalTranscript, commands[i], 6);
+        resetTranscript();
+        return;
+      }
+
+      if (session_listen==false && finalTranscript.split(" ").length > 10000) {
         console.log("Transcript exceeds 89 words. Clearing You really should call func-api to save .");
         resetTranscript();
         return;
@@ -76,7 +82,7 @@ const Dictaphone = ({
   return (
     <>
       {show_conversation && (
-        <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", flexDirection: "column", maxHeight: "200px", overflowY: "auto", border: "1px solid #ccc", padding: "10px" }}>
           <span>You said: {prevScript}</span>
           <span>Listening: {listening ? "on" : "off"}</span>
           {/* Add other conversation messages here */}

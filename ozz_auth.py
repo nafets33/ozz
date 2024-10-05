@@ -16,8 +16,7 @@ main_root = ozz_master_root()  # os.getcwd()  # hive root
 load_dotenv(os.path.join(main_root, ".env"))
 
 def all_page_auth_signin(force_db_root=None):
-    with st.sidebar:
-        authenticator = signin_main()
+    authenticator = signin_main()
     
     if 'authentication_status' not in st.session_state or st.session_state['authentication_status'] != True: ## None or False
         force_db_root = True

@@ -49,6 +49,8 @@ from botocore.exceptions import NoCredentialsError
 # import replicate ### ??????
 import replicate as rp
 
+import subprocess
+
 
 # from youtubesearchpython import *
 #### AUTH UTILS #####
@@ -77,14 +79,14 @@ def sign_in_client_user():
         st.info("Want to Talk To the Creator?")
         with st.form("Your Name, use Email"):
             enter_name = st.text_input('Your Name')
-            password = st.text_input('password')
-            if st.form_submit_button('save'):
-                if password != os.environ.get('kings_guest_pw'):
-                    st.error("No Soup for you, Wrong Password")
-                    return False
+            # password = st.text_input('password')
+            if st.form_submit_button('yes I want to talk to him'):
+                # if password != os.environ.get('kings_guest_pw'):
+                #     st.error("No Soup for you, Wrong Password")
+                #     return False
                 st.session_state['ozz_guest'] = True
                 st.session_state['client_user'] = enter_name
-                st.session_state['password'] = password
+                st.session_state['password'] = os.environ.get('kings_guest_pw')
                 st.rerun()
         return False
     else:
@@ -205,7 +207,7 @@ def setup_instance(client_username, switch_env, force_db_root, queenKING, prod=N
         print_line_of_error(f"setup instance {e}")
 
 def kingdom():
-    allowed_emails=['stefanstapinski@gmail.com']
+    allowed_emails=['stefanstapinski@gmail.com', 'nstapinski@gmail.com']
     return allowed_emails
 
 def init_user_session_state():
@@ -662,6 +664,29 @@ def set_streamlit_page_config_once():
         raise e
 
 
+def run_pq_fastapi_server():
+
+    script_path = os.path.join(ozz_master_root(), 'ozz_api.py')
+
+    try:
+        # Use sys.executable to get the path to the Python interpreter
+        python_executable = sys.executable
+        subprocess.run([python_executable, script_path, '-i'])
+    except FileNotFoundError:
+        print(f"Error: Python interpreter not found. Make sure Python is installed.")
+    except Exception as e:
+        print(f"Error: {e}")
+
+def check_fastapi_status(ip_address):
+    try:
+
+        req = requests.get(f"{ip_address}/api/data/", timeout=2) # http://127.0.0.1:8000/api/data/
+
+        return True
+    # except ConnectionError as e:
+    except Exception as e:
+        print(e)
+        return False
 
 def get_ip_address():
     hostname = socket.gethostname()

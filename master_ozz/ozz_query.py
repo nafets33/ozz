@@ -38,6 +38,18 @@ common_phrases = json.load(json_file)
 root_db = ozz_master_root_db()
 
 
+def clean_response(response):
+    # Remove asterisks specifically, but keep other punctuation like ? and !
+    cleaned_response = re.sub(r'\*', '', response)
+    
+    # Replace multiple spaces with a single space
+    cleaned_response = re.sub(r'\s+', ' ', cleaned_response)
+    
+    # Strip leading and trailing whitespace
+    cleaned_response = cleaned_response.strip()
+    
+    return cleaned_response
+
 def get_last_eight(lst=[]):
     if len(lst) <= 1:
         return lst
@@ -45,6 +57,7 @@ def get_last_eight(lst=[]):
     max_items = min(len(lst), 8)
 
     return [lst[0]] + lst[-(max_items - 1):]
+
 
 def remove_exact_string(string_a, string_b):
     # Split string_a by string_b
@@ -426,8 +439,12 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
 
     # Scenario Limit
     df_mch = pd.DataFrame(master_conversation_history)
+
     if len(df_mch) > 0:
         if 'client_user' in df_mch.columns:
+            df_mch['datetime'] = pd.to_datetime(df_mch['datetime'], format="%Y-%m-%d %H-%M-%S %p %Z", errors='coerce')
+            today = datetime.now(est).replace(hour=0)
+            df_mch = df_mch[df_mch['datetime'] > today]
             cl_user_questions = len(df_mch[df_mch['client_user'] == client_user])
             print('stop len', cl_user_questions)
             if cl_user_questions > 8 and client_user != 'stefanstapinski@gmail.com':
@@ -558,7 +575,7 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
 
     return scenario_return(response, conversation_history, audio_file, session_state, self_image)
 
-def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, page_direct=False, listen_after_reply=False, session_listen=False):
+def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, page_direct=False, listen_after_reply=False, session_listen=False, before_trigger_vars={}):
     
     def ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply=False, session_state=None):
         json_data = {'text': text, 
@@ -670,6 +687,8 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
     # Call the Scenario Function and get the response accordingly
     scenario_resp = Scenarios(text, current_query, conversation_history, master_conversation_history, session_state, self_image=self_image, client_user=client_user, use_embeddings=use_embeddings, df_master_audio=df_master_audio)
     response = scenario_resp.get('response')
+    response = clean_response(response)
+
     # print("RESPONSE", response)
     conversation_history = scenario_resp.get('conversation_history')
     audio_file = scenario_resp.get('audio_file')

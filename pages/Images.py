@@ -34,15 +34,24 @@ def gen_images():
     images_ = os.listdir(OZZ_db_images)
     images_ = sorted(images_, key=lambda x: os.path.getmtime(os.path.join(OZZ_db_images, x)), reverse=True)
 
+    def generate_visual_prompt(category="nature", subcategory="forest", details="tall trees with sunlight filtering through", mood="serene", color_palette="earthy tones", lighting="soft morning light", perspective="eye-level", style="realistic", action="leaves rustling in the wind"):
+        prompt = f"Create a {mood} {style} image of a {subcategory} in {category}, featuring {details}. "
+        prompt += f"The scene should be captured from a {perspective} perspective, using a {color_palette} color palette with {lighting}. "
+        if action:
+            prompt += f"Include dynamic elements like {action}. "
+        prompt += "Ensure the image is visually cohesive and striking."
+        return prompt
 
+    # Example usage:
+    visual_prompt = generate_visual_prompt()
 
 
     # START
     st.title('Create Images')
 
     # st.image(fn)
-    gen_im_text = st.text_input("generate Images")
-    gen_source = st.selectbox('image gen source', options=['replicate', 'dalle'], index=['replicate', 'dalle'].index('dalle'))
+    gen_im_text = st.text_area("generate Images", value=visual_prompt)
+    gen_source = st.sidebar.selectbox('image gen source', options=['replicate', 'dalle'], index=['replicate', 'dalle'].index('dalle'))
     # Assuming you call the function somewhere in your Streamlit script
     image_name = st.text_input("Image Name")
     image_name = None if len(image_name) == 0 else image_name

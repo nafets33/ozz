@@ -29,6 +29,7 @@ const CustomVoiceGPT = (props) => {
     api_audio,
     client_user,
     force_db_root,
+    before_trigger,
   } = kwargs;
   const [imageSrc, setImageSrc] = useState(kwargs.self_image);
   const [imageSrc_name, setImageSrc_name] = useState(kwargs.self_image);
@@ -46,7 +47,7 @@ const CustomVoiceGPT = (props) => {
   const [listenButton, setlistenButton] = useState(false); // Added state for API in progress
   const [session_listen, setsession_listen] = useState(false);
 
-
+  const [before_trigger_vars, before_trigger_] = useState(kwargs.before_trigger); 
   const faceData = useRef([]);
   const faceTriggered = useRef(false);
   const videoRef = useRef();
@@ -144,15 +145,6 @@ const CustomVoiceGPT = (props) => {
   }
     }
 
-  const listenContinuouslyInChinese = () =>
-    SpeechRecognition.startListening({
-      continuous: true,
-      language: "zh-CN",
-    });
-  const listenOnce = () =>
-    SpeechRecognition.startListening({ continuous: false });
-
-  
   useEffect(() => {
     const loadModels = async () => {
       const MODEL_URL = process.env.PUBLIC_URL + "/models";
@@ -305,6 +297,7 @@ const CustomVoiceGPT = (props) => {
         client_user: client_user,
         force_db_root:force_db_root,
         session_listen:session_listen,
+        before_trigger_vars:before_trigger_vars,
       };
       console.log("api");
       const { data } = await axios.post(api, body);
@@ -349,7 +342,7 @@ const CustomVoiceGPT = (props) => {
         window.location.href = data["page_direct"];
       }
       
-      if (listenAfterReply && !listenButton && !UserUsedChatWindow) {
+      if (listenAfterReply==true && !listenButton && !UserUsedChatWindow) {
         listenContinuously()
         setButtonName_listen("Awaiting your Answer please speak")
       }
@@ -361,7 +354,7 @@ const CustomVoiceGPT = (props) => {
       }
       else {
         listenContinuously()
-        setButtonName_listen("listeing waiting for key word --> stefan")
+        setButtonName_listen("listeing for key word")
       }
       
       console.log("listing end", isListening)
@@ -428,20 +421,27 @@ const CustomVoiceGPT = (props) => {
             )}
             {/* Speaking indicator */}
             {speaking && (
-              <div
-                style={{
-                  position: 'relative',
-                  top: '10px',
-                  left: '0',
-                  width: '100%',
-                  height: '20px',
-                  background: 'linear-gradient(to right, blue, transparent, purple)',
-                  animation: 'waveAnimation 1s infinite',
-                  borderRadius: '10px',
-                }}
-              >
-                <div style={{ position: 'relative', top: '-30px', left: '50%', transform: 'translateX(-50%)', color: 'black', fontSize: '14px' }}>Speaking</div>
-              </div>
+              <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+              {speaking && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '10px',
+                    left: '0',
+                    width: '100%',
+                    height: '20px',
+                    background: 'linear-gradient(to right, blue, transparent, purple)',
+                    animation: 'waveAnimation 1s infinite',
+                    borderRadius: '10px',
+                  }}
+                >
+                  <div style={{ position: 'absolute', top: '-30px', left: '50%', transform: 'translateX(-50%)', color: 'black', fontSize: '14px' }}>
+                    Speaking
+                  </div>
+                </div>
+              )}
+              {/* Your image or other content here */}
+            </div>
             )}
             {/* Listening indicator */}
             {isListening && (
@@ -456,7 +456,7 @@ const CustomVoiceGPT = (props) => {
                   animation: 'flashLine 1s infinite',
                 }}
               >
-                <div style={{ position: 'relative', top: '-20px', left: '50%', transform: 'translateX(-50%)', color: 'black', fontSize: '14px' }}>{buttonName_listen}</div>
+                <div style={{ position: 'absolute', top: '-30px', left: '50%', transform: 'translateX(-89%)', color: 'black', fontSize: '14px' }}>{buttonName_listen}</div>
               </div>
             )}
             {/* Listening Session */}
@@ -555,6 +555,7 @@ const CustomVoiceGPT = (props) => {
             show_conversation={show_conversation}
             apiInProgress={apiInProgress}
             listenButton={listenButton}
+            session_listen={session_listen}
           />
         </div>
   

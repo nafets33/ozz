@@ -22,7 +22,8 @@ def hoots_and_hootie(width=350, height=350,
                      show_conversation=True, 
                      no_response_time=3,
                      refresh_ask=True,
-                     use_embeddings=[],):
+                     use_embeddings=[],
+                     before_trigger={},):
     
     to_builder = VoiceGPT_options_builder.create()
     to = to_builder.build()
