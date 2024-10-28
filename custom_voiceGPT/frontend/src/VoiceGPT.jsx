@@ -55,12 +55,20 @@ const CustomVoiceGPT = (props) => {
   const videoWidth = 640;
   const canvasRef = useRef();
   const audioRef = useRef(null);
+  
 
   const [isListening, setIsListening] = useState(false);
   const [UserUsedChatWindow, setUserUsedChatWindow] = useState(false);
 
   const [buttonName, setButtonName] = useState("Click and Ask");
   const [buttonName_listen, setButtonName_listen] = useState("Listening");
+
+  const [showImage, setShowImage] = useState(false); // Step 1: Define showImage state
+
+  const toggleShowImage = () => { // Step 2: Create toggle function
+    setShowImage((prevShowImage) => !prevShowImage);
+  };
+
 
   useEffect(() => {
     if (self_image) {
@@ -312,20 +320,35 @@ const CustomVoiceGPT = (props) => {
         audioRef.current.pause(); // Pause existing playback if any
       }
 
-      // audioRef.current = new Audio(data["audio_path"]);
-      const apiUrlWithFileName = `${api_audio}${data["audio_path"]}`;
-      audioRef.current = new Audio(apiUrlWithFileName);
-      audioRef.current.play();
-      
-      // Wait for the onended callback to complete before continuing
-      setSpeakingInProgress(true)
-      setButtonName_listen("Speaking")
-      await new Promise((resolve) => {
-        audioRef.current.onended = () => {
-          console.log("Audio playback finished.");
-          resolve();
-        };
-      });
+      if (data["audio_path"]) {
+        const apiUrlWithFileName = `${api_audio}${data["audio_path"]}`;
+        audioRef.current = new Audio(apiUrlWithFileName);
+    
+        try {
+            await audioRef.current.play();
+            
+            // Set state to indicate speaking in progress
+            setSpeakingInProgress(true);
+            setButtonName_listen("Speaking");
+    
+            // Await playback completion
+            await new Promise((resolve) => {
+                audioRef.current.onended = () => {
+                    console.log("Audio playback finished.");
+                    resolve();
+                };
+            });
+    
+        } catch (error) {
+            console.error("Audio playback error:", error);
+        } finally {
+            // Cleanup or reset after playback
+            audioRef.current = null;
+            setSpeakingInProgress(false);
+            setButtonName_listen("Listen");
+        }
+    }
+
       setButtonName("Click and Ask")
       setButtonName_listen("Listening")
       setSpeakingInProgress(false)
@@ -335,6 +358,8 @@ const CustomVoiceGPT = (props) => {
       
       setListenAfterReply(data["listen_after_reply"]);
       console.log("listen after reply", data["listen_after_reply"]);
+
+
 
       if (data["page_direct"] !== false && data["page_direct"] !== null) {
         console.log("api has page direct", data["page_direct"]);
@@ -382,133 +407,113 @@ const CustomVoiceGPT = (props) => {
     };
   }, []); // Run only once after component mounts
 
+  
+  const background_color_chat = refresh_ask.color_dict?.background_color_chat || 'transparent';
+  const splitImage = self_image.split('.')[0]; // Split by dot
+  const placeholder = `Chat with ${splitImage}`;
+
   return (
     <>
       <div className="p-2">
         <div style={{ display: 'flex', flexDirection: 'row', width: '100%' }}>
           {/* Image or video section */}
-          <div style={{ flex: 1 }}>
-            {imageSrc && imageSrc.toLowerCase().endsWith(".mp4") ? (
-              <video
-                height={height || 100}
-                width={width || 100}
-                controls
-                autoPlay={true}
-                loop={false}
-                muted
-              >
-                <source src={imageSrc} type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
-            ) : (
-              <img src={imageSrc} height={height || 100} width={width || 100} />
-            )}
-            {/* Flashing green line indicator */}
-            {apiInProgress && (
-              <div
-                style={{
-                  position: 'relative',
-                  top: '10px',
-                  left: '0',
-                  width: '100%',
-                  height: '10px',
-                  backgroundImage: 'linear-gradient(90deg, blue, transparent 50%, blue)',
-                  animation: 'flashLine 1s infinite',
-                }}
-              >
-                <div style={{ position: 'relative', top: '-20px', left: '50%', transform: 'translateX(-50%)', color: 'black', fontSize: '14px' }}>One Moment please</div>
-              </div>
-            )}
-            {/* Speaking indicator */}
-            {speaking && (
-              <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-              {speaking && (
+          {showImage && (
+            <div style={{ flex: 1 }}>
+              {imageSrc && (
+                imageSrc.toLowerCase().endsWith(".mp4") ? (
+                  <video
+                    style={{ maxWidth: '100%' }}
+                    height={height || 100}
+                    width={width || 100}
+                    controls
+                    autoPlay
+                    loop={false}
+                    muted
+                  >
+                    <source src={imageSrc} type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+                ) : (
+                  <img src={imageSrc} height={height || 100} width={width || 100} style={{ maxWidth: '100%' }} />
+                )
+              )}
+            </div>
+          )}
+  
+          {/* Chat window, taking full width if no image is shown */}
+          <div style={{ flex: showImage ? 1 : '100%', overflowY: 'auto', maxHeight: '400px' }}>
+          {show_conversation && (
+            <div
+              style={{
+                border: '2px solid #2980b9', // Outer border
+                borderRadius: '6px', // Slightly round the corners of the outer border
+                overflowY: 'auto', // Enable vertical scrolling
+                maxHeight: '400px', // Set maximum height for scrolling
+                padding: '10px', // Add padding inside the outer border
+              }}
+            >
+              {answers.map((answer, idx) => (
                 <div
+                  key={idx}
                   style={{
-                    position: 'absolute',
-                    top: '10px',
-                    left: '0',
-                    width: '100%',
-                    height: '20px',
-                    background: 'linear-gradient(to right, blue, transparent, purple)',
-                    animation: 'waveAnimation 1s infinite',
-                    borderRadius: '10px',
+                    marginBottom: '5px',
+                    // backgroundColor: answer.resp ? 'lightyellow' : '#f2f2f2', // Background color for the entire message
+                    padding: '5px',
+                    borderRadius: '4px',
+                    border: '1px solid #ccc', // Inner border for each message
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', // Optional: add shadow for depth
                   }}
                 >
-                  <div style={{ position: 'absolute', top: '-30px', left: '50%', transform: 'translateX(-50%)', color: 'black', fontSize: '14px' }}>
-                    Speaking
+                  <div className="chat-user" style={{ backgroundColor: 'transparent' }}>
+                    {client_user}: <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(answer.user) }} />
+                  </div>
+                  <div className="chat-resp" style={{ display: 'flex', alignItems: 'center', backgroundColor: background_color_chat }}>
+                    {/* Displaying image in place of -resp */}
+                    <div className="chat-image" style={{ marginRight: '10px' }}>
+                      <img src={imageSrc} alt="response" style={{ width: '50px' }} /> {/* Adjusted width */}
+                    </div>
+                    {/* Displaying the response text without the -resp label */}
+                    <span>
+                      <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(answer.resp || "thinking...") }} />
+                    </span>
                   </div>
                 </div>
-              )}
-              {/* Your image or other content here */}
-            </div>
-            )}
-            {/* Listening indicator */}
-            {isListening && (
-              <div
-                style={{
-                  position: 'relative',
-                  top: '10px',
-                  left: '0',
-                  width: '100%',
-                  height: '10px',
-                  backgroundImage: 'linear-gradient(90deg, green, transparent 50%, green)',
-                  animation: 'flashLine 1s infinite',
-                }}
-              >
-                <div style={{ position: 'absolute', top: '-30px', left: '50%', transform: 'translateX(-89%)', color: 'black', fontSize: '14px' }}>{buttonName_listen}</div>
-              </div>
-            )}
-            {/* Listening Session */}
-            {session_listen && (
-              <div
-                style={{
-                  position: 'relative',
-                  top: '-10px', /* Adjusted top position */
-                  right: '50', /* Added right position */
-                  left: '0',
-                  width: '50%', /* Adjusted width to show only to the right side */
-                  height: '10px',
-                  backgroundImage: 'linear-gradient(90deg, orange, transparent 50%, orange)',
-                  animation: 'flashLine 1s infinite',
-                }}
-              >
-                <div style={{ position: 'relative', top: '-20px', left: '50%', transform: 'translateX(-50%)', color: 'black', fontSize: '14px' }}>Session Started</div>
-              </div>
-            )}
-          </div>
-  
-          {/* Message section */}
-        {/* Conversation history */}
-        <div style={{ flex: 1, overflowY: 'auto', maxHeight: '400px' }}>
-      {show_conversation === true && (
-        <>
-          <div> You: {message}</div>
-          {answers.map((answer, idx) => (
-            <div key={idx} style={{ marginBottom: '5px' }}>
-              <div style={{ backgroundColor: answer.resp ? '#f2f2f2' : 'lightblue', padding: '5px', borderRadius: '5px' }}>
-                -user: <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(answer.user) }} />
-              </div>
-              <div style={{ backgroundColor: answer.resp ? 'lightyellow' : '#f2f2f2', padding: '5px', borderRadius: '5px' }}>
-                -resp: <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(answer.resp || "thinking...") }} />
-              </div>
-                </div>
               ))}
-            </>
+            </div>
           )}
+          </div>
         </div>
-        </div>
-  
-        {/* Listen and Listening buttons */}
+
+        {/* Input text section */}
+        {input_text && (
+          <>
+          <hr style={{ margin: '20px 0' }} />
+            <div className="form-group">
+              <input
+                className="form-control"
+                type="text"
+                placeholder={placeholder}
+                value={textString}
+                onChange={handleInputText}
+                onKeyDown={handleOnKeyDown}
+              />
+            </div>
+            <hr style={{ margin: '20px 0' }} />
+          </>
+        )}
+
+        {/* Buttons with the toggle button included */}
         <div style={{ display: 'flex', marginTop: '10px' }}>
           <button
             style={{
               flex: 1,
+              fontSize: '12px',
+              padding: '5px',
               marginRight: '5px',
               backgroundColor: '#3498db',
               color: 'white',
-              padding: '10px',
-              border: '2px solid #2980b9',
+              border: '1px solid #2980b9',
+              borderRadius: '4px',
               cursor: 'pointer',
             }}
             onClick={click_listenButton}
@@ -518,11 +523,13 @@ const CustomVoiceGPT = (props) => {
           <button
             style={{
               flex: 1,
+              fontSize: '12px',
+              padding: '5px',
               marginLeft: '5px',
               backgroundColor: '#2980b9',
               color: 'white',
-              padding: '10px',
-              border: '2px solid #2980b9',
+              border: '1px solid #2980b9',
+              borderRadius: '4px',
               cursor: 'pointer',
             }}
             onClick={listenContinuously}
@@ -532,19 +539,39 @@ const CustomVoiceGPT = (props) => {
           <button
             style={{
               flex: 1,
+              fontSize: '12px',
+              padding: '5px',
               marginLeft: '5px',
               backgroundColor: '#2980b9',
               color: 'white',
-              padding: '10px',
-              border: '2px solid #2980b9',
+              border: '1px solid #2980b9',
+              borderRadius: '4px',
               cursor: 'pointer',
             }}
             onClick={listenSession}
           >
             Start A Session
           </button>
+          <button
+            style={{
+              flex: 1,
+              fontSize: '12px',
+              padding: '5px',
+              marginLeft: '5px',
+              backgroundColor: '#7f8c8d',
+              color: 'white',
+              border: '1px solid #7f8c8d',
+              borderRadius: '4px',
+              cursor: 'pointer',
+            }}
+            onClick={toggleShowImage}
+          >
+            {showImage ? "Hide Image" : "Show Image"}
+          </button>
         </div>
-  
+
+
+
         {/* Dictaphone component */}
         <div className="p-2">
           <Dictaphone
@@ -559,26 +586,10 @@ const CustomVoiceGPT = (props) => {
           />
         </div>
   
-        {/* Input text section */}
-        {input_text && (
-          <>
-            <div className="form-group">
-              <input
-                className="form-control"
-                type="text"
-                placeholder="Chat with Me"
-                value={textString}
-                onChange={handleInputText}
-                onKeyDown={handleOnKeyDown}
-              />
-            </div>
-            <hr style={{ margin: '20px 0' }} /> {/* Add a solid line */}
-          </>
-        )}
-  
+
       </div>
     </>
   );
-};
+}
 
 export default CustomVoiceGPT;

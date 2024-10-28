@@ -75,7 +75,7 @@ def return_db_root(client_username):
 
 
 def sign_in_client_user():
-    if 'client_user' not in st.session_state:
+    if 'username' not in st.session_state:
         st.info("Want to Talk To the Creator?")
         with st.form("Your Name, use Email"):
             enter_name = st.text_input('Your Name')
@@ -85,7 +85,7 @@ def sign_in_client_user():
                 #     st.error("No Soup for you, Wrong Password")
                 #     return False
                 st.session_state['ozz_guest'] = True
-                st.session_state['client_user'] = enter_name
+                st.session_state['username'] = enter_name
                 st.session_state['password'] = os.environ.get('kings_guest_pw')
                 st.rerun()
         return False
@@ -186,6 +186,7 @@ def setup_instance(client_username, switch_env, force_db_root, queenKING, prod=N
     queens_chess_pieces=['conversation_history.json', 'session_state.json', 'master_conversation_history.json']
     try:
         db_root = init_clientUser_dbroot(client_username=client_username, force_db_root=force_db_root, queenKING=queenKING)  # main_root = os.getcwd() // # db_root = os.path.join(main_root, 'db')
+        init_user_session_state()
         if prod is not None:
             init_pollen_dbs(db_root, prod, queens_chess_pieces, queenKING, init)
             return prod
@@ -201,7 +202,6 @@ def setup_instance(client_username, switch_env, force_db_root, queenKING, prod=N
             init_pollen_dbs(db_root, prod, queens_chess_pieces, queenKING, init)
             
             st.session_state['prod'] = prod
-            st.session_state['client_user'] = client_username
             return prod
     except Exception as e:
         print_line_of_error(f"setup instance {e}")
@@ -241,13 +241,17 @@ def init_constants():
     OZZ_db_audio = f"{OZZ_DB}/audio"
     OZZ_db_images = f"{OZZ_DB}/images"
 
-    return {'DATA_PATH': DATA_PATH,
+    data_paths = {'DATA_PATH': DATA_PATH,
             'PERSIST_PATH':PERSIST_PATH,
             'OZZ_BUILD_dir': OZZ_BUILD_dir,
             "OZZ_db_audio": OZZ_db_audio,
             "OZZ_db_images": OZZ_db_images,
             "ROOT_PATH": ROOT_PATH,
             "OZZ_DB": OZZ_DB,}
+    for k,v in data_paths.items():
+        st.session_state[k] = v
+    
+    return data_paths
 
 ROOT_PATH = ozz_master_root()
 OZZ_DB = ozz_master_root_db()
@@ -638,6 +642,13 @@ def common_phrases_for_Questions():
     "Where can",
 ]
 
+def page_line_seperator(height="3", border="none", color="#C5B743"):
+    return st.markdown(
+        """<hr style="height:{}px;border:{};color:#333;background-color:{};" /> """.format(
+            height, border, color
+        ),
+        unsafe_allow_html=True,
+    )
 
 def set_streamlit_page_config_once():
     try:
@@ -694,8 +705,10 @@ def get_ip_address():
     return ip_address
 
 
-def return_app_ip(streamlit_ip=os.environ.get('streamlit_ip'), ip_address=os.environ.get('local_fastapi_address')):
+def return_app_ip():
     ip_address = st.session_state.get('ip_address')
+    streamlit_ip=os.environ.get('streamlit_ip'), 
+    # ip_address=os.environ.get('local_fastapi_address')
     
     if ip_address:
         return ip_address, streamlit_ip
@@ -1000,6 +1013,16 @@ def preprocessing(df): # df must be set as key content columns >> File name, con
             
     return df_cleaned[df_cleaned['contents'] != '']
 
+
+def generate_visual_prompt(category="nature", subcategory="forest", details="tall trees with sunlight filtering through", 
+                           mood="serene", color_palette="earthy tones", lighting="soft morning light", 
+                           perspective="eye-level", style="realistic", action="leaves rustling in the wind"):
+    prompt = f"Create a {mood} {style} image of a {subcategory} in {category}, featuring {details}. "
+    prompt += f"The scene should be captured from a {perspective} perspective, using a {color_palette} color palette with {lighting}. "
+    if action:
+        prompt += f"Include dynamic elements like {action}. "
+    prompt += "Ensure the image is visually cohesive and striking."
+    return prompt
 
 def generate_image(text="2 cute owls in a forest, Award-Winning Art, Detailed, Photorealistic, Fanart", size="1024x1024", save_img=True, use_llm_enhance=True, gen_source='replicate', image_name=None): 
     
@@ -1337,70 +1360,3 @@ def init_stories():
 
 
 
-# Host
-# ec2-3-230-24-12.compute-1.amazonaws.com
-# Database
-# dcp3airkvcc1u1
-# User
-# jdudpjkxggkbrv
-# Port
-# 5432
-# Password
-# c9db217ba584b1a549f9b35536fb52b6416b7c387e9cc3c49fab82614efb167f
-# URI
-# postgres://jdudpjkxggkbrv:c9db217ba584b1a549f9b35536fb52b6416b7c387e9cc3c49fab82614efb167f@ec2-3-230-24-12.compute-1.amazonaws.com:5432/dcp3airkvcc1u1
-# Heroku CLI
-# heroku pg:psql postgresql-cubic-10426 --app ozz
-
-
-# def autoplay_audio(file_path: str):
-#     with open(file_path, "rb") as f:
-#         data = f.read()
-#         b64 = base64.b64encode(data).decode()
-#         md = f"""
-#             <audio controls autoplay="true">
-#             <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
-#             </audio>
-#             """
-#         st.markdown(
-#             md,
-#             unsafe_allow_html=True,
-#         )
-
-
-# st.write("# Auto-playing Audio!")
-
-# autoplay_audio("local_audio.mp3")
-
-# def llm_response(query, chat_history):
-#     memory = ConversationBufferMemory(
-#                                         memory_key="chat_history",
-#                                         max_len=50,
-#                                         return_messages=True,
-#                                     )
-
-#     prompt_template = '''
-#     You are a Bioinformatics expert with immense knowledge and experience in the field. Your name is Dr. Fanni.
-#     Answer my questions based on your knowledge and our older conversation. Do not make up answers.
-#     If you do not know the answer to a question, just say "I don't know".
-
-#     Given the following conversation and a follow up question, answer the question.
-
-#     {chat_history}
-
-#     question: {question}
-#     '''
-
-#     PROMPT = PromptTemplate.from_template(
-#                 template=prompt_template
-#             )
-
-
-#     chain = ConversationalRetrievalChain.from_llm(
-#                                                     chat_model,
-#                                                     retriever,
-#                                                     memory=memory,
-#                                                     condense_question_prompt=PROMPT
-#                                                 )
-
-#     pp.pprint(chain({'question': q1, 'chat_history': memory.chat_memory.messages}))

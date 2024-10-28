@@ -2,7 +2,7 @@ import streamlit as st
 import os
 from bs4 import BeautifulSoup
 import re
-from master_ozz.utils import ozz_characters, save_json, init_text_audio_db, ozz_master_root_db, init_user_session_state, hoots_and_hootie_keywords, return_app_ip, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
+from master_ozz.utils import ozz_characters, save_json, init_text_audio_db, ozz_master_root_db, init_user_session_state, hoots_and_hootie_keywords, return_app_ip, ozz_master_root, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
 from streamlit_extras.switch_page_button import switch_page
 from dotenv import load_dotenv
 from custom_voiceGPT import custom_voiceGPT, VoiceGPT_options_builder
@@ -22,15 +22,12 @@ def hoots_and_hootie(width=350, height=350,
                      no_response_time=3,
                      refresh_ask=True,
                      use_embeddings=[],
-                     before_trigger={},):
+                     before_trigger={},
+                     phrases=[],):
     
     to_builder = VoiceGPT_options_builder.create()
     to = to_builder.build()
 
-    if 'stefan' in self_image:
-        phrases = hoots_and_hootie_keywords(['stefan', 'stephen', 'stephanie', 'stephan'])
-    else:
-        phrases = hoots_and_hootie_keywords()
     force_db_root = True if 'force_db_root' in st.session_state and st.session_state['force_db_root'] else False
 
     custom_voiceGPT(
@@ -70,8 +67,11 @@ def ozz():
 
     # if 'interviewing' in st.session_state:
 
-    
-    set_streamlit_page_config_once()
+    cols = st.columns((3,2))
+    with cols[0]:
+        col_1 = st.empty()
+    with cols[1]:
+        col_2 = st.empty()
 
     ip_address, streamlit_ip = return_app_ip()
 
@@ -82,7 +82,8 @@ def ozz():
 
     characters = ozz_characters()
     st.session_state['characters'] = characters
-    self_image = st.selectbox("Speak To", options=characters.keys(), key='self_image')
+    with col_2.container():
+        self_image = st.selectbox("Speak To", options=characters.keys(), key='self_image')
     
     refresh_ask = True if 'page_refresh' not in st.session_state else False
     st.session_state['page_refresh'] = True
@@ -108,17 +109,17 @@ def ozz():
     
     embedding_default = []
     if self_image == 'stefan.png':
-        cols = st.columns((5,3))
-        with cols[0]:
+        with col_1.container():
             st.header(f"Stefans '''~Conscience'''...")
 
         embedding_default = ['stefan']
         user_session_state['use_embeddings'] = embedding_default
         save_json(session_state_file_path, user_session_state)
 
-        text="...Well sort of, it's WIP...Responses may be delay'd, ⚡faster-thinking and processing always costs more 💰"
-        with cols[0]:
-            st.markdown(f''':yellow[{text}]''')
+        text = "...Well sort of, it's WIP...Responses may be delay'd, ⚡faster-thinking and processing always costs more 💰"
+        st.write(text)
+        # with cols[0]:
+        #     st.markdown(f'<span style="color: red;">{text}</span>', unsafe_allow_html=True)
 
     else:
         embedding_default = []
@@ -137,14 +138,16 @@ def ozz():
             st.info("saved")
     
 
-    # cols = st.columns((5,3))
-    # with cols[1]:
-    #     user_output = st.empty()
     with st.sidebar:
         # rep_output = st.empty()
         selected_audio_file=st.empty()
         llm_audio=st.empty()
-    
+
+    if 'stefan' in self_image:
+        phrases = hoots_and_hootie_keywords(['stefan', 'stephen', 'stephanie', 'stephan'])
+    else:
+        phrases = hoots_and_hootie_keywords()
+
     # with cols[0]:
     hoots_and_hootie(
         width=width,
@@ -157,19 +160,20 @@ def ozz():
         no_response_time=no_response_time,
         refresh_ask=refresh_ask,
         use_embeddings=use_embeddings,
+        phrases=phrases,
         )
 
     if self_image == 'stefan.png':
-        with st.expander("3 Ways to chat", False):
-            cols = st.columns((3,2))
+        with st.expander("3 Ways to chat", True):
+            cols = st.columns((3,3))
             with cols[0]:
                 st.info("1: RECOMMENDED --> Click And Ask Button: Each time you click you can speak your question")
                 st.info("2: Conversational Mode Button: Once you click, use Keyword 'Stefan', ex: 'Stefan How Are you today' (If stefan responds with a question you can directly answer it and don't need to say his name)")
                 st.info("3: Chat Form: Type your questions and hit enter")
             with cols[1]:
+                st.error("Speach ONLY works on Desktop and does not work on Mobile")
                 st.error("Please note: Sometimes questions may be misunderstood and the response may result in inchorent manner.")
-                st.warning("The LLM that uses RAG (i.e. this one) needs extra context to undestand each new query from user, Having responses tailor more accurately requires more engineering")
-            st.error("Character Speach ONLY works on Desktop and does not work on Mobile")
+                st.error("The LLM that uses RAG (i.e. this one) needs extra context to undestand each new query from user, Having responses tailor more accurately requires more engineering")
 
     def list_files_by_date(directory):
         files = []
@@ -179,9 +183,18 @@ def ozz():
                 files.append((filepath, os.path.getmtime(filepath)))
         files.sort(key=lambda x: x[1], reverse=True)
         return files
+    
+    # # Options for the selectbox
+    # options = ['Option 1', 'Option 2', 'Option 3', 'Custom Input']
+    # # Create a selectbox with an additional option for custom input
+    # selected_option = st.selectbox("Session Type", options)
+    # # If 'Custom Input' is selected, show a text input field
+    # if selected_option == 'Custom Input':
+    #     custom_input = st.text_input("Enter your custom input")
+    #     st.write(f"You entered: {custom_input}")
+    # else:
+    #     st.write(f"You selected: {selected_option}")
 
-    # Path to the directory containing audio files
-    # audio_directory = "/path/to/audio/directory"
 
     # Get list of audio files sorted by modification date
     db_name, master_text_audio=init_text_audio_db()

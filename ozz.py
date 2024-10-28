@@ -3,10 +3,10 @@ import os
 # from bs4 import BeautifulSoup
 # import re
 from dotenv import load_dotenv
-from ozz_auth import signin_main
+from ozz_auth import all_page_auth_signin
 from master_ozz.utils import (ozz_characters, load_local_json, init_user_session_state, setup_instance, 
                               return_app_ip, init_text_audio_db, 
-                              ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, 
+                              ozz_master_root, sign_in_client_user, 
                               print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, 
                               init_constants, check_fastapi_status, run_pq_fastapi_server
 )
@@ -60,10 +60,7 @@ def sac_menu_buttons_func(main='Ozz'):
     return sac_menu_buttons
 
 
-set_streamlit_page_config_once()
-
-
-authenticator = signin_main()
+authenticator = all_page_auth_signin().get('authenticator')
 force_db_root=False
 if 'authentication_status' not in st.session_state or st.session_state['authentication_status'] != True: ## None or False
     force_db_root = True
@@ -86,23 +83,15 @@ st.session_state['force_db_root'] = True if force_db_root else False
 with st.sidebar:
     st.write(f"force db, {force_db_root}")
         
-client_user = st.session_state['client_user']
+client_user = st.session_state['username']
 st.write(f"welcome {client_user}")
 prod = setup_instance(client_username=client_user, switch_env=False, force_db_root=force_db_root, queenKING=True, init=True, prod=True)
-
 
 init_user_session_state()
 
 if 'ozz_guest' in st.session_state:
-    st.info("Welcome to Divergent Thinkers, you are granted to speak with Stefan, Follow Instructions")
+    st.info("Welcome to Divergent Thinkers, you may speak with Stefan, Follow Instructions")
     st.session_state['hh_vars']['self_image'] = 'stefan.png'
-
-
-
-characters = ozz_characters()
-st.session_state['characters'] = characters
-self_image = st.sidebar.selectbox("Speak To", options=characters.keys(), key='speak_to')
-
 
 if 'page_refresh_count' not in st.session_state:
     st.session_state['page_refresh_count'] = 0
@@ -124,7 +113,6 @@ with st.sidebar:
     st.warning(f"page refresh count: , {st.session_state['page_refresh_count']}")
 
 if sac_menu == 'Ozz':
-    # switch_page('characters')
     ozz()
 elif sac_menu == 'Lab':
     lab()

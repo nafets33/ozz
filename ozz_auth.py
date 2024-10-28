@@ -7,17 +7,16 @@ import streamlit_authenticator as stauth
 import smtplib
 import ssl
 from email.message import EmailMessage
-from master_ozz.utils import print_line_of_error, ozz_master_root, setup_instance, kingdom, sign_in_client_user
-import ipdb
+from master_ozz.utils import print_line_of_error, ozz_master_root, setup_instance, kingdom, sign_in_client_user, return_app_ip, init_user_session_state, set_streamlit_page_config_once, page_line_seperator
+from custom_button import cust_Button
 
 # from QueenHive import init_pollen_dbs
 
 main_root = ozz_master_root()  # os.getcwd()  # hive root
 load_dotenv(os.path.join(main_root, ".env"))
 
-def all_page_auth_signin(force_db_root=None):
+def all_page_auth_signin(force_db_root=None, page=None):
     authenticator = signin_main()
-    
     if 'authentication_status' not in st.session_state or st.session_state['authentication_status'] != True: ## None or False
         force_db_root = True
         if not sign_in_client_user():
@@ -302,6 +301,7 @@ def signin_main():
             st.session_state["confirmed_user"] = False
         
         st.session_state["authorized_user"] = True
+        st.session_state["client_user"] = st.session_state["username"] 
 
         st.session_state["admin"] = (
             True
@@ -313,6 +313,8 @@ def signin_main():
 
     # def main_func__signIn():
     try:
+        set_streamlit_page_config_once()
+        return_app_ip()
         con = sqlite3.connect("ozz_db/client_users.db")
         cur = con.cursor()
         check_if_table_exists(cur, conn=con)
@@ -326,10 +328,9 @@ def signin_main():
             cookie_expiry_days=int(os.environ.get("cookie_expiry_days")),
             preauthorized={"emails": "na"},
         )
-
-
+        authentication_status = st.session_state['authentication_status']
         # Check login. Automatically gets stored in session state
-        if 'sneak_key' in st.session_state and st.session_state['sneak_key'].lower() == 'family':
+        if 'sneak_key' in st.session_state and st.session_state.get('sneak_key').lower() == 'family':
             authentication_status = True
             st.session_state['name'] = 'stefanstapinski@yahoo.com'
             st.session_state['auth_email'] = "stefanstapinski@yahoo.com"
@@ -341,15 +342,20 @@ def signin_main():
             define_authorized_user()
             return authenticator
         else:
-            name, authentication_status, email = authenticator.login("Login", "main")
+            # page_line_seperator()
+            sb_main = 'main' if st.session_state.get('signin') else 'sidebar'
+            name, authentication_status, email = authenticator.login("Login", sb_main)
             st.session_state['auth_email'] = email
             st.session_state['auth_name'] = name
-        
+            if not authentication_status:
+                cols = st.columns((8,3))
+                with cols[1]:
+                    cust_Button("misc/fairy.png", hoverText='Sign In', key='signin', default=False, height=f'50px') # "https://cdn.onlinewebfonts.com/svg/img_562964.png"
+
         if authentication_status:
+            authenticator.logout("Logout", location='sidebar')
+            reset_password(authenticator, email, location='sidebar')
             if 'logout' in st.session_state and st.session_state["logout"] != True:
-                # authenticator.logout("Logout", location='sidebar')
-                # reset_password(authenticator, email, location='sidebar')
-                
                 # Returning Customer
                 if 'authorized_user' in st.session_state and st.session_state['authorized_user'] == True:
                     if 'instance_setup' in st.session_state and st.session_state['instance_setup']:
