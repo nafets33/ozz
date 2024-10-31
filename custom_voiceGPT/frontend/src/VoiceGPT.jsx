@@ -137,12 +137,17 @@ const CustomVoiceGPT = (props) => {
   };
 
   const listenContinuously = () =>{
+    if (isListening) {
+      setIsListening(false)
+    }
+    else {
     SpeechRecognition.startListening({
       continuous: true,
       language: "en-GB",
     })
     setIsListening(true)
   }
+    }
 
   const listenSession = () =>{
     if (session_listen) {
@@ -452,33 +457,38 @@ const CustomVoiceGPT = (props) => {
                 padding: '10px', // Add padding inside the outer border
               }}
             >
-              {answers.map((answer, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    marginBottom: '5px',
-                    // backgroundColor: answer.resp ? 'lightyellow' : '#f2f2f2', // Background color for the entire message
-                    padding: '5px',
-                    borderRadius: '4px',
-                    border: '1px solid #ccc', // Inner border for each message
-                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', // Optional: add shadow for depth
-                  }}
-                >
-                  <div className="chat-user" style={{ backgroundColor: 'transparent' }}>
-                    {client_user}: <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(answer.user) }} />
+            {answers.map((answer, idx) => (
+              <div
+                key={idx}
+                style={{
+                  marginBottom: '5px',
+                  padding: '5px',
+                  borderRadius: '4px',
+                  border: '1px solid #ccc', // Inner border for each message
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', // Optional: add shadow for depth
+                  // backgroundColor: answer.resp ? 'lightyellow' : '#f2f2f2' // Background color if needed
+                }}
+              >
+                <div className="chat-user"   style={{
+                                                  backgroundColor: '#f2f2f2',
+                                                  textAlign: 'right', // Align text to the right
+                                                  marginLeft: 'auto', // Push content to the right side
+                                                  padding: '5px', // Optional padding for spacing
+                                                }}>
+                  {client_user}: <span dangerouslySetInnerHTML={{ __html: answer.user }} />
+                </div>
+                <div className="chat-resp" style={{ display: 'flex', alignItems: 'flex-start', backgroundColor: background_color_chat }}>
+                  {/* Displaying image on the left side */}
+                  <div className="chat-image" style={{ marginRight: '10px' }}>
+                    <img src={imageSrc} alt="response" style={{ width: '50px' }} /> {/* Adjusted width */}
                   </div>
-                  <div className="chat-resp" style={{ display: 'flex', alignItems: 'center', backgroundColor: background_color_chat }}>
-                    {/* Displaying image in place of -resp */}
-                    <div className="chat-image" style={{ marginRight: '10px' }}>
-                      <img src={imageSrc} alt="response" style={{ width: '50px' }} /> {/* Adjusted width */}
-                    </div>
-                    {/* Displaying the response text without the -resp label */}
-                    <span>
-                      <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(answer.resp || "thinking...") }} />
-                    </span>
+                  {/* Rendering the response text with HTML formatting */}
+                  <div style={{ flex: 1 }}> {/* Flex container to allow text wrapping */}
+                    <span dangerouslySetInnerHTML={{ __html: answer.resp || "thinking..." }} />
                   </div>
                 </div>
-              ))}
+              </div>
+            ))}
             </div>
           )}
           </div>
@@ -502,14 +512,15 @@ const CustomVoiceGPT = (props) => {
           </>
         )}
 
-        {/* Buttons with the toggle button included */}
-        <div style={{ display: 'flex', marginTop: '10px' }}>
+      {/* Buttons with indicators under each */}
+      <div style={{ display: 'flex', marginTop: '10px' }}>
+        {/* Button 1 with Listen Indicator */}
+        <div style={{ flex: 1, textAlign: 'center' }}>
           <button
             style={{
-              flex: 1,
               fontSize: '12px',
               padding: '5px',
-              marginRight: '5px',
+              margin: '5px 0',
               backgroundColor: '#3498db',
               color: 'white',
               border: '1px solid #2980b9',
@@ -520,12 +531,28 @@ const CustomVoiceGPT = (props) => {
           >
             {buttonName}
           </button>
+          {isListening && (
+            <div
+              style={{
+                width: '100%',
+                height: '10px',
+                backgroundImage: 'linear-gradient(90deg, green, transparent 50%, green)',
+                animation: 'flashLine 1s infinite',
+                marginTop: '5px',
+              }}
+            >
+              <div style={{ fontSize: '12px', color: 'black' }}>{buttonName_listen}</div>
+            </div>
+          )}
+        </div>
+
+        {/* Button 2 with Conversational Mode Indicator */}
+        <div style={{ flex: 1, textAlign: 'center' }}>
           <button
             style={{
-              flex: 1,
               fontSize: '12px',
               padding: '5px',
-              marginLeft: '5px',
+              margin: '5px 0',
               backgroundColor: '#2980b9',
               color: 'white',
               border: '1px solid #2980b9',
@@ -536,12 +563,29 @@ const CustomVoiceGPT = (props) => {
           >
             Conversational Mode
           </button>
+          {speaking && (
+            <div
+              style={{
+                width: '100%',
+                height: '10px',
+                background: 'linear-gradient(to right, blue, transparent, purple)',
+                animation: 'waveAnimation 1s infinite',
+                marginTop: '5px',
+                borderRadius: '10px',
+              }}
+            >
+              <div style={{ fontSize: '12px', color: 'black' }}>Speaking</div>
+            </div>
+          )}
+        </div>
+
+        {/* Button 3 with Session Started Indicator */}
+        <div style={{ flex: 1, textAlign: 'center' }}>
           <button
             style={{
-              flex: 1,
               fontSize: '12px',
               padding: '5px',
-              marginLeft: '5px',
+              margin: '5px 0',
               backgroundColor: '#2980b9',
               color: 'white',
               border: '1px solid #2980b9',
@@ -552,12 +596,28 @@ const CustomVoiceGPT = (props) => {
           >
             Start A Session
           </button>
+          {session_listen && (
+            <div
+              style={{
+                width: '100%',
+                height: '10px',
+                backgroundImage: 'linear-gradient(90deg, orange, transparent 50%, orange)',
+                animation: 'flashLine 1s infinite',
+                marginTop: '5px',
+              }}
+            >
+              <div style={{ fontSize: '12px', color: 'black' }}>Session Started</div>
+            </div>
+          )}
+        </div>
+
+        {/* Toggle Image Button */}
+        <div style={{ flex: 1, textAlign: 'center' }}>
           <button
             style={{
-              flex: 1,
               fontSize: '12px',
               padding: '5px',
-              marginLeft: '5px',
+              margin: '5px 0',
               backgroundColor: '#7f8c8d',
               color: 'white',
               border: '1px solid #7f8c8d',
@@ -569,8 +629,7 @@ const CustomVoiceGPT = (props) => {
             {showImage ? "Hide Image" : "Show Image"}
           </button>
         </div>
-
-
+      </div>
 
         {/* Dictaphone component */}
         <div className="p-2">
