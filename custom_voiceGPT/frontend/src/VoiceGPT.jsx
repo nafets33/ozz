@@ -69,6 +69,14 @@ const CustomVoiceGPT = (props) => {
     setShowImage((prevShowImage) => !prevShowImage);
   };
 
+  useEffect(() => {
+    const handleResize = () => {
+        // Trigger a re-render on resize to adjust layout
+        setWindowWidth(window.innerWidth);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+}, []);
 
   useEffect(() => {
     if (self_image) {

@@ -27,8 +27,9 @@ def show_image_history():
     df = pd.DataFrame(MT_Image)
     st.write(df)
 
-def saved_images(images_, OZZ_db_images):
+def saved_images(OZZ_db_images):
     st.header("Saved Images")
+    images_ = os.listdir(OZZ_db_images)
     self_image = st.sidebar.selectbox("Select Image", options=images_, key='pic')
     file_path = os.path.join(OZZ_db_images, self_image)
     if os.path.exists(file_path):
@@ -37,6 +38,10 @@ def saved_images(images_, OZZ_db_images):
 def gen_images(visual_prompt=None, OZZ_db_images=None):
     # main_root = ozz_master_root()  # os.getcwd()
     # START
+    if not OZZ_db_images:
+        constants = init_constants()
+        OZZ_db_images = constants.get('OZZ_db_images')
+
     if not visual_prompt:
         visual_prompt = generate_visual_prompt()
     with st.form("create image"):
@@ -54,11 +59,15 @@ def gen_images(visual_prompt=None, OZZ_db_images=None):
                 st.image(file_path_, caption=f'Generated Image {file_path}', use_column_width=False, width=100)
 
 
+    saved_images(OZZ_db_images)
+    show_image_history()
+
 if __name__ == '__main__':
     # load_dotenv(os.path.join(main_root, ".env"))
-
     all_page_auth_signin()
 
     init_user_session_state()
 
     gen_images()
+
+    

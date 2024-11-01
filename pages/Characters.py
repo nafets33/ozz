@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from custom_voiceGPT import custom_voiceGPT, VoiceGPT_options_builder
 import requests
 import base64
+from ozz_auth import all_page_auth_signin
 
 # from custom_button import cust_Button
 load_dotenv(os.path.join(ozz_master_root(),'.env'))
@@ -242,5 +243,6 @@ def ozz():
             st.write("Admin Only")
             st.write(st.session_state)
 if __name__ == '__main__':
+    all_page_auth_signin(force_db_root=True)
     ozz()
 

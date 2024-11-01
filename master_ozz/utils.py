@@ -900,7 +900,7 @@ def MergeIndexes(db_locations : list, new_location : str = None):
     return dbPrimary.docstore._dict
 
 
-def ozz_characters(population=['stefan', 'hootsAndHootie']): # class
+def ozz_characters(population=['stefan', 'hootsAndHootie', 'viki']): # class
     my_characters = {}
     def char_attributes(split_query_by, voice_id, main_prompt, conv_rules):
         return {'split_query_by':split_query_by, 'voice_id':voice_id, 
@@ -937,6 +937,23 @@ def ozz_characters(population=['stefan', 'hootsAndHootie']): # class
             Please keep your reponses short and clear, Try to Answer is less then 300 characters.
             """
             conv_rules={}
+
+        elif char == 'viki':
+            split_query_by=['hey viki', 'hey vic', 'icky']
+            voice_id = 'XrExE9yKIg1WjnnlVkGX'
+            main_prompt = """
+            Your name is Vicki, you are a professional tutor, teaching russian speakers learn how to speak english.
+            Your students name is Victoria, you are helping her prep for a interview with the army to teach the army students how to speak russian.
+            Help listen to her responses in engligh and do your best to correct her sentences and ensure she learns properly.
+            
+            -Some questions you can ask her
+            Why do you want to work for the army?
+            How much experience do you have teaching russian?
+            What do you do is a student is not listening?
+            What do you do is a student is not learning the russian language well?
+            How do you feel about moving to california?
+            """
+
 
         my_characters[char] = char_attributes(split_query_by, voice_id, main_prompt, conv_rules)
 
