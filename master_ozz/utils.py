@@ -84,7 +84,7 @@ def sign_in_client_user():
                 # if password != os.environ.get('kings_guest_pw'):
                 #     st.error("No Soup for you, Wrong Password")
                 #     return False
-                st.session_state['ozz_guest'] = True
+                st.session_state['ozz_guest'] = enter_name
                 st.session_state['username'] = enter_name
                 st.session_state['password'] = os.environ.get('kings_guest_pw')
                 st.session_state['force_db_root'] = True
@@ -1271,7 +1271,8 @@ def hoots_and_hootie_keywords(characters, self_image):
     return characters[self_image].get('split_query_by')
 
 
-def hoots_and_hootie_vars(width=350, height=350, self_image="hootsAndHootie.png", face_recon=False, show_video=False, input_text=True, show_conversation=True, no_response_time=3, refresh_ask=True):
+def hoots_and_hootie_vars(width=350, height=350, self_image="hootsAndHootie.png", face_recon=False, show_video=False, input_text=True, show_conversation=True, no_response_time=3, refresh_ask={}):
+    refresh_ask = refreshAsk_kwargs()
     return {'width':width,
      'height':height,
      'self_image':self_image, 

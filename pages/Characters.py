@@ -63,21 +63,12 @@ def hoots_and_hootie(width=350, height=350,
     return True
 
 def ozz():
-    main_root = ozz_master_root()  # os.getcwd()
-    # load_dotenv(os.path.join(main_root, ".env"))
-
-    # if 'interviewing' in st.session_state:
 
     cols = st.columns((3,2))
     with cols[0]:
         col_1 = st.empty()
     with cols[1]:
         col_2 = st.empty()
-
-    ip_address, streamlit_ip = return_app_ip()
-
-    if not sign_in_client_user():
-        st.stop()
 
     user_session_state = init_user_session_state()
 
@@ -246,6 +237,5 @@ def ozz():
             st.write("Admin Only")
             st.write(st.session_state)
 if __name__ == '__main__':
-    all_page_auth_signin(force_db_root=True)
     ozz()
 

@@ -7,7 +7,7 @@ import streamlit_authenticator as stauth
 import smtplib
 import ssl
 from email.message import EmailMessage
-from master_ozz.utils import print_line_of_error, ozz_master_root, setup_instance, kingdom, sign_in_client_user, return_app_ip, init_user_session_state, set_streamlit_page_config_once, page_line_seperator
+from master_ozz.utils import print_line_of_error, ozz_master_root, setup_instance, kingdom, sign_in_client_user, return_app_ip, set_streamlit_page_config_once, page_line_seperator
 from custom_button import cust_Button
 import ipdb
 # from QueenHive import init_pollen_dbs
@@ -329,7 +329,6 @@ def signin_main(force_db_root=None):
             st.session_state['name'] = 'stefanstapinski@yahoo.com'
             st.session_state['auth_email'] = "stefanstapinski@yahoo.com"
             st.session_state['auth_name'] = "Kings Guest"
-            st.session_state['ozz_guest'] = "Kings Guest"
             st.session_state['auth_pw'] = os.environ.get("quantqueen_pw")
             name, authentication_status, email = authenticator.direct_login(st.session_state['auth_email'], os.environ.get("quantqueen_pw"))
             st.session_state['authentication_status'] = True

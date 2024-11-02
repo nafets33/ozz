@@ -34,10 +34,9 @@ def ozz():
     with st.sidebar:
         st.write(f"force db, {force_db_root}")
             
-    client_user = st.session_state['client_user']
+    client_user = st.session_state['ozz_guest']
     st.write(f"welcome {client_user}")
     
-
     characters = ozz_characters()
     st.session_state['characters'] = characters
     self_image = st.sidebar.selectbox("Speak To", options=characters.keys(), key='self_image')
@@ -59,7 +58,6 @@ def ozz():
 
     characters = ['stefan', 'hootsAndHootie']
     
-    refresh_ask = True if 'page_refresh' not in st.session_state else False
     st.session_state['page_refresh'] = True
     client_user = st.session_state['client_user']
     constants = init_constants()
@@ -79,7 +77,7 @@ def ozz():
     input_text=st.session_state['hh_vars']['input_text'] if 'hc_vars' in st.session_state else True
     show_conversation=st.session_state['hh_vars']['show_conversation'] if 'hc_vars' in st.session_state else True
     no_response_time=st.session_state['hh_vars']['no_response_time'] if 'hc_vars' in st.session_state else 3
-    refresh_ask=st.session_state['hh_vars']['refresh_ask'] if 'hc_vars' in st.session_state else False
+    refresh_ask=st.session_state['hh_vars']['refresh_ask'] if 'hc_vars' in st.session_state else {}
 
     tabs = st.tabs(['Talk To Stefan', 'Cool Things I Build'])
 
