@@ -103,6 +103,9 @@ def ozz():
     show_conversation=st.session_state['hh_vars']['show_conversation'] if 'hc_vars' in st.session_state else True
     no_response_time=st.session_state['hh_vars']['no_response_time'] if 'hc_vars' in st.session_state else 3
     refresh_ask=st.session_state['hh_vars']['refresh_ask'] if 'hc_vars' in st.session_state else refreshAsk_kwargs()
+
+    no_response_time = st.slider('No Response Time', max_value=8, value=no_response_time)
+    
     
     embedding_default = []
     if self_image == 'stefan.png':
