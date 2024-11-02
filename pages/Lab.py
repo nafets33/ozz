@@ -104,7 +104,6 @@ def lab():
 
     # master_conversation_history = load_local_json(master_conversation_history_file_path)
     conversation_history = get_last_eight(conversation_history, num_items=4)
-    st.write(conversation_history)
 
     characters = ozz_characters()
 

@@ -27,18 +27,16 @@ def list_files_by_date(directory):
 
 def ozz():
 
-    force_db_root=False
-    authenticator = all_page_auth_signin().get('authenticator')
+    force_db_root=True
+    user_session_state = init_user_session_state()
+    authenticator = all_page_auth_signin(force_db_root).get('authenticator')
     
-    st.session_state['force_db_root'] = True if force_db_root else False
-
     with st.sidebar:
         st.write(f"force db, {force_db_root}")
             
     client_user = st.session_state['client_user']
     st.write(f"welcome {client_user}")
-    prod = setup_instance(client_username=client_user, switch_env=False, force_db_root=force_db_root, queenKING=True, init=True, prod=True)
-    user_session_state=init_user_session_state()
+    
 
     characters = ozz_characters()
     st.session_state['characters'] = characters
@@ -94,7 +92,7 @@ def ozz():
                 st.header(f"Stefans '''~Conscience'''...")
 
             embedding_default = ['stefan']
-            user_session_state['use_embeddings'] = embedding_default
+            st.session_state['use_embeddings'] = embedding_default
             save_json(session_state_file_path, user_session_state)
 
             text="...Well sort of, it's WIP...Responses may be delay'd, ⚡faster-thinking and processing always costs more 💰"
@@ -183,7 +181,5 @@ def ozz():
             st.write("Admin Only")
             st.write(st.session_state)
 if __name__ == '__main__':
-    return_app_ip() # "http://localhost:8501"
-    set_streamlit_page_config_once()
     ozz()
 

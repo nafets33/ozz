@@ -805,7 +805,7 @@ def CreateEmbeddings(textChunks :str ,persist_directory : str):
     vector_store.save_local(persist_directory)
     return vector_store
 
-def get_last_eight(lst=[], num_items=8):
+def get_last_eight(lst=[], num_items=3):
     if len(lst) <= 1:
         return lst
 

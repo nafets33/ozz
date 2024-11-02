@@ -62,7 +62,7 @@ def sac_menu_buttons_func(main='Ozz'):
 
 force_db_root = st.session_state.get('force_db_root')
 authenticator = all_page_auth_signin(force_db_root).get('authenticator')
-
+user_session_state = init_user_session_state()
 ip_address, streamlit_ip = return_app_ip() # "http://localhost:8501"
 
 if not check_fastapi_status(ip_address=ip_address):
@@ -79,17 +79,6 @@ with st.sidebar:
         
 client_user = st.session_state['username']
 st.write(f"welcome {client_user}")
-prod = setup_instance(client_username=client_user, switch_env=False, force_db_root=force_db_root, queenKING=True, init=True, prod=True)
-
-init_user_session_state()
-
-if 'ozz_guest' in st.session_state:
-    st.info("Welcome to Divergent Thinkers, you may speak with Stefan, Follow Instructions")
-    st.session_state['hh_vars']['self_image'] = 'stefan.png'
-
-if 'page_refresh_count' not in st.session_state:
-    st.session_state['page_refresh_count'] = 0
-print(st.session_state['page_refresh_count'])
 
 
 db_name, master_text_audio=init_text_audio_db()
@@ -98,13 +87,6 @@ cols = st.columns((3,2))
 
 with st.sidebar:
     sac_menu = sac_menu_buttons_func()
-
-# with cols[1]:
-#     st.header(f"Welcome {client_user} to {self_image}'s virtual reality, what would you like to talk about?")
-
-st.session_state['page_refresh_count']+=1
-with st.sidebar:
-    st.warning(f"page refresh count: , {st.session_state['page_refresh_count']}")
 
 if sac_menu == 'Ozz':
     ozz()

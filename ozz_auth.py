@@ -9,13 +9,14 @@ import ssl
 from email.message import EmailMessage
 from master_ozz.utils import print_line_of_error, ozz_master_root, setup_instance, kingdom, sign_in_client_user, return_app_ip, init_user_session_state, set_streamlit_page_config_once, page_line_seperator
 from custom_button import cust_Button
-
+import ipdb
 # from QueenHive import init_pollen_dbs
 
 main_root = ozz_master_root()  # os.getcwd()  # hive root
 load_dotenv(os.path.join(main_root, ".env"))
 
 def all_page_auth_signin(force_db_root=None, page=None):
+    st.session_state['force_db_root'] = force_db_root
     authenticator = signin_main(force_db_root)
     if 'authentication_status' not in st.session_state or st.session_state['authentication_status'] != True: ## None or False
         if not sign_in_client_user():
@@ -261,18 +262,16 @@ def signin_main(force_db_root=None):
     """Return True or False if the user is signed in"""
 
     def setup_user_pollenqdbs():
-        if 'sneak_key' in st.session_state and st.session_state['sneak_key'] == 'family':
-            prod = setup_instance(client_username=st.session_state["username"], switch_env=False, force_db_root=False, queenKING=True, prod=False, init=True)
+        if st.session_state.get('force_db_root'):
+            prod = setup_instance(client_username=st.session_state["username"], switch_env=False, force_db_root=st.session_state.get('force_db_root'), queenKING=True, prod=False, init=True)
             st.session_state['instance_setup'] = True
             return prod
 
         if st.session_state["authorized_user"]:
+            force_db_root = False
             if 'admin__client_user' in st.session_state and st.session_state['admin__client_user'] != False:
                 st.session_state["username"] = st.session_state['admin__client_user']
                 st.sidebar.write(f'Swarm *{st.session_state["username"]}')
-
-            # st.sidebar.warning("Your Queen is Awaiting")
-            force_db_root = False
         else:
             # st.sidebar.info("Request For a Queen")
             st.info("Below is a Preview")
@@ -283,7 +282,6 @@ def signin_main(force_db_root=None):
 
 
         prod = setup_instance(client_username=st.session_state["username"], switch_env=False, force_db_root=force_db_root, queenKING=True, init=True)
-
         st.session_state['instance_setup'] = True
 
         return prod
@@ -331,6 +329,7 @@ def signin_main(force_db_root=None):
             st.session_state['name'] = 'stefanstapinski@yahoo.com'
             st.session_state['auth_email'] = "stefanstapinski@yahoo.com"
             st.session_state['auth_name'] = "Kings Guest"
+            st.session_state['ozz_guest'] = "Kings Guest"
             st.session_state['auth_pw'] = os.environ.get("quantqueen_pw")
             name, authentication_status, email = authenticator.direct_login(st.session_state['auth_email'], os.environ.get("quantqueen_pw"))
             st.session_state['authentication_status'] = True
