@@ -16,7 +16,7 @@ main_root = ozz_master_root()  # os.getcwd()  # hive root
 load_dotenv(os.path.join(main_root, ".env"))
 
 def all_page_auth_signin(force_db_root=None, page=None):
-    authenticator = signin_main()
+    authenticator = signin_main(force_db_root)
     if 'authentication_status' not in st.session_state or st.session_state['authentication_status'] != True: ## None or False
         force_db_root = True
         if not sign_in_client_user():
@@ -261,7 +261,7 @@ def read_user_db(cur):
         }
     return {"usernames": creds}
 
-def signin_main():
+def signin_main(force_db_root=None):
     """Return True or False if the user is signed in"""
 
     def setup_user_pollenqdbs():
@@ -330,7 +330,7 @@ def signin_main():
         )
         authentication_status = st.session_state['authentication_status']
         # Check login. Automatically gets stored in session state
-        if 'sneak_key' in st.session_state and st.session_state.get('sneak_key').lower() == 'family':
+        if 'sneak_key' in st.session_state and st.session_state.get('sneak_key').lower() == 'family' or force_db_root:
             authentication_status = True
             st.session_state['name'] = 'stefanstapinski@yahoo.com'
             st.session_state['auth_email'] = "stefanstapinski@yahoo.com"

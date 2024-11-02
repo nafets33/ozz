@@ -3,7 +3,7 @@ import os
 from bs4 import BeautifulSoup
 from ozz_auth import all_page_auth_signin
 from pages.Characters import hoots_and_hootie
-from master_ozz.utils import setup_instance, save_json, init_text_audio_db, ozz_master_root_db, init_user_session_state, hoots_and_hootie_keywords, return_app_ip, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, ozz_characters, CreateEmbeddings, Retriever, init_constants
+from master_ozz.utils import setup_instance, save_json, refreshAsk_kwargs, ozz_master_root_db, init_user_session_state, return_app_ip, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, ozz_characters, CreateEmbeddings, Retriever, init_constants
 from streamlit_extras.switch_page_button import switch_page
 from dotenv import load_dotenv
 from custom_voiceGPT import custom_voiceGPT, VoiceGPT_options_builder
@@ -43,7 +43,13 @@ def ozz():
     characters = ozz_characters()
     st.session_state['characters'] = characters
     self_image = st.sidebar.selectbox("Speak To", options=characters.keys(), key='self_image')
-
+    
+    if st.sidebar.toggle("sy_prompt"):
+        header_prompt = st.text_area("System_Prompt", characters[st.session_state.get('self_image')].get('main_prompt'))
+    else:
+        header_prompt = characters[st.session_state.get('self_image')].get('main_prompt')
+    
+    refresh_ask = refreshAsk_kwargs(header_prompt=header_prompt)
 
     if 'ozz_guest' in st.session_state:
         st.info("Welcome to Divergent Thinkers, you are granted to speak with Stefan, Follow Instructions")

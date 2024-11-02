@@ -3,6 +3,8 @@ import axios from "axios";
 import { Streamlit } from "streamlit-component-lib";
 import SpeechRecognition from "react-speech-recognition";
 import Dictaphone from "./Dictaphone";
+import MediaDisplay from "./MediaDisplay";
+
 // import Dictaphone_ss from "./Dictaphone_ss";
 import * as faceapi from "@vladmandic/face-api";
 import DOMPurify from 'dompurify';
@@ -18,7 +20,6 @@ const CustomVoiceGPT = (props) => {
     commands,
     height,
     width,
-    show_conversation,
     show_video,
     input_text,
     no_response_time,
@@ -42,7 +43,11 @@ const CustomVoiceGPT = (props) => {
   const [captureVideo, setCaptureVideo] = useState(false);
   const [textString, setTextString] = useState("");
   const [apiInProgress, setApiInProgress] = useState(false); // Added state for API in progress
-  const [speaking, setSpeakingInProgress] = useState(false); // Added state for API in progress
+  const [speaking, setSpeakingInProgress] = useState(false); // Added state for API in progresslistening
+  const [listening, setlistening] = useState(false); // Added state for API in progress
+
+  const [show_conversation, setshow_conversation] = useState(true); // Added state for API in progress
+  
 
   const [listenButton, setlistenButton] = useState(false); // Added state for API in progress
   const [session_listen, setsession_listen] = useState(false);
@@ -57,26 +62,31 @@ const CustomVoiceGPT = (props) => {
   const audioRef = useRef(null);
   
 
-  const [isListening, setIsListening] = useState(false);
   const [UserUsedChatWindow, setUserUsedChatWindow] = useState(false);
-
   const [buttonName, setButtonName] = useState("Click and Ask");
   const [buttonName_listen, setButtonName_listen] = useState("Listening");
 
   const [showImage, setShowImage] = useState(false); // Step 1: Define showImage state
 
+  
+
   const toggleShowImage = () => { // Step 2: Create toggle function
     setShowImage((prevShowImage) => !prevShowImage);
   };
 
+  const [windowWidth, setWindowWidth] = useState(0); // Initial value
+
+    // Create a reusable function for getting the window width
+    const updateWindowWidth = () => {
+      if (typeof window !== 'undefined') {
+          setWindowWidth(window.innerWidth);
+      }
+  };
+
+  // Call the function on component mount to set the initial window width
   useEffect(() => {
-    const handleResize = () => {
-        // Trigger a re-render on resize to adjust layout
-        setWindowWidth(window.innerWidth);
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-}, []);
+      updateWindowWidth();
+  }, []);
 
   useEffect(() => {
     if (self_image) {
@@ -98,64 +108,43 @@ const CustomVoiceGPT = (props) => {
     }
   };
 
-  const checkListeningStatus = () => {
-    // Check if continuous listening is active
-    if (!SpeechRecognition.browserSupportsContinuousListening()) {
-      // If not, restart continuous listening
-      startContinuousListening();
-    }
-  };
 
-  useEffect(() => {
-    Streamlit.setFrameHeight();
-
-    // Check listening status every minute
-    const intervalId = setInterval(() => {
-      if (!SpeechRecognition.browserSupportsContinuousListening()) {
-        // If continuous listening is not active, start it
-        console.log("LISTEN STOPPED TURNING BACK ON", error);
-        listenContinuously();
-      }
-    }, 60000);
-
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, []);
-
-  const startContinuousListening = () => {
-    // Start continuous listening
-    SpeechRecognition.startListening({
-      continuous: true,
-      language: "en-GB",
-    });
-    setIsListening(true)
-  };
 
   const stopListening = () => {
+    setlistening(false);
     SpeechRecognition.stopListening();
-    setIsListening(false);
-    console.log("Stopping Listening, isListening=", isListening)
-
-    
+    console.log("Stopping Listening, isListening=", listening)
   }
-  
-  const startListening = () => {
-    SpeechRecognition.startListening();
-  };
 
   const listenContinuously = () =>{
-    if (isListening) {
-      setIsListening(false)
-    }
-    else {
+    setlistening(true)
     SpeechRecognition.startListening({
       continuous: true,
       language: "en-GB",
     })
-    setIsListening(true)
+
+}
+
+
+const listen_button = () => {
+  console.log("listening?", listening);
+  if (!listening) {
+    console.log("Starting to listen...");
+    listenContinuously();
+  } else {
+    console.log("Stopping listening...");
+    stopListening();
   }
-    }
+};
+
+useEffect(() => {
+  if (listening) {
+    console.log("Listening has started");
+  } else {
+    console.log("Listening has stopped");
+  }
+}, [listening]);
+
 
   const listenSession = () =>{
     if (session_listen) {
@@ -289,7 +278,9 @@ const CustomVoiceGPT = (props) => {
 
   const click_listenButton = () => {
     setlistenButton(true)
+    if (!listening) {
     listenContinuously()
+    }
     setButtonName("Please Speak")
     console.log("listening button listen click");
     console.log(listenButton);
@@ -370,7 +361,7 @@ const CustomVoiceGPT = (props) => {
       console.log("Audio ENDED MOVE TO SET VARS .");
       
       setListenAfterReply(data["listen_after_reply"]);
-      console.log("listen after reply", data["listen_after_reply"]);
+      console.log("listen after reply", data["listen_after_reply"], listenAfterReply);
 
 
 
@@ -379,46 +370,44 @@ const CustomVoiceGPT = (props) => {
         // window.location.reload();
         window.location.href = data["page_direct"];
       }
-      
-      if (listenAfterReply==true && !listenButton && !UserUsedChatWindow) {
-        listenContinuously()
+
+      if (UserUsedChatWindow) {
+        setUserUsedChatWindow(false)
+      }
+      else if (listenAfterReply==true) {
+        console.log("API END HIT listen after replyTRUE")
         setButtonName_listen("Awaiting your Answer please speak")
       }
       else if (listenButton) {
       setlistenButton(false)
       }
-      else if (UserUsedChatWindow){
-        setUserUsedChatWindow(false)
-      }
-      else {
-        listenContinuously()
-        setButtonName_listen("listeing for key word")
-      }
-      
-      console.log("listing end", isListening)
 
+      
     } catch (error) {
       console.log("api call on listen failed!", error);
       setApiInProgress(false); // Set API in progress to false on error
       setlistenButton(false)
     }
+
+    updateWindowWidth();
+    console.log("ReSize Window")
   };
 
-  useEffect(() => {
-    // Function to resize the window
-    const resizeWindow = () => {
-      window.resizeBy(0, 1); // Resize the window by 1 pixel vertically
-    };
+  // useEffect(() => {
+  //   // Function to resize the window
+  //   const resizeWindow = () => {
+  //     window.resizeBy(0, 1); // Resize the window by 1 pixel vertically
+  //   };
 
-    // Resize the window after the response finishes
-    // Replace `RESPONSE_FINISH_EVENT` with the event that indicates the response finished
-    window.addEventListener('RESPONSE_FINISH_EVENT', resizeWindow);
+  //   // Resize the window after the response finishes
+  //   // Replace `RESPONSE_FINISH_EVENT` with the event that indicates the response finished
+  //   window.addEventListener('RESPONSE_FINISH_EVENT', resizeWindow);
 
-    // Cleanup the event listener
-    return () => {
-      window.removeEventListener('RESPONSE_FINISH_EVENT', resizeWindow);
-    };
-  }, []); // Run only once after component mounts
+  //   // Cleanup the event listener
+  //   return () => {
+  //     window.removeEventListener('RESPONSE_FINISH_EVENT', resizeWindow);
+  //   };
+  // }, []); // Run only once after component mounts
 
   
   const background_color_chat = refresh_ask.color_dict?.background_color_chat || 'transparent';
@@ -427,76 +416,82 @@ const CustomVoiceGPT = (props) => {
 
   return (
     <>
+
       <div className="p-2">
-        <div style={{ display: 'flex', flexDirection: 'row', width: '100%' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
           {/* Image or video section */}
-          {showImage && (
-            <div style={{ flex: 1 }}>
-              {imageSrc && (
-                imageSrc.toLowerCase().endsWith(".mp4") ? (
-                  <video
-                    style={{ maxWidth: '100%' }}
-                    height={height || 100}
-                    width={width || 100}
-                    controls
-                    autoPlay
-                    loop={false}
-                    muted
-                  >
-                    <source src={imageSrc} type="video/mp4" />
-                    Your browser does not support the video tag.
-                  </video>
-                ) : (
-                  <img src={imageSrc} height={height || 100} width={width || 100} style={{ maxWidth: '100%' }} />
-                )
-              )}
-            </div>
-          )}
+          <div>
+            {/* Media Display */}
+            <MediaDisplay
+              showImage={showImage}
+              imageSrc={imageSrc}
+              largeHeight={100}   // Customize as needed
+              largeWidth={100}    // Customize as needed
+              smallHeight={40}    // Customize as needed
+              smallWidth={40}     // Customize as needed
+            />
+          </div>
   
           {/* Chat window, taking full width if no image is shown */}
           <div style={{ flex: showImage ? 1 : '100%', overflowY: 'auto', maxHeight: '400px' }}>
           {show_conversation && (
             <div
               style={{
-                border: '2px solid #2980b9', // Outer border
-                borderRadius: '6px', // Slightly round the corners of the outer border
-                overflowY: 'auto', // Enable vertical scrolling
-                maxHeight: '400px', // Set maximum height for scrolling
-                padding: '10px', // Add padding inside the outer border
+                display: 'flex',
+                flexDirection: 'column',
+                maxHeight: '400px', // Set your desired max height
+                height: '400px', // Fixed height to ensure no resizing
+                overflowY: 'auto', // Enable scrolling within this container
+                border: '1px solid #ccc',
+                padding: '10px',
               }}
             >
-            {answers.map((answer, idx) => (
-              <div
-                key={idx}
-                style={{
-                  marginBottom: '5px',
-                  padding: '5px',
-                  borderRadius: '4px',
-                  border: '1px solid #ccc', // Inner border for each message
-                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', // Optional: add shadow for depth
-                  // backgroundColor: answer.resp ? 'lightyellow' : '#f2f2f2' // Background color if needed
-                }}
-              >
-                <div className="chat-user"   style={{
-                                                  backgroundColor: '#f2f2f2',
-                                                  textAlign: 'right', // Align text to the right
-                                                  marginLeft: 'auto', // Push content to the right side
-                                                  padding: '5px', // Optional padding for spacing
-                                                }}>
-                  {client_user}: <span dangerouslySetInnerHTML={{ __html: answer.user }} />
-                </div>
-                <div className="chat-resp" style={{ display: 'flex', alignItems: 'flex-start', backgroundColor: background_color_chat }}>
-                  {/* Displaying image on the left side */}
-                  <div className="chat-image" style={{ marginRight: '10px' }}>
-                    <img src={imageSrc} alt="response" style={{ width: '50px' }} /> {/* Adjusted width */}
+              {answers.map((answer, idx) => (
+                <div
+                  key={idx}
+                  className="chat-message-container"
+                  style={{
+                    marginBottom: '5px',
+                    padding: '5px',
+                    borderRadius: '4px',
+                    border: '1px solid #ccc', // Inner border for each message
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                    // backgroundColor: answer.resp ? 'lightyellow' : '#f2f2f2', // Background color
+                  }}
+                >
+                  <div
+                    className="chat-user"
+                    style={{
+                      backgroundColor: '#f2f2f2',
+                      textAlign: 'right',
+                      marginLeft: 'auto',
+                      padding: '5px',
+                    }}
+                  >
+                    {client_user}: <span>{answer.user}</span>
                   </div>
-                  {/* Rendering the response text with HTML formatting */}
-                  <div style={{ flex: 1 }}> {/* Flex container to allow text wrapping */}
-                    <span dangerouslySetInnerHTML={{ __html: answer.resp || "thinking..." }} />
+                  <div
+                    className="chat-response-container"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      backgroundColor: background_color_chat,
+                      padding: '10px', // Padding for better spacing
+                    }}
+                  >
+                    {/* Optional image on the left side */}
+                    {imageSrc && (
+                      <div className="chat-image" style={{ marginRight: '10px' }}>
+                        <img src={imageSrc} alt="response" style={{ width: '50px' }} />
+                      </div>
+                    )}
+                    {/* Wrapping response text */}
+                    <div className="chat-response-text" style={{ flex: 1, wordBreak: 'break-word' }}>
+                      {answer.resp || "thinking..."}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
             </div>
           )}
           </div>
@@ -534,12 +529,13 @@ const CustomVoiceGPT = (props) => {
               border: '1px solid #2980b9',
               borderRadius: '4px',
               cursor: 'pointer',
+              width: '100%',
             }}
             onClick={click_listenButton}
           >
             {buttonName}
           </button>
-          {isListening && (
+          {listening && (
             <div
               style={{
                 width: '100%',
@@ -566,15 +562,16 @@ const CustomVoiceGPT = (props) => {
               border: '1px solid #2980b9',
               borderRadius: '4px',
               cursor: 'pointer',
+              // width: '100%',
             }}
-            onClick={listenContinuously}
+            onClick={listen_button}
           >
             Conversational Mode
           </button>
           {speaking && (
             <div
               style={{
-                width: '100%',
+                // width: '89%',
                 height: '10px',
                 background: 'linear-gradient(to right, blue, transparent, purple)',
                 animation: 'waveAnimation 1s infinite',
@@ -602,12 +599,12 @@ const CustomVoiceGPT = (props) => {
             }}
             onClick={listenSession}
           >
-            Start A Session
+            {session_listen ? "Stop Session" : "Start Session"}
           </button>
           {session_listen && (
             <div
               style={{
-                width: '100%',
+                width: '89%',
                 height: '10px',
                 backgroundImage: 'linear-gradient(90deg, orange, transparent 50%, orange)',
                 animation: 'flashLine 1s infinite',
@@ -632,29 +629,32 @@ const CustomVoiceGPT = (props) => {
               borderRadius: '4px',
               cursor: 'pointer',
             }}
-            onClick={toggleShowImage}
+            onClick={stopListening}
           >
-            {showImage ? "Hide Image" : "Show Image"}
+            {listening ? "Stop Listening" : ""}
           </button>
         </div>
       </div>
 
         {/* Dictaphone component */}
-        <div className="p-2">
+        <div className="p-2" style={{ marginBottom: '15px' }}>
           <Dictaphone
             commands={commands}
             myFunc={myFunc}
             listenAfterReply={listenAfterReply}
             no_response_time={no_response_time}
-            show_conversation={show_conversation}
             apiInProgress={apiInProgress}
             listenButton={listenButton}
             session_listen={session_listen}
+            listening={listening}
           />
         </div>
   
 
       </div>
+
+
+
     </>
   );
 }

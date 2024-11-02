@@ -2,7 +2,7 @@ import streamlit as st
 import os
 from bs4 import BeautifulSoup
 import re
-from master_ozz.utils import ozz_characters, save_json, init_text_audio_db, ozz_master_root_db, init_user_session_state, hoots_and_hootie_keywords, return_app_ip, ozz_master_root, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants
+from master_ozz.utils import ozz_characters, save_json, init_text_audio_db, ozz_master_root_db, init_user_session_state, hoots_and_hootie_keywords, return_app_ip, ozz_master_root, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants, refreshAsk_kwargs
 from streamlit_extras.switch_page_button import switch_page
 from dotenv import load_dotenv
 from custom_voiceGPT import custom_voiceGPT, VoiceGPT_options_builder
@@ -21,7 +21,7 @@ def hoots_and_hootie(width=350, height=350,
                      input_text=True, 
                      show_conversation=True, 
                      no_response_time=3,
-                     refresh_ask=True,
+                     refresh_ask={},
                      use_embeddings=[],
                      before_trigger={},
                      phrases=[],):
@@ -86,7 +86,12 @@ def ozz():
     with col_2.container():
         self_image = st.selectbox("Speak To", options=characters.keys(), key='self_image')
     
-    refresh_ask = True if 'page_refresh' not in st.session_state else False
+    tabs = st.tabs([f"{self_image.split('.')[0]}", 'System Prompt'])
+
+    with tabs[1]:
+        header_prompt = st.text_area("System_Prompt", characters[st.session_state.get('self_image')].get('main_prompt'), height=500)
+    
+    refresh_ask = refreshAsk_kwargs(header_prompt=header_prompt)
     st.session_state['page_refresh'] = True
     client_user = st.session_state['client_user']
     constants = init_constants()
@@ -106,7 +111,7 @@ def ozz():
     input_text=st.session_state['hh_vars']['input_text'] if 'hc_vars' in st.session_state else True
     show_conversation=st.session_state['hh_vars']['show_conversation'] if 'hc_vars' in st.session_state else True
     no_response_time=st.session_state['hh_vars']['no_response_time'] if 'hc_vars' in st.session_state else 3
-    refresh_ask=st.session_state['hh_vars']['refresh_ask'] if 'hc_vars' in st.session_state else False
+    refresh_ask=st.session_state['hh_vars']['refresh_ask'] if 'hc_vars' in st.session_state else refreshAsk_kwargs()
     
     embedding_default = []
     if self_image == 'stefan.png':
@@ -144,25 +149,23 @@ def ozz():
         selected_audio_file=st.empty()
         llm_audio=st.empty()
 
-    if 'stefan' in self_image:
-        phrases = hoots_and_hootie_keywords(['stefan', 'stephen', 'stephanie', 'stephan'])
-    else:
-        phrases = hoots_and_hootie_keywords()
 
-    # with cols[0]:
-    hoots_and_hootie(
-        width=width,
-        height=height,
-        self_image=self_image,
-        face_recon=face_recon,
-        show_video=show_video,
-        input_text=input_text,
-        show_conversation=show_conversation,
-        no_response_time=no_response_time,
-        refresh_ask=refresh_ask,
-        use_embeddings=use_embeddings,
-        phrases=phrases,
-        )
+    phrases = hoots_and_hootie_keywords(characters, self_image.split(".")[0])
+
+    with tabs[0]:
+        hoots_and_hootie(
+            width=width,
+            height=height,
+            self_image=self_image,
+            face_recon=face_recon,
+            show_video=show_video,
+            input_text=input_text,
+            show_conversation=show_conversation,
+            no_response_time=no_response_time,
+            refresh_ask=refresh_ask,
+            use_embeddings=use_embeddings,
+            phrases=phrases,
+            )
 
     if self_image == 'stefan.png':
         with st.expander("3 Ways to chat", True):

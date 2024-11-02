@@ -6,55 +6,69 @@ const Dictaphone = ({
   myFunc,
   listenAfterReply = false,
   no_response_time = 3,
-  show_conversation = true,
   apiInProgress = false, // Receive apiInProgress as a prop
   listenButton = false,
-  session_listen=false,
+  session_listen = false,
 }) => {
   const [transcribing, setTranscribing] = useState(true);
   const [clearTranscriptOnListen, setClearTranscriptOnListen] = useState(true);
   const { finalTranscript, resetTranscript, listening, browserSupportsSpeechRecognition, isMicrophoneAvailable } = useSpeechRecognition({ transcribing, clearTranscriptOnListen });
-  const [prevScript, setPrevScript] = useState("");
+  const [show_transcript, setshow_transcript] = useState(true); // Added state for API in progress
+
+  const showTranscript_func = () => {
+    console.log("set showTranscript", show_transcript)
+    if (show_transcript) {
+      setshow_transcript(false)
+    } else {
+      setshow_transcript(true)
+    }
+  };
+
+  const clearTranscript_func = () => {
+    console.log("clear transcript")
+    resetTranscript()
+  }
 
   useEffect(() => {
     if (finalTranscript !== "") {
-      // Add logs to check the conditions
       console.log("Got final result:", finalTranscript);
       console.log("listening?", listening);
       console.log("listenAfterReply:", listenAfterReply);
 
-      // Clear the previous script if a keyword is found or if the transcript exceeds 89 words
-      if (session_listen && finalTranscript.split(" ").length > 500000){
+
+      // Clear the previous script if a keyword is found or if the transcript exceeds limits
+      if (session_listen && finalTranscript.split(" ").length > 500000) {
         console.log("Transcript exceeds X words");
-        myFunc(finalTranscript, commands[i], 6);
+        // Ensure to check if i is defined
+        for (let i = 0; i < commands.length; i++) {
+          myFunc(finalTranscript, commands[i], 6);
+        }
         resetTranscript();
         return;
       }
 
-      if (session_listen==false && finalTranscript.split(" ").length > 10000) {
-        console.log("Transcript exceeds 89 words. Clearing You really should call func-api to save .");
+      if (!session_listen && finalTranscript.split(" ").length > 10000) {
+        console.log("Transcript exceeds 10000 words. Clearing.");
         resetTranscript();
         return;
       }
 
-      // Set the previous script
-      setPrevScript(finalTranscript);
-
-      // Start the timer to check for keywords after a pause
+      // Clear any existing timers to prevent multiple triggers
       const timer = setTimeout(() => {
+        const lowerCaseTranscript = finalTranscript.toLowerCase();
+
         for (let i = 0; i < commands.length; i++) {
           const { keywords, api_body } = commands[i];
           for (let j = 0; j < keywords.length; j++) {
             const keyword = new RegExp(keywords[j], "i");
-            const isKeywordFound = finalTranscript.search(keyword) !== -1;
+            const isKeywordFound = lowerCaseTranscript.search(keyword) !== -1;
 
             if ((isKeywordFound || listenAfterReply || listenButton) && !apiInProgress) {
               if (listenAfterReply) {
                 myFunc(finalTranscript, { api_body: { keyword: "" } }, 3);
               } else if (isKeywordFound) {
                 myFunc(finalTranscript, commands[i], 1);
-              }
-              else if (listenButton) {
+              } else if (listenButton) {
                 myFunc(finalTranscript, commands[i], 5);
               }
               resetTranscript();
@@ -62,14 +76,12 @@ const Dictaphone = ({
             }
           }
         }
-        // Waiting for a keyword or API is in progress
-        console.log("Waiting for a keyword or API is in progress");
+        console.log("Waiting for a keyword");
       }, no_response_time * 1000);
 
       return () => clearTimeout(timer); // Clear the timer on component unmount or when useEffect runs again
     }
-  }, [finalTranscript, listenAfterReply, commands, no_response_time, resetTranscript, apiInProgress, listenButton]);
-
+  }, [finalTranscript, listening, listenAfterReply, commands, no_response_time, resetTranscript, apiInProgress, listenButton]);
 
   if (!browserSupportsSpeechRecognition) {
     return <span>No browser support</span>;
@@ -81,15 +93,23 @@ const Dictaphone = ({
 
   return (
     <>
-      {show_conversation && (
-          <div style={{ display: "flex", flexDirection: "column", maxHeight: "200px", overflowY: "auto", border: "1px solid #ccc", padding: "10px" }}>
-          <span>You said: {prevScript}</span>
+      <div style={{ height: "20px" }} /> {/* Adds empty space */}
+      {show_transcript && (
+        <div style={{ display: "flex", flexDirection: "column", maxHeight: "200px", overflowY: "auto", border: "1px solid #ccc", padding: "10px" }}>
+          <span>You said: {finalTranscript}</span>
           <span>Listening: {listening ? "on" : "off"}</span>
           {/* Add other conversation messages here */}
         </div>
       )}
+      {/* Button to clear the transcript */}
+      <button onClick={showTranscript_func} style={{ marginTop: "10px" }}>
+      {show_transcript ? "Hide Transcript" : "Show Transcript"}
+      </button>
+      <button onClick={clearTranscript_func} style={{ marginTop: "10px" }}>
+      Clear Transscript
+      </button>
     </>
   );
-};
+}
 
 export default Dictaphone;

@@ -813,7 +813,7 @@ def get_last_eight(lst=[], num_items=8):
     return [lst[0]] + lst[-(max_items - 1):]
 
 
-def handle_prompt(characters, self_image, conversation_history, system_info=False):
+def handle_prompt(characters, self_image, conversation_history, main_prompt=None, system_info=False):
     try:
         
         self_image_name = self_image.split('.')[0]
@@ -939,26 +939,40 @@ def ozz_characters(population=['stefan', 'hootsAndHootie', 'viki']): # class
             conv_rules={}
 
         elif char == 'viki':
-            split_query_by=['hey viki', 'hey vic', 'icky']
+            split_query_by=['hey viki', 'hey vic', 'hey vicky', 'hey vicki']
             voice_id = 'XrExE9yKIg1WjnnlVkGX'
             main_prompt = """
-            Your name is Vicki, you are a professional tutor, teaching russian speakers learn how to speak english.
-            Your students name is Victoria, you are helping her prep for a interview with the army to teach the army students how to speak russian.
-            Help listen to her responses in engligh and do your best to correct her sentences and ensure she learns properly.
-            
-            -Some questions you can ask her
-            Why do you want to work for the army?
-            How much experience do you have teaching russian?
-            What do you do is a student is not listening?
-            What do you do is a student is not learning the russian language well?
-            How do you feel about moving to california?
-            """
+Your name is Vicki, you are a professional tutor, teaching russian speakers learn how to speak english.
+Your students name is Victoria, you are helping her prep for a interview with DLI (DLI stands for Defense Language Institute) to teach the army students how to speak Russian.
+
+Help listen to her responses in engligh and do your best to correct her sentences and ensure she learns properly.
+Your Student is a beginner in english, so do not use complex words or sentenses, try to keep things very simple and short. 
+
+-Some questions you can ask her
+1. Why do you want to work for DLI?
+2. How much experience do you have teaching russian?
+3. What do you do is a student is not listening?
+4. What do you do is a student is not learning the russian language well?
+5. How do you feel about moving to California?
+6. what experience has prepared you for this job?
+7. How did you find out about this job?
+8. What do you think about technology in the world?
+9. What programs, technologies have you used?
+10. How would you motivate students?
+
+-some answers to help for those questions
+1. I want to work for the Army at DLI because I like teaching Russian and want to help soldiers learn 
+9. Microsoft Word, Power Point, Zoom, Excel, Google
+10. I will do my best to tell them how important learning Russian is. 
+"""
 
 
         my_characters[char] = char_attributes(split_query_by, voice_id, main_prompt, conv_rules)
 
     return my_characters
 
+def refreshAsk_kwargs(color_dict={'background_color_chat': 'transparent'}, header_prompt=''):
+    return {'color_dict': color_dict, header_prompt: header_prompt}
 
 def ozzapi_script_Parser():
     parser = argparse.ArgumentParser()
@@ -1252,8 +1266,8 @@ def upload_to_s3(local_file, bucket, s3_file):
         # upload_to_s3(audio_file_path, bucket_name, s3_key)
 
 
-def hoots_and_hootie_keywords(phrases=["hey Hoots", "hey Hoot", "hey Hootie", 'morning Hoots', 'morning Hootie']):
-    return phrases
+def hoots_and_hootie_keywords(characters, self_image):
+    return characters[self_image].get('split_query_by')
 
 
 def hoots_and_hootie_vars(width=350, height=350, self_image="hootsAndHootie.png", face_recon=False, show_video=False, input_text=True, show_conversation=True, no_response_time=3, refresh_ask=True):
