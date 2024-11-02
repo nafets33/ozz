@@ -17,7 +17,7 @@ est = pytz.timezone("US/Eastern")
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-from master_ozz.utils import llm_assistant_response, get_last_eight, ozz_characters, init_stories ,hoots_and_hootie_vars, common_phrases_for_Questions, hoots_and_hootie_keywords, save_json, load_local_json, init_clientUser_dbroot, init_text_audio_db, print_line_of_error, ozz_master_root, ozz_master_root_db, generate_audio, save_audio, Retriever, init_constants
+from master_ozz.utils import llm_assistant_response, get_last_eight, ozz_characters, init_stories ,hoots_and_hootie_vars, common_phrases_for_Questions, save_json, load_local_json, init_clientUser_dbroot, init_text_audio_db, print_line_of_error, ozz_master_root, ozz_master_root_db, generate_audio, save_audio, Retriever, init_constants
 import ipdb
 
 main_root = ozz_master_root()  # os.getcwd()
@@ -179,15 +179,13 @@ def determine_embedding(current_query, use_embedding=None):
     return db_name, current_query
 
 
-def handle_prompt(self_image, conversation_history, system_info=False):
+def handle_prompt(self_image, conversation_history, main_prompt=None, characters=characters, system_info=False):
     try:
         
         self_image_name = self_image.split('.')[0]
-        main_prompt = characters[self_image_name].get('main_prompt')
-        # if "stefan" in self_image:
-            # main_prompt = characters[self_image_name].get('main_prompt')
-
-        # elif "hootsAndHootie" in self_image:
+        
+        if not main_prompt:
+            main_prompt = characters[self_image_name].get('main_prompt')
         
         if len(conversation_history) == 0: # FIRST ASK
             conversation_history.append({"role": "system", "content": main_prompt})
@@ -195,8 +193,6 @@ def handle_prompt(self_image, conversation_history, system_info=False):
         if system_info:
             main_prompt = conversation_history[0].get('content')
             conversation_history[0] = {"role": "system", "content": main_prompt + system_info}
-        else:
-            conversation_history[0] = {"role": "system", "content": main_prompt}
 
         return conversation_history
     except Exception as e:
@@ -438,7 +434,7 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
     ## check commands
 
     # Scenario Limit
-    df_mch = pd.DataFrame(master_conversation_history)
+    df_mch = pd.DataFrame(conversation_history)
 
     if len(df_mch) > 0:
         if 'client_user' in df_mch.columns:
@@ -447,7 +443,7 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
             df_mch = df_mch[df_mch['datetime'] > today]
             cl_user_questions = len(df_mch[df_mch['client_user'] == client_user])
             print('stop len', cl_user_questions)
-            if cl_user_questions > 8 and client_user != 'stefanstapinski@gmail.com':
+            if cl_user_questions > 15 and client_user != 'stefanstapinski@gmail.com':
                 # return good bye message 
                 response = "Hey sorry but you've reached the max number of questions to ask. Talking to me literally costs money...time is money after all even with computers. Maybe next time we can speak for real. "
                 # Appending the response from json file
@@ -543,19 +539,24 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
    
     # except Exception as e:
     #     print_line_of_error(e)
+
+    handle_questions = f"If you are not asking a question do not put any question mark symbols in the response. If you are asking a question make sure the question mark symbol is exactly at the end of the text: "
     
     use_embedding = use_embeddings[0] if use_embeddings else None
     db_name, current_query = determine_embedding(current_query, use_embedding=use_embedding)
     return_only_text=True
+    llm_convHistory = copy.deepcopy(conversation_history)
     if db_name:
         print("USE EMBEDDINGS: ", db_name)
         Retriever_db = os.path.join(PERSIST_PATH, db_name)
         response = Retriever(current_query, Retriever_db, return_only_text=return_only_text)
         if return_only_text:
-            llm_convHistory = copy.deepcopy(conversation_history)
             source_documents = [i.page_content for i in response]
             current_query = current_query + f""". Use the following information below to try and answer the above query. 
             If the informaiton is not relevant to the above query then do not lie and ask the user if they could be more specific in their ask. 
+            {handle_questions}
+
+            Below is source context:
             {source_documents}
             """
             llm_convHistory.append({"role": "user", "content": current_query})
@@ -565,8 +566,9 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
 
     else:
         print("CALL LLM - GPT")
-        current_query = current_query
-        response = llm_assistant_response(conversation_history)
+        current_query =  handle_questions + current_query
+        llm_convHistory.append({"role": "user", "content": current_query})
+        response = llm_assistant_response(llm_convHistory)
     
     
     conversation_history.append({"role": "assistant", "content": response})
@@ -655,7 +657,7 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
     use_embeddings=session_state.get('use_embeddings')
 
     # handle prompt 1 and ensure light conv history
-    conversation_history = handle_prompt(self_image, conversation_history, system_info=False)
+    conversation_history = handle_prompt(self_image, conversation_history, main_prompt=True, characters=characters, system_info=refresh_ask.get('header_prompt'))
     conversation_history = get_last_eight(conversation_history)
 
     # # If query was already ASKED find audio and don't call LLM # WORKERBEE
@@ -703,15 +705,16 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
     text[-1].update({'resp': response})
     session_state['text'] = text
     
-    # Question Return?
-    if response.endswith("?"):
-        session_state['returning_question'] = True
-        session_state['response_type'] = 'question'
-    else:
-        session_state['returning_question'] = False
-        session_state['response_type'] = 'response'
-    listen_after_reply = session_state['returning_question'] # True if session_state.get('response_type') == 'question' else False
-    
+    # # Question Return?
+    # if response.endswith("?"):
+    #     session_state['returning_question'] = True
+    #     session_state['response_type'] = 'question'
+    # else:
+    #     session_state['returning_question'] = False
+    #     session_state['response_type'] = 'response'
+    # listen_after_reply = session_state['returning_question'] # True if session_state.get('response_type') == 'question' else False
+    listen_after_reply=False
+
     page_direct= False # if redirect, add redirect page into session_state
     if not session_state['current_youtube_search']:
         pass

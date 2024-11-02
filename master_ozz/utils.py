@@ -75,7 +75,7 @@ def return_db_root(client_username):
 
 
 def sign_in_client_user():
-    if 'username' not in st.session_state:
+    if 'client_user' not in st.session_state:
         st.info("Want to Talk To the Creator?")
         with st.form("Your Name, use Email"):
             enter_name = st.text_input('Your Name')
@@ -87,6 +87,7 @@ def sign_in_client_user():
                 st.session_state['ozz_guest'] = True
                 st.session_state['username'] = enter_name
                 st.session_state['password'] = os.environ.get('kings_guest_pw')
+                st.session_state['force_db_root'] = True
                 st.rerun()
         return False
     else:

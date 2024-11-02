@@ -55,13 +55,12 @@ const Dictaphone = ({
 
       // Clear any existing timers to prevent multiple triggers
       const timer = setTimeout(() => {
-        const lowerCaseTranscript = finalTranscript.toLowerCase();
 
         for (let i = 0; i < commands.length; i++) {
           const { keywords, api_body } = commands[i];
           for (let j = 0; j < keywords.length; j++) {
             const keyword = new RegExp(keywords[j], "i");
-            const isKeywordFound = lowerCaseTranscript.search(keyword) !== -1;
+            const isKeywordFound = finalTranscript.search(keyword) !== -1;
 
             if ((isKeywordFound || listenAfterReply || listenButton) && !apiInProgress) {
               if (listenAfterReply) {

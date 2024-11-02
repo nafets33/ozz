@@ -27,7 +27,7 @@ import pandas as pd
 import time
 from datetime import datetime
 import pytz
-
+import ipdb
 est = pytz.timezone('US/Eastern')
 
 print("OZZ START")
@@ -60,12 +60,8 @@ def sac_menu_buttons_func(main='Ozz'):
     return sac_menu_buttons
 
 
-authenticator = all_page_auth_signin().get('authenticator')
-force_db_root=False
-if 'authentication_status' not in st.session_state or st.session_state['authentication_status'] != True: ## None or False
-    force_db_root = True
-    if not sign_in_client_user():
-        st.stop()
+force_db_root = st.session_state.get('force_db_root')
+authenticator = all_page_auth_signin(force_db_root).get('authenticator')
 
 ip_address, streamlit_ip = return_app_ip() # "http://localhost:8501"
 
@@ -77,8 +73,6 @@ if not check_fastapi_status(ip_address=ip_address):
 
 if force_db_root and 'ozz_guest' in st.session_state:
     switch_page('stefan')
-
-st.session_state['force_db_root'] = True if force_db_root else False
 
 with st.sidebar:
     st.write(f"force db, {force_db_root}")

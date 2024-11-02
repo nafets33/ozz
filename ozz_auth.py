@@ -18,7 +18,6 @@ load_dotenv(os.path.join(main_root, ".env"))
 def all_page_auth_signin(force_db_root=None, page=None):
     authenticator = signin_main(force_db_root)
     if 'authentication_status' not in st.session_state or st.session_state['authentication_status'] != True: ## None or False
-        force_db_root = True
         if not sign_in_client_user():
             st.stop()
     return {'authenticator': authenticator}
@@ -83,9 +82,6 @@ def register_user(authenticator, con, cur):
                 )
 
                 authenticator.direct_login(register_email, register_password)
-
-                # st.session_state["username"] = register_email
-                # self.password = register_password,
 
             else:
                 st.error("Incorrect Code")
