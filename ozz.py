@@ -78,8 +78,6 @@ with st.sidebar:
     st.write(f"force db, {force_db_root}")
         
 client_user = st.session_state['username']
-st.write(f"welcome {client_user}")
-
 
 db_name, master_text_audio=init_text_audio_db()
 

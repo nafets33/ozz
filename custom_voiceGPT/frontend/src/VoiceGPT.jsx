@@ -51,6 +51,7 @@ const CustomVoiceGPT = (props) => {
 
   const [listenButton, setlistenButton] = useState(false); // Added state for API in progress
   const [session_listen, setsession_listen] = useState(false);
+  const [convo_button, setconvo_button] = useState(false); // Added state for API in progress
 
   const [before_trigger_vars, before_trigger_] = useState(kwargs.before_trigger); 
   const faceData = useRef([]);
@@ -126,13 +127,15 @@ const CustomVoiceGPT = (props) => {
 }
 
 
-const listen_button = () => {
+const convo_mode = () => {
   console.log("listening?", listening);
   if (!listening) {
     console.log("Starting to listen...");
+    setconvo_button(true)
     listenContinuously();
   } else {
     console.log("Stopping listening...");
+    setconvo_button(false)
     stopListening();
   }
 };
@@ -279,7 +282,7 @@ useEffect(() => {
   const click_listenButton = () => {
     setlistenButton(true)
     if (!listening) {
-    listenContinuously()
+      listenContinuously()
     }
     setButtonName("Please Speak")
     console.log("listening button listen click");
@@ -375,11 +378,15 @@ useEffect(() => {
         setUserUsedChatWindow(false)
       }
       else if (listenAfterReply==true) {
-        console.log("API END HIT listen after replyTRUE")
+        console.log("API END HIT listenAfterReply==TRUE")
         setButtonName_listen("Awaiting your Answer please speak")
       }
       else if (listenButton) {
       setlistenButton(false)
+      }
+      else if (convo_button){
+        console.log("convo mode")
+        listenContinuously()
       }
 
       
@@ -392,23 +399,6 @@ useEffect(() => {
     updateWindowWidth();
     console.log("ReSize Window")
   };
-
-  // useEffect(() => {
-  //   // Function to resize the window
-  //   const resizeWindow = () => {
-  //     window.resizeBy(0, 1); // Resize the window by 1 pixel vertically
-  //   };
-
-  //   // Resize the window after the response finishes
-  //   // Replace `RESPONSE_FINISH_EVENT` with the event that indicates the response finished
-  //   window.addEventListener('RESPONSE_FINISH_EVENT', resizeWindow);
-
-  //   // Cleanup the event listener
-  //   return () => {
-  //     window.removeEventListener('RESPONSE_FINISH_EVENT', resizeWindow);
-  //   };
-  // }, []); // Run only once after component mounts
-
   
   const background_color_chat = refresh_ask.color_dict?.background_color_chat || 'transparent';
   const splitImage = self_image.split('.')[0]; // Split by dot
@@ -433,14 +423,14 @@ useEffect(() => {
           </div>
   
           {/* Chat window, taking full width if no image is shown */}
-          <div style={{ flex: showImage ? 1 : '100%', overflowY: 'auto', maxHeight: '400px' }}>
+          <div style={{ flex: showImage ? 1 : '100%', overflowY: 'auto', maxHeight: '350px' }}>
           {show_conversation && (
             <div
               style={{
                 display: 'flex',
                 flexDirection: 'column',
-                maxHeight: '400px', // Set your desired max height
-                height: '400px', // Fixed height to ensure no resizing
+                maxHeight: '350px', // Set your desired max height
+                height: '350px', // Fixed height to ensure no resizing
                 overflowY: 'auto', // Enable scrolling within this container
                 border: '1px solid #ccc',
                 padding: '10px',
@@ -500,7 +490,7 @@ useEffect(() => {
         {/* Input text section */}
         {input_text && (
           <>
-          <hr style={{ margin: '20px 0' }} />
+          <hr style={{ margin: '3px 0' }} />
             <div className="form-group">
               <input
                 className="form-control"
@@ -511,12 +501,12 @@ useEffect(() => {
                 onKeyDown={handleOnKeyDown}
               />
             </div>
-            <hr style={{ margin: '20px 0' }} />
+            <hr style={{ margin: '3px 0' }} />
           </>
         )}
 
       {/* Buttons with indicators under each */}
-      <div style={{ display: 'flex', marginTop: '10px' }}>
+      <div style={{ display: 'flex', marginTop: '3px' }}>
         {/* Button 1 with Listen Indicator */}
         <div style={{ flex: 1, textAlign: 'center' }}>
           <button
@@ -529,7 +519,7 @@ useEffect(() => {
               border: '1px solid #2980b9',
               borderRadius: '4px',
               cursor: 'pointer',
-              width: '100%',
+              width: '89%',
             }}
             onClick={click_listenButton}
           >
@@ -538,7 +528,7 @@ useEffect(() => {
           {listening && (
             <div
               style={{
-                width: '100%',
+                width: '89%',
                 height: '10px',
                 backgroundImage: 'linear-gradient(90deg, green, transparent 50%, green)',
                 animation: 'flashLine 1s infinite',
@@ -562,11 +552,11 @@ useEffect(() => {
               border: '1px solid #2980b9',
               borderRadius: '4px',
               cursor: 'pointer',
-              // width: '100%',
+              width: '89%',
             }}
-            onClick={listen_button}
+            onClick={convo_mode}
           >
-            Conversational Mode
+            {convo_button ? "End Conversation" : "Start Conversation"}
           </button>
           {speaking && (
             <div
@@ -596,6 +586,7 @@ useEffect(() => {
               border: '1px solid #2980b9',
               borderRadius: '4px',
               cursor: 'pointer',
+              width: '89%',
             }}
             onClick={listenSession}
           >
