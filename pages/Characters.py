@@ -70,17 +70,22 @@ def ozz():
     with cols[1]:
         col_2 = st.empty()
 
-    user_session_state = init_user_session_state()
-
     characters = ozz_characters()
     st.session_state['characters'] = characters
+    user_session_state = init_user_session_state()
     with col_2.container():
         self_image = st.selectbox("Speak To", options=characters.keys(), key='self_image')
-    
+
+    main_prompt = characters[st.session_state.get('self_image')].get('main_prompt')
+
     tabs = st.tabs([f"{self_image.split('.')[0]}", 'System Prompt'])
 
     with tabs[1]:
-        header_prompt = st.text_area("System_Prompt", characters[st.session_state.get('self_image')].get('main_prompt'), height=500)
+        header_prompt = st.text_area("System_Prompt", main_prompt, height=500)
+        if st.button("save main prompt"):
+            st.info("DB Not Setup Yet")
+            # user_session_state['characters'][self_image].update({'main_prompt': header_prompt})
+            # save_json(st.session_state['ss_file'], user_session_state)
     
     refresh_ask = refreshAsk_kwargs(header_prompt=header_prompt)
     st.session_state['page_refresh'] = True
@@ -101,12 +106,11 @@ def ozz():
     show_video=st.session_state['hh_vars']['show_video'] if 'hc_vars' in st.session_state else False
     input_text=st.session_state['hh_vars']['input_text'] if 'hc_vars' in st.session_state else True
     show_conversation=st.session_state['hh_vars']['show_conversation'] if 'hc_vars' in st.session_state else True
-    no_response_time=st.session_state['hh_vars']['no_response_time'] if 'hc_vars' in st.session_state else 3
+    no_response_time=st.session_state['hh_vars']['no_response_time'] if 'hc_vars' in st.session_state else 4
     refresh_ask=st.session_state['hh_vars']['refresh_ask'] if 'hc_vars' in st.session_state else refreshAsk_kwargs()
 
-    no_response_time = st.slider('No Response Time', max_value=8, value=no_response_time)
-    
-    
+    no_response_time = st.sidebar.slider('No Response Time', max_value=8, value=no_response_time)
+
     embedding_default = []
     if self_image == 'stefan.png':
         with col_1.container():
@@ -240,5 +244,6 @@ def ozz():
             st.write("Admin Only")
             st.write(st.session_state)
 if __name__ == '__main__':
+    all_page_auth_signin()
     ozz()
 
