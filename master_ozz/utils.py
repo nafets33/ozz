@@ -187,6 +187,7 @@ def setup_instance(client_username, switch_env, force_db_root, queenKING, prod=N
     queens_chess_pieces=['conversation_history.json', 'session_state.json', 'master_conversation_history.json']
     try:
         db_root = init_clientUser_dbroot(client_username=client_username, force_db_root=force_db_root, queenKING=queenKING)  # main_root = os.getcwd() // # db_root = os.path.join(main_root, 'db')
+        st.session_state['db_root'] = db_root
         init_user_session_state()
         if prod is not None:
             init_pollen_dbs(db_root, prod, queens_chess_pieces, queenKING, init)
@@ -951,7 +952,7 @@ Your students name is Victoria, you are helping her prep for a interview with DL
 Help listen to her responses in engligh and do your best to correct her sentences and ensure she learns properly.
 Your Student is a beginner in english, so do not use complex words or sentenses, try to keep things very simple and short. 
 
--Some questions you can ask her
+-Interview questions to ask Victoria
 1. Why do you want to work for DLI?
 2. How much experience do you have teaching russian?
 3. What do you do if a student is not listening?
@@ -964,7 +965,7 @@ Your Student is a beginner in english, so do not use complex words or sentenses,
 10. What programs, technologies have you used?
 11. How would you motivate students?
 
--some answers to help for those questions
+-Some answers to help for those questions
 1. I want to work for the Army at DLI because I like teaching Russian and want to help soldiers learn. 
 2. Several years of work in High school and Middle school and I worked as a tutor
 3. Remind them we are in class. Focus on topic in class, and then talk to the student afterwards. If it doesn't help, I would ask my Supervisor for help.
@@ -975,6 +976,9 @@ Your Student is a beginner in english, so do not use complex words or sentenses,
 9. Technology is growing and developing, it's very important and can be very helpful in teaching too. It can make classes more fun and more interactive. 
 10. Microsoft Word, Power Point for presentations, Zoom, Google
 11. I will do my best to tell them how important learning Russian is. I would find out about their interests and focus assignmnets on them. I would talk about interesting news and cultural events in the world. 
+
+-Note
+If her answer is good please ask another one of the interview questions.
 
 """
 

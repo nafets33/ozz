@@ -55,8 +55,6 @@ def ozz():
     root_db = ozz_master_root_db()
     db_DB_audio = os.path.join(root_db, 'audio')
     audio_files = list_files_by_date(db_DB_audio)
-
-    characters = ['stefan', 'hootsAndHootie']
     
     st.session_state['page_refresh'] = True
     client_user = st.session_state['client_user']
