@@ -50,14 +50,6 @@ def clean_response(response):
     
     return cleaned_response
 
-def get_last_eight(lst=[]):
-    if len(lst) <= 1:
-        return lst
-
-    max_items = min(len(lst), 8)
-
-    return [lst[0]] + lst[-(max_items - 1):]
-
 
 def remove_exact_string(string_a, string_b):
     # Split string_a by string_b
@@ -324,13 +316,17 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
             ## NEW AUDIO
             fname_image = self_image.split('.')[0]
             voice_id = characters[fname_image].get('voice_id')
+            settings_vars={'stability': .71, 'similarity_boost': .5, 'style': 0.0}
+            if fname_image == 'viki':
+                print('VIKI audio')
+                settings_vars={'stability': .5, 'similarity_boost': .8, 'style': 0.0}
 
             filename = f'{fname_image}__{fnames}.mp3'
             audio_file = filename #os.path.join(db_DB_audio, filename)
             print("NEW AUDIO", audio_file)
             model_id = 'eleven_monolingual_v1' # if len(response) < 300 else 'eleven_turbo_v2'
 
-            audio = generate_audio(query=response, voice_id=voice_id, model_id=model_id)
+            audio = generate_audio(query=response, voice_id=voice_id, model_id=model_id, settings_vars=settings_vars)
             print('audiofunc generate:', (datetime.now() - s).total_seconds())
 
             if audio:
@@ -573,7 +569,15 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
     
     conversation_history.append({"role": "assistant", "content": response})
     audio_file = handle_audio(user_query, response=response, audio_file=audio_file, self_image=self_image, s3_filepath=s3_filepath)
-    
+
+    if 'viki' in self_image:
+        copy_conversation_history = copy.deepcopy(conversation_history)
+        copy_conversation_history = []
+        copy_conversation_history.append({"role": "user", "content": f"take this below text and return it translated into Russian {response}"})
+        russ_response = llm_assistant_response(copy_conversation_history)
+        conversation_history.pop()
+        conversation_history.append({"role": "assistant", "content": f'{response} -TRANSLATED- {russ_response}'})
+        response = f'{response} -TRANSLATED- {russ_response}'
 
     return scenario_return(response, conversation_history, audio_file, session_state, self_image)
 
@@ -654,7 +658,10 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
     # Session State
     session_state = load_local_json(session_state_file_path)
     session_state['session_listen'] = session_listen
-    use_embeddings=session_state.get('use_embeddings')
+    if 'viki' in self_image:
+        use_embeddings = False
+    else:
+        use_embeddings=session_state.get('use_embeddings')
 
     # handle prompt 1 and ensure light conv history
     conversation_history = handle_prompt(self_image, conversation_history, main_prompt=True, characters=characters, system_info=refresh_ask.get('header_prompt'))

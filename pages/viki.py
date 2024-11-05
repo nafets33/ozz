@@ -3,7 +3,7 @@ import os
 from bs4 import BeautifulSoup
 from ozz_auth import all_page_auth_signin
 from pages.Characters import hoots_and_hootie
-from master_ozz.utils import setup_instance, save_json, refreshAsk_kwargs, ozz_master_root_db, init_user_session_state, return_app_ip, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, ozz_characters, CreateEmbeddings, Retriever, init_constants
+from master_ozz.utils import get_last_eight, load_local_json, refreshAsk_kwargs, ozz_master_root_db, init_user_session_state, return_app_ip, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, ozz_characters, CreateEmbeddings, Retriever, init_constants
 from streamlit_extras.switch_page_button import switch_page
 from dotenv import load_dotenv
 from custom_voiceGPT import custom_voiceGPT, VoiceGPT_options_builder
@@ -26,8 +26,9 @@ def list_files_by_date(directory):
     return files
 
 def ozz():
-
-
+    # ccc=os.path.join(st.session_state['db_root'], 'conversation_history.json')
+    # conv = load_local_json(ccc)
+    # conv = [conv[0]]
     characters = ozz_characters()
     st.session_state['characters'] = characters
     self_image = 'viki'  #st.sidebar.selectbox("Speak To", options=characters.keys(), key='self_image')
@@ -74,6 +75,22 @@ def ozz():
         use_embeddings=False,
         )
 
+
+    root_db = ozz_master_root_db()
+    db_DB_audio = os.path.join(root_db, 'audio')
+    audio_files = list_files_by_date(db_DB_audio)
+    selected_audio_file=st.empty()
+    llm_audio=st.empty()
+
+    with selected_audio_file.container():
+        audio_path = st.selectbox("Select Audio File", [os.path.basename(file[0]) for file in audio_files])
+    # st.write(master_text_audio[-1])
+    # st.write([i for i in st.session_state])
+    # st.write(st.session_state['conversation_history.json'])
+    response=requests.get(f"{st.session_state['ip_address']}/api/data/{audio_path}")
+    with llm_audio.container():
+        # st.info(kw)
+        st.audio(response.content, format="audio/mp3")  
 
 if __name__ == '__main__':
     force_db_root=True

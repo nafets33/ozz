@@ -475,7 +475,8 @@ def save_audio(filename, audio, response, user_query, self_image=False, db_name=
         print_line_of_error(e)
         return False
 
-def generate_audio(query="Hello Story Time Anyone?", voice_id='zrHiDhphv9ZnVXBqCLjz', use_speaker_boost=True, settings_vars={'stability': .71, 'similarity_boost': .5, 'style': 0.0}, model_id='eleven_monolingual_v1'):
+def generate_audio(query="Hello Story Time Anyone?", voice_id='zrHiDhphv9ZnVXBqCLjz', use_speaker_boost=True, 
+                   settings_vars={'stability': .71, 'similarity_boost': .5, 'style': 0.0}, model_id='eleven_monolingual_v1'):
     try:
         # 'eleven_monolingual_v1' # eleven_multilingual_v2, eleven_turbo_v2
         # 'Mimi', #'Charlotte', 'Fin'
@@ -485,7 +486,10 @@ def generate_audio(query="Hello Story Time Anyone?", voice_id='zrHiDhphv9ZnVXBqC
             # voice=voice,
             voice=Voice(
             voice_id= voice_id, #'zrHiDhphv9ZnVXBqCLjz', # mimi
-            settings=VoiceSettings(stability=0.8, similarity_boost=0.7, style=0.0, use_speaker_boost=use_speaker_boost)
+            settings=VoiceSettings(stability=settings_vars.get('stability'), 
+                                   similarity_boost=settings_vars.get('stability'), 
+                                   style=settings_vars.get('style'), 
+                                   use_speaker_boost=use_speaker_boost)
             ),
         )
 
@@ -950,7 +954,7 @@ Your name is Vicki, you are a professional tutor, teaching russian speakers lear
 Your students name is Victoria, you are helping her prep for a interview with DLI (DLI stands for Defense Language Institute) to teach the army students how to speak Russian.
 
 Help listen to her responses in engligh and do your best to correct her sentences and ensure she learns properly.
-Your Student is a beginner in english, so do not use complex words or sentenses, try to keep things very simple and short. 
+Your Student is a beginner in english, so do not use complex words or sentenses, keep your responses simple and short. 
 
 -Interview questions to ask Victoria
 1. Why do you want to work for DLI?
@@ -979,6 +983,7 @@ Your Student is a beginner in english, so do not use complex words or sentenses,
 
 -Note
 If her answer is good please ask another one of the interview questions.
+If you don't understand the query from the user try move forward with practicing the interview and ask the interview questions. 
 
 """
 
