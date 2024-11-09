@@ -424,66 +424,65 @@ useEffect(() => {
   
           {/* Chat window, taking full width if no image is shown */}
           <div style={{ flex: showImage ? 1 : '100%', overflowY: 'auto', maxHeight: '350px' }}>
-          {show_conversation && (
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                maxHeight: '350px', // Set your desired max height
-                height: '350px', // Fixed height to ensure no resizing
-                overflowY: 'auto', // Enable scrolling within this container
-                border: '1px solid #ccc',
-                padding: '10px',
-              }}
-            >
-              {answers.map((answer, idx) => (
-                <div
-                  key={idx}
-                  className="chat-message-container"
-                  style={{
-                    marginBottom: '5px',
-                    padding: '5px',
-                    borderRadius: '4px',
-                    border: '1px solid #ccc', // Inner border for each message
-                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-                    // backgroundColor: answer.resp ? 'lightyellow' : '#f2f2f2', // Background color
-                  }}
-                >
+            {show_conversation && (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  maxHeight: '350px',
+                  height: '350px',
+                  overflowY: 'auto',
+                  border: '1px solid #ccc',
+                  padding: '10px',
+                }}
+              >
+                {answers.map((answer, idx) => (
                   <div
-                    className="chat-user"
+                    key={idx}
+                    className="chat-message-container"
                     style={{
-                      backgroundColor: '#f2f2f2',
-                      textAlign: 'right',
-                      marginLeft: 'auto',
+                      marginBottom: '5px',
                       padding: '5px',
+                      borderRadius: '4px',
+                      border: '1px solid #ccc',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
                     }}
                   >
-                    {client_user}: <span>{answer.user}</span>
-                  </div>
-                  <div
-                    className="chat-response-container"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      backgroundColor: background_color_chat,
-                      padding: '10px', // Padding for better spacing
-                    }}
-                  >
-                    {/* Optional image on the left side */}
-                    {imageSrc && (
-                      <div className="chat-image" style={{ marginRight: '10px' }}>
-                        <img src={imageSrc} alt="response" style={{ width: '50px' }} />
-                      </div>
-                    )}
-                    {/* Wrapping response text */}
-                    <div className="chat-response-text" style={{ flex: 1, wordBreak: 'break-word' }}>
-                      {answer.resp || "thinking..."}
+                    <div
+                      className="chat-user"
+                      style={{
+                        backgroundColor: '#f2f2f2',
+                        textAlign: 'right',
+                        marginLeft: 'auto',
+                        padding: '5px',
+                      }}
+                    >
+                      {client_user}: <span>{answer.user}</span>
+                    </div>
+                    <div
+                      className="chat-response-container"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        backgroundColor: background_color_chat,
+                        padding: '10px',
+                      }}
+                    >
+                      {imageSrc && (
+                        <div className="chat-image" style={{ marginRight: '10px' }}>
+                          <img src={imageSrc} alt="response" style={{ width: '50px' }} />
+                        </div>
+                      )}
+                      <div
+                        className="chat-response-text"
+                        style={{ flex: 1, wordBreak: 'break-word' }}
+                        dangerouslySetInnerHTML={{ __html: answer.resp || "thinking..." }}
+                      />
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
