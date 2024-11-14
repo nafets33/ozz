@@ -25,12 +25,18 @@ load_dotenv(os.path.join(ozz_master_root(),'.env'))
 def show_image_history():
     MT_Image = init_text_image_db('master_text_image.json')
     df = pd.DataFrame(MT_Image)
+    df = df.sort_index(ascending=False)
     st.write(df)
 
 def saved_images(OZZ_db_images):
     st.header("Saved Images")
     images_ = os.listdir(OZZ_db_images)
-    self_image = st.sidebar.selectbox("Select Image", options=images_, key='pic')
+    images_sorted = sorted(
+        images_,
+        key=lambda x: os.path.getmtime(os.path.join(OZZ_db_images, x)),
+        reverse=True
+    )
+    self_image = st.selectbox("Select Image", options=images_sorted, key='pic')
     file_path = os.path.join(OZZ_db_images, self_image)
     if os.path.exists(file_path):
         st.image(file_path, caption=f'Saved Image {file_path}', use_column_width=False, width=250)
@@ -56,7 +62,7 @@ def gen_images(visual_prompt=None, OZZ_db_images=None):
             image_responses = generate_image(text=gen_im_text, gen_source=gen_source, image_name=image_name)
             for file_path, image_reponse in image_responses.items():
                 file_path_ = os.path.join(OZZ_db_images, file_path)
-                st.image(file_path_, caption=f'Generated Image {file_path}', use_column_width=False, width=100)
+                st.image(file_path_, caption=f'Generated Image {file_path}', use_column_width=False, width=250)
 
 
     saved_images(OZZ_db_images)
