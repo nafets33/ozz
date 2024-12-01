@@ -106,7 +106,7 @@ def ozz():
     show_video=st.session_state['hh_vars']['show_video'] if 'hc_vars' in st.session_state else False
     input_text=st.session_state['hh_vars']['input_text'] if 'hc_vars' in st.session_state else True
     show_conversation=st.session_state['hh_vars']['show_conversation'] if 'hc_vars' in st.session_state else True
-    no_response_time=st.session_state['hh_vars']['no_response_time'] if 'hc_vars' in st.session_state else 4
+    no_response_time=st.session_state['hh_vars']['no_response_time'] if 'hc_vars' in st.session_state else 3
     refresh_ask=st.session_state['hh_vars']['refresh_ask'] if 'hc_vars' in st.session_state else refreshAsk_kwargs()
 
     no_response_time = st.sidebar.slider('No Response Time', max_value=8, value=no_response_time)
@@ -115,13 +115,13 @@ def ozz():
     if self_image == 'stefan.png':
         with col_1.container():
             st.header(f"Stefans '''~Conscience'''...")
+            text = "...Well sort of, it's WIP...Responses may be delay'd, ⚡faster-thinking and processing always costs more 💰"
+            st.write(text)
 
         embedding_default = ['stefan']
         user_session_state['use_embeddings'] = embedding_default
         save_json(session_state_file_path, user_session_state)
 
-        text = "...Well sort of, it's WIP...Responses may be delay'd, ⚡faster-thinking and processing always costs more 💰"
-        st.write(text)
         # with cols[0]:
         #     st.markdown(f'<span style="color: red;">{text}</span>', unsafe_allow_html=True)
 
@@ -165,17 +165,6 @@ def ozz():
             phrases=phrases,
             )
 
-    if self_image == 'stefan.png':
-        with st.expander("3 Ways to chat", True):
-            cols = st.columns((3,3))
-            with cols[0]:
-                st.info("1: RECOMMENDED --> Click And Ask Button: Each time you click you can speak your question")
-                st.info("2: Conversational Mode Button: Once you click, use Keyword 'Stefan', ex: 'Stefan How Are you today' (If stefan responds with a question you can directly answer it and don't need to say his name)")
-                st.info("3: Chat Form: Type your questions and hit enter")
-            with cols[1]:
-                st.error("Speach ONLY works on Desktop and does not work on Mobile")
-                st.error("Please note: Sometimes questions may be misunderstood and the response may result in inchorent manner.")
-                st.error("The LLM that uses RAG (i.e. this one) needs extra context to undestand each new query from user, Having responses tailor more accurately requires more engineering")
 
     def list_files_by_date(directory):
         files = []
@@ -186,16 +175,6 @@ def ozz():
         files.sort(key=lambda x: x[1], reverse=True)
         return files
     
-    # # Options for the selectbox
-    # options = ['Option 1', 'Option 2', 'Option 3', 'Custom Input']
-    # # Create a selectbox with an additional option for custom input
-    # selected_option = st.selectbox("Session Type", options)
-    # # If 'Custom Input' is selected, show a text input field
-    # if selected_option == 'Custom Input':
-    #     custom_input = st.text_input("Enter your custom input")
-    #     st.write(f"You entered: {custom_input}")
-    # else:
-    #     st.write(f"You selected: {selected_option}")
 
 
     # Get list of audio files sorted by modification date

@@ -287,12 +287,12 @@ def signin_main(force_db_root=None):
         return prod
 
     def define_authorized_user():
-        users_allowed_queen_email = kingdom()
-        # print(st.session_state["username"])
-        if st.session_state["username"] in users_allowed_queen_email:
-            st.session_state["confirmed_user"] = True
-        else:
-            st.session_state["confirmed_user"] = False
+        # users_allowed_queen_email = kingdom()
+        # # print(st.session_state["username"])
+        # if st.session_state["username"] in users_allowed_queen_email:
+        #     st.session_state["confirmed_user"] = True
+        # else:
+        #     st.session_state["confirmed_user"] = False
         
         st.session_state["authorized_user"] = True
         st.session_state["client_user"] = st.session_state["username"] 

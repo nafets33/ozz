@@ -29,7 +29,6 @@ def ozz():
 
     force_db_root=True
     user_session_state = init_user_session_state()
-    authenticator = all_page_auth_signin(force_db_root).get('authenticator')
     
     with st.sidebar:
         st.write(f"force db, {force_db_root}")
@@ -49,7 +48,7 @@ def ozz():
     refresh_ask = refreshAsk_kwargs(header_prompt=header_prompt)
 
     if 'ozz_guest' in st.session_state:
-        st.info("Welcome to Divergent Thinkers, you are granted to speak with Stefan, Follow Instructions")
+        st.info("Welcome to Divergent Thinkers")
         st.session_state['hh_vars']['self_image'] = 'stefan.png'
 
     root_db = ozz_master_root_db()
@@ -86,13 +85,12 @@ def ozz():
             cols = st.columns((5,3))
             with cols[0]:
                 st.header(f"Stefans '''~Conscience'''...")
+                text="...Well sort of, it's just a RAG...Responses may be delay'd, ⚡faster-thinking and processing always costs more 💰"
+                st.write(text)
 
             embedding_default = ['stefan']
             st.session_state['use_embeddings'] = embedding_default
             save_json(session_state_file_path, user_session_state)
-
-            text="...Well sort of, it's WIP...Responses may be delay'd, ⚡faster-thinking and processing always costs more 💰"
-            st.write(text)
         else:
             embedding_default = []
             user_session_state['use_embeddings'] = embedding_default
@@ -177,5 +175,7 @@ def ozz():
             st.write("Admin Only")
             st.write(st.session_state)
 if __name__ == '__main__':
+    all_page_auth_signin(True)
+    st.session_state['ozz_guest'] = 'Stefan'
     ozz()
 

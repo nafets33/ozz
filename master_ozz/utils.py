@@ -76,11 +76,11 @@ def return_db_root(client_username):
 
 def sign_in_client_user():
     if 'client_user' not in st.session_state:
-        st.info("Want to Talk To the Creator?")
+        st.info("Enter Your Name")
         with st.form("Your Name, use Email"):
             enter_name = st.text_input('Your Name')
             # password = st.text_input('password')
-            if st.form_submit_button('yes I want to talk to him'):
+            if st.form_submit_button('Lets Chat'):
                 # if password != os.environ.get('kings_guest_pw'):
                 #     st.error("No Soup for you, Wrong Password")
                 #     return False
