@@ -31,6 +31,7 @@ const CustomVoiceGPT = (props) => {
     client_user,
     force_db_root,
     before_trigger,
+    agent_actions,
   } = kwargs;
   const [imageSrc, setImageSrc] = useState(kwargs.self_image);
   const [imageSrc_name, setImageSrc_name] = useState(kwargs.self_image);
@@ -68,6 +69,7 @@ const CustomVoiceGPT = (props) => {
   const [buttonName_listen, setButtonName_listen] = useState("Listening");
 
   const [showImage, setShowImage] = useState(false); // Step 1: Define showImage state
+  const [selectedActions, setSelectedActions] = useState([]);
 
   
 
@@ -158,24 +160,24 @@ useEffect(() => {
   }
     }
 
-  useEffect(() => {
-    const loadModels = async () => {
-      const MODEL_URL = process.env.PUBLIC_URL + "/models";
+  // useEffect(() => {
+  //   const loadModels = async () => {
+  //     const MODEL_URL = process.env.PUBLIC_URL + "/models";
 
-      Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-        faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-        faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-        faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
-        faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL),
-      ]).then(() => setModelsLoaded(true));
-    };
-    loadModels();
-    const interval = setInterval(() => {
-      // console.log("faceData.current :>> ", faceData.current);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
+  //     Promise.all([
+  //       faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+  //       faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+  //       faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+  //       faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
+  //       faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL),
+  //     ]).then(() => setModelsLoaded(true));
+  //   };
+  //   loadModels();
+  //   const interval = setInterval(() => {
+  //     // console.log("faceData.current :>> ", faceData.current);
+  //   }, 3000);
+  //   return () => clearInterval(interval);
+  // }, []);
 
 
   const handleInputText = (event) => {
@@ -194,90 +196,90 @@ useEffect(() => {
     }
   };
 
-  const startVideo = () => {
-    setCaptureVideo(true);
-    navigator.mediaDevices
-      .getUserMedia({ video: { width: 300 } })
-      .then((stream) => {
-        let video = videoRef.current;
-        video.srcObject = stream;
-        video.play();
-      })
-      .catch((err) => {
-        console.error("error:", err);
-      });
-  };
+  // const startVideo = () => {
+  //   setCaptureVideo(true);
+  //   navigator.mediaDevices
+  //     .getUserMedia({ video: { width: 300 } })
+  //     .then((stream) => {
+  //       let video = videoRef.current;
+  //       video.srcObject = stream;
+  //       video.play();
+  //     })
+  //     .catch((err) => {
+  //       console.error("error:", err);
+  //     });
+  // };
 
-  const handleVideoOnPlay = () => {
-    setInterval(async () => {
-      if (canvasRef && canvasRef.current) {
-        canvasRef.current.innerHTML = faceapi.createCanvasFromMedia(
-          videoRef.current
-        );
-        const displaySize = {
-          width: videoWidth,
-          height: videoHeight,
-        };
+  // const handleVideoOnPlay = () => {
+  //   setInterval(async () => {
+  //     if (canvasRef && canvasRef.current) {
+  //       canvasRef.current.innerHTML = faceapi.createCanvasFromMedia(
+  //         videoRef.current
+  //       );
+  //       const displaySize = {
+  //         width: videoWidth,
+  //         height: videoHeight,
+  //       };
 
-        faceapi.matchDimensions(canvasRef.current, displaySize);
+  //       faceapi.matchDimensions(canvasRef.current, displaySize);
 
-        const detections = await faceapi
-          .detectAllFaces(
-            videoRef.current,
-            new faceapi.TinyFaceDetectorOptions()
-          )
-          .withFaceLandmarks()
-          .withFaceExpressions();
+  //       const detections = await faceapi
+  //         .detectAllFaces(
+  //           videoRef.current,
+  //           new faceapi.TinyFaceDetectorOptions()
+  //         )
+  //         .withFaceLandmarks()
+  //         .withFaceExpressions();
 
-        const resizedDetections = faceapi.resizeResults(detections, displaySize);
+  //       const resizedDetections = faceapi.resizeResults(detections, displaySize);
 
-        if (resizedDetections.length > 0) {
-          faceData.current = resizedDetections;
-          if (!faceTriggered.current && face_recon) {
-            myFunc("", { api_body: { keyword: "" } }, 2);
-            faceTriggered.current = true;
-          }
-        } else {
-          faceTimer && clearTimeout(faceTimer);
-          setTimeout(() => {
-            faceData.current = [];
-          }, 1000);
-        }
+  //       if (resizedDetections.length > 0) {
+  //         faceData.current = resizedDetections;
+  //         if (!faceTriggered.current && face_recon) {
+  //           myFunc("", { api_body: { keyword: "" } }, 2);
+  //           faceTriggered.current = true;
+  //         }
+  //       } else {
+  //         faceTimer && clearTimeout(faceTimer);
+  //         setTimeout(() => {
+  //           faceData.current = [];
+  //         }, 1000);
+  //       }
 
-        if (resizedDetections.length > 0 && !firstFace) {
-          firstFace = true;
-          if (kwargs.hello_audio) {
-            const audio = new Audio(kwargs.hello_audio);
-            audio.play();
-          }
-        }
+  //       if (resizedDetections.length > 0 && !firstFace) {
+  //         firstFace = true;
+  //         if (kwargs.hello_audio) {
+  //           const audio = new Audio(kwargs.hello_audio);
+  //           audio.play();
+  //         }
+  //       }
 
-        canvasRef &&
-          canvasRef.current &&
-          canvasRef.current
-            .getContext("2d")
-            .clearRect(0, 0, videoWidth, videoHeight);
-        canvasRef &&
-          canvasRef.current &&
-          faceapi.draw.drawDetections(canvasRef.current, resizedDetections);
-        canvasRef &&
-          canvasRef.current &&
-          faceapi.draw.drawFaceLandmarks(canvasRef.current, resizedDetections);
-        canvasRef &&
-          canvasRef.current &&
-          faceapi.draw.drawFaceExpressions(
-            canvasRef.current,
-            resizedDetections
-          );
-      }
-    }, 300);
-  };
+  //       canvasRef &&
+  //         canvasRef.current &&
+  //         canvasRef.current
+  //           .getContext("2d")
+  //           .clearRect(0, 0, videoWidth, videoHeight);
+  //       canvasRef &&
+  //         canvasRef.current &&
+  //         faceapi.draw.drawDetections(canvasRef.current, resizedDetections);
+  //       canvasRef &&
+  //         canvasRef.current &&
+  //         faceapi.draw.drawFaceLandmarks(canvasRef.current, resizedDetections);
+  //       canvasRef &&
+  //         canvasRef.current &&
+  //         faceapi.draw.drawFaceExpressions(
+  //           canvasRef.current,
+  //           resizedDetections
+  //         );
+  //     }
+  //   }, 300);
+  // };
 
-  const closeWebcam = () => {
-    videoRef.current.pause();
-    videoRef.current.srcObject.getTracks()[0].stop();
-    setCaptureVideo(false);
-  };
+  // const closeWebcam = () => {
+  //   videoRef.current.pause();
+  //   videoRef.current.srcObject.getTracks()[0].stop();
+  //   setCaptureVideo(false);
+  // };
 
   const click_listenButton = () => {
     setlistenButton(true)
@@ -289,9 +291,6 @@ useEffect(() => {
     console.log(listenButton);
   };
 
-  function isHTML(str) {
-    return /^</.test(str);
-  }
 
   const myFunc = async (ret, command, type) => {
     setMessage(` (${command["api_body"]["keyword"]}) ${ret},`);
@@ -313,6 +312,7 @@ useEffect(() => {
         force_db_root:force_db_root,
         session_listen:session_listen,
         before_trigger_vars:before_trigger_vars,
+        selected_actions: selectedActions,
       };
       console.log("api");
       const { data } = await axios.post(api, body);
@@ -361,7 +361,6 @@ useEffect(() => {
       setSpeakingInProgress(false)
       setApiInProgress(false)
 
-      console.log("Audio ENDED MOVE TO SET VARS .");
       
       setListenAfterReply(data["listen_after_reply"]);
       console.log("listen after reply", data["listen_after_reply"], listenAfterReply);
@@ -400,7 +399,7 @@ useEffect(() => {
     console.log("ReSize Window")
   };
   
-  const background_color_chat = refresh_ask.color_dict?.background_color_chat || 'transparent';
+  const background_color_chat = refresh_ask?.color_dict?.background_color_chat || 'transparent';
   const splitImage = self_image.split('.')[0]; // Split by dot
   const placeholder = `Chat with ${splitImage}`;
 
@@ -625,6 +624,47 @@ useEffect(() => {
           </button>
         </div>
       </div>
+
+    {/* Agent Actions Horizontal Button-Style Multi-Select */}
+    {Array.isArray(agent_actions) && agent_actions.length > 0 && (
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          marginTop: '8px',
+          gap: '6px',
+        }}
+      >
+        {agent_actions.map((action, idx) => {
+          const selected = selectedActions.includes(action);
+          return (
+            <button
+              key={idx}
+              onClick={() => {
+                if (selected) {
+                  setSelectedActions(selectedActions.filter((a) => a !== action));
+                } else {
+                  setSelectedActions([...selectedActions, action]);
+                }
+              }}
+              style={{
+                fontSize: '12px',
+                padding: '5px 10px',
+                backgroundColor: selected ? '#1abc9c' : '#ecf0f1',
+                color: selected ? 'white' : 'black',
+                border: '1px solid #bdc3c7',
+                borderRadius: '4px',
+                cursor: 'pointer',
+              }}
+            >
+              {action}
+            </button>
+          );
+        })}
+      </div>
+    )}
+
 
         {/* Dictaphone component */}
         <div className="p-2" style={{ marginBottom: '15px' }}>

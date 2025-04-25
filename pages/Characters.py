@@ -24,7 +24,9 @@ def hoots_and_hootie(width=350, height=350,
                      refresh_ask={},
                      use_embeddings=[],
                      before_trigger={},
-                     phrases=[],):
+                     phrases=[],
+                     agent_actions=["action 1", "action 2"],
+                     ):
     
     to_builder = VoiceGPT_options_builder.create()
     to = to_builder.build()
@@ -49,6 +51,7 @@ def hoots_and_hootie(width=350, height=350,
         force_db_root=force_db_root,
         before_trigger={'how are you': 'hoots_waves__272.mp3', 'phrases': phrases},
         api_audio=f"{st.session_state['ip_address']}/api/data/",
+        agent_actions=agent_actions,
         # use_embeddings=use_embeddings,
         commands=[{
             "keywords": phrases, # keywords are case insensitive
@@ -97,17 +100,17 @@ def ozz():
     db_root = st.session_state['db_root']
     session_state_file_path = os.path.join(db_root, 'session_state.json')
 
-    st.session_state['hh_vars']['self_image'] = st.session_state['self_image']
+    # st.session_state['hh_vars']['self_image'] = st.session_state['self_image']
 
-    width=st.session_state['hh_vars']['width'] if 'hc_vars' in st.session_state else 350
-    height=st.session_state['hh_vars']['height'] if 'hc_vars' in st.session_state else 350
-    self_image=st.session_state['hh_vars']['self_image'] if 'hc_vars' in st.session_state else f"{st.session_state.get('self_image')}.png"
-    face_recon=st.session_state['hh_vars']['face_recon'] if 'hc_vars' in st.session_state else False
-    show_video=st.session_state['hh_vars']['show_video'] if 'hc_vars' in st.session_state else False
-    input_text=st.session_state['hh_vars']['input_text'] if 'hc_vars' in st.session_state else True
-    show_conversation=st.session_state['hh_vars']['show_conversation'] if 'hc_vars' in st.session_state else True
-    no_response_time=st.session_state['hh_vars']['no_response_time'] if 'hc_vars' in st.session_state else 3
-    refresh_ask=st.session_state['hh_vars']['refresh_ask'] if 'hc_vars' in st.session_state else refreshAsk_kwargs()
+    width=350 #st.session_state['hh_vars']['width'] if 'hc_vars' in st.session_state else 350
+    height=350# st.session_state['hh_vars']['height'] if 'hc_vars' in st.session_state else 350
+    self_image=f"{st.session_state.get('self_image')}.png" #st.session_state['hh_vars']['self_image'] if 'hc_vars' in st.session_state else f"{st.session_state.get('self_image')}.png"
+    face_recon= False # st.session_state['hh_vars']['face_recon'] if 'hc_vars' in st.session_state else False
+    show_video=False #st.session_state['hh_vars']['show_video'] if 'hc_vars' in st.session_state else False
+    input_text=True #st.session_state['hh_vars']['input_text'] if 'hc_vars' in st.session_state else True
+    show_conversation=True #st.session_state['hh_vars']['show_conversation'] if 'hc_vars' in st.session_state else True
+    no_response_time=3 #st.session_state['hh_vars']['no_response_time'] if 'hc_vars' in st.session_state else 3
+    refresh_ask=refreshAsk_kwargs() #st.session_state['hh_vars']['refresh_ask'] if 'hc_vars' in st.session_state else refreshAsk_kwargs()
 
     no_response_time = st.sidebar.slider('No Response Time', max_value=8, value=no_response_time)
 

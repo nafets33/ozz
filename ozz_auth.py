@@ -16,7 +16,6 @@ main_root = ozz_master_root()  # os.getcwd()  # hive root
 load_dotenv(os.path.join(main_root, ".env"))
 
 def all_page_auth_signin(force_db_root=None, page=None):
-    st.session_state['force_db_root'] = force_db_root
     authenticator = signin_main(force_db_root)
     if 'authentication_status' not in st.session_state or st.session_state['authentication_status'] != True: ## None or False
         if not sign_in_client_user():
@@ -112,7 +111,7 @@ def forgot_password(authenticator):
                 body=f"""
 Dear {authenticator.credentials["usernames"][email_forgot_pw]["name"]},
 
-Your new password for pollenq.com is {random_password}
+Your new password for divergent-thinkers.com is {random_password}
 
 Please keep this password safe.
 
@@ -128,7 +127,7 @@ PollenQ
     except Exception as e:
         st.error(e)
 
-def send_email(recipient, subject, body):
+def send_email(recipient='stefanstapinski@gmail.com', subject="you forgot to say something", body="this is my body and my blood"):
 
     # Define email sender and receiver
     pollenq_gmail = os.environ.get("pollenq_gmail")
@@ -309,11 +308,13 @@ def signin_main(force_db_root=None):
     try:
         set_streamlit_page_config_once()
         return_app_ip()
+        if force_db_root:
+            st.session_state['force_db_root'] = force_db_root
+
         con = sqlite3.connect("ozz_db/client_users.db")
         cur = con.cursor()
         check_if_table_exists(cur, conn=con)
         credentials = read_user_db(cur)
-
         # Create authenticator object
         authenticator = stauth.Authenticate(
             credentials=credentials,
@@ -325,6 +326,7 @@ def signin_main(force_db_root=None):
         authentication_status = st.session_state['authentication_status']
         # Check login. Automatically gets stored in session state
         if 'sneak_key' in st.session_state and st.session_state.get('sneak_key').lower() == 'family' or force_db_root:
+            print("FORCE, sneak_key", force_db_root)
             authentication_status = True
             st.session_state['name'] = 'stefanstapinski@yahoo.com'
             st.session_state['auth_email'] = "stefanstapinski@yahoo.com"
@@ -337,14 +339,14 @@ def signin_main(force_db_root=None):
             return authenticator
         else:
             # page_line_seperator()
-            sb_main = 'main' if st.session_state.get('signin') else 'sidebar'
-            name, authentication_status, email = authenticator.login("Login", sb_main)
+            # sb_main = 'main' if st.session_state.get('signin') else 'sidebar'
+            name, authentication_status, email = authenticator.login("Login", 'main')
             st.session_state['auth_email'] = email
             st.session_state['auth_name'] = name
-            if not authentication_status:
-                cols = st.columns((8,3))
-                with cols[1]:
-                    cust_Button("misc/fairy.png", hoverText='Sign In', key='signin', default=False, height=f'50px') # "https://cdn.onlinewebfonts.com/svg/img_562964.png"
+            # if not authentication_status:
+            #     cols = st.columns((8,3))
+            #     with cols[1]:
+            #         cust_Button("misc/fairy.png", hoverText='Sign In', key='signin', default=False, height=f'50px') # "https://cdn.onlinewebfonts.com/svg/img_562964.png"
 
         if authentication_status:
             authenticator.logout("Logout", location='sidebar')
