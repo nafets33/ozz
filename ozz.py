@@ -108,6 +108,7 @@ if st.session_state.get('admin'):
     # load db
 
     conversation_history_file_path = os.path.join(db_root, 'conversation_history.json')
+    print(conversation_history_file_path)
     CVH = load_local_json(conversation_history_file_path)
     st.write("curent conversation history")
     st.write(pd.DataFrame(CVH))

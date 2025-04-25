@@ -8,6 +8,7 @@ __pycache__/
 
 client_user_dbs/
 ozz_db/
+node_modules/*
 
 # Distribution / packaging
 .Python

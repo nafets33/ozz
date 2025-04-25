@@ -109,8 +109,9 @@ def lab():
 
     first_ask = True if 'refresh_count' in st.session_state and st.session_state['refresh_count'] > 0 else False
     if first_ask:
+        print("FIRST INTERACTION")
         system_info = " this is your first interaction, be polite and ask them a question on what they want to talk about, work, physics, basketball, AI, investments, family, fun. "
-        conversation_history =  conversation_history.clear() if len(conversation_history) > 0 else conversation_history
+        conversation_history =  [] if len(conversation_history) > 0 else conversation_history
 
     st.session_state['refresh_count'] = 1
 

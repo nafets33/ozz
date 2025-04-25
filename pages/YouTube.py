@@ -1,7 +1,12 @@
 import streamlit as st
-from youtubesearchpython import VideosSearch
+from youtubesearchpython import VideosSearch, Video
 import os
-from master_ozz.utils import init_user_session_state
+from master_ozz.utils import init_user_session_state, init_constants, load_local_json, save_json, llm_assistant_response
+from ozz_auth import all_page_auth_signin
+
+def get_youtube_video_metadata(url):
+    return Video.getInfo(url)
+
 # def search_youtube():
 #     channelsSearch = ChannelsSearch('NoCopyrightSounds', limit = 10, region = 'US')
 
@@ -131,7 +136,7 @@ def display_channel_info():
                     st.write(f"**{key}:** {value}")
                 if "Thumbnail URL:" in line:
                     thumbnail_url = line.split("Thumbnail URL: ")[1].strip()
-                    st.image(thumbnail_url, caption="Thumbnail", use_column_width=True)
+                    st.image(thumbnail_url, caption="Thumbnail", use_container_width=True)
             st.write("-------------\n")
 
 
@@ -155,8 +160,8 @@ def youtube():
     for i, result in enumerate(search_results):
         st.header(result["title"])
         thumbnail_url = result['thumbnails'][0].get('url')
-        st.image(thumbnail_url, caption="Thumbnail", use_column_width=False)
-        # st.image(result["thumbnails"][0], caption="Thumbnail", use_column_width=True)
+        st.image(thumbnail_url, caption="Thumbnail", use_container_width=False)
+        # st.image(result["thumbnails"][0], caption="Thumbnail", use_container_width=True)
         st.markdown("**Duration:** " + str(result['duration']) + " | **Views:** " + str(result['views']))
         st.markdown("**Link:** [" + result['link'] + "](" + result['link'] + ")")
         # st.button(f"{result['title']},", key=result['title'])
@@ -182,4 +187,144 @@ def youtube():
 
 
 if __name__ == "__main__":
-    youtube()
+
+    authenticator = all_page_auth_signin().get('authenticator')
+    tabs = st.tabs(["Translate", 'Search Youtube'])
+    constants = init_constants()
+    OZZ_DB = constants.get('OZZ_DB')
+    translate_file = os.path.join(OZZ_DB, 'translate_history.json')
+    if os.path.exists(translate_file) == False:
+        save_json(translate_file, {})
+
+    translate_history = load_local_json(translate_file)
+
+    with tabs[1]:
+        youtube()
+
+
+    from youtubesearchpython import VideosSearch
+    import yt_dlp
+    import whisper
+    import os
+    import subprocess
+    import tempfile
+
+    def download_youtube_audio(url, output_dir):
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'outtmpl': os.path.join(output_dir, '%(title)s.%(ext)s'),
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': '192',
+            }],
+            'quiet': True,
+        }
+
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            filename = ydl.prepare_filename(info)
+            audio_path = os.path.splitext(filename)[0] + ".mp3"
+            return audio_path
+
+    def transcribe_and_translate(audio_path, model_size="base"):
+        model = whisper.load_model(model_size)
+        result = model.transcribe(audio_path, task="translate")
+        return result["text"]
+
+    def youtube_to_english_transcript(url):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            print("🔻 Downloading audio...")
+            audio_path = download_youtube_audio(url, tmpdir)
+            
+            print("🧠 Transcribing and translating...")
+            transcript = transcribe_and_translate(audio_path)
+
+            print("✅ Done!")
+            return transcript
+    with tabs[0]:
+    # Example
+        # url = "https://www.youtube.com/watch?v=SKbmnCfxz6A"
+        url = st.text_input("YouTube URL", )
+        if url:
+            url_data = get_youtube_video_metadata(url)
+            meta_data = url_data
+            title = url_data.get('title')
+        translate = st.button(f"translate: {title}")
+        if url and translate:
+            with st.spinner("Translating Youtube Page"):
+                translated_text = youtube_to_english_transcript(url)
+                data_save = {'meta_data': meta_data, 'translated_text': translated_text}
+
+                translate_history[title] = data_save
+                save_json(translate_file, translate_history)
+
+            st.write("🔊 Transcription:", translated_text)
+        
+        see_translation = st.selectbox("Tranlations", options=list(translate_history.keys()))
+        if see_translation:
+            st.write(translate_history[see_translation])
+
+    
+    # Split into chunks that don’t exceed a token limit
+    def chunk_text(text, max_words_per_chunk=3000):
+        words = text.split()
+        chunks = []
+
+        for i in range(0, len(words), max_words_per_chunk):
+            chunk = " ".join(words[i:i + max_words_per_chunk])
+            chunks.append(chunk)
+
+        return chunks
+
+    # Wrapper for summarizing large text
+    def summarize_large_text(long_text):
+        chunks = chunk_text(long_text)
+        summaries = []
+
+        for i, chunk in enumerate(chunks):
+            print(f"Summarizing chunk {i+1}/{len(chunks)}")
+            history = [
+                {"role": "system", "content": "Summarize the following text clearly and concisely."},
+                {"role": "user", "content": chunk}
+            ]
+            summary = llm_assistant_response(history)
+            summaries.append(summary)
+
+        combined_summary_prompt = "\n\n".join(summaries)
+        final_summary_history = [
+            {"role": "system", "content": "Summarize the following multiple section summaries into one cohesive final summary."},
+            {"role": "user", "content": combined_summary_prompt}
+        ]
+        return llm_assistant_response(final_summary_history)
+    
+
+    if st.button("Summarizes"):
+        data = summarize_large_text(translate_history[see_translation].get('translated_text'))
+
+        st.write(data)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# from deep_translator import GoogleTranslator
+# import re
+# sentences = re.split(r'(?<=[.!?]) +', russian_text)
+# translated_sentences = [GoogleTranslator(source='auto', target='en').translate(sentence) for sentence in sentences]
+
+# # Join back into a single string
+# translated_text = " ".join(translated_sentences)
+# print(translated_text)

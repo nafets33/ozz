@@ -96,7 +96,6 @@ def sign_in_client_user():
 
 
 def init_clientUser_dbroot(client_username, force_db_root=False, queenKING=False):
-
     if force_db_root:
         db_root = os.path.join(ozz_master_root(), "ozz_db/sneakpeak")
     # elif client_username in ['stefanstapinski@gmail.com']:  ## admin
@@ -660,7 +659,6 @@ def page_line_seperator(height="3", border="none", color="#C5B743"):
 def set_streamlit_page_config_once():
     try:
         main_root = ozz_master_root()
-
         jpg_root = os.path.join(main_root, "misc")
         queenbee = os.path.join(jpg_root, "hootsAndHootie.png")
         page_icon = Image.open(queenbee)
@@ -850,7 +848,7 @@ def llm_assistant_response(conversation_history):
         response = openai.ChatCompletion.create(
             model="gpt-4o", # gpt-3.5-turbo
             messages=conversation_history,
-            api_key=os.getenv('ozz_api_key')
+            api_key=os.getenv('OPENAI_API_KEY')
         )
         assistant_reply = response.choices[0].message["content"]
         print('LLM Call:', (datetime.now() - s).total_seconds())
@@ -866,7 +864,7 @@ def Retriever(query : str, persist_directory : str, search_kwards_num=8, score_t
 
         s = datetime.now()
 
-        embeddings = OpenAIEmbeddings(api_key=os.environ.get('ozz_api_key'))
+        embeddings = OpenAIEmbeddings(api_key=os.environ.get('OPENAI_API_KEY'))
         # memory = ConversationBufferMemory()
         # embeddings = HuggingFaceInstructEmbeddings(model_name=EMBEDDING_MODEL_NAME)
         vectordb = FAISS.load_local(persist_directory,embeddings=embeddings)
@@ -877,7 +875,7 @@ def Retriever(query : str, persist_directory : str, search_kwards_num=8, score_t
             return docs
         
         # For OpenAI ChatGPT Model
-        qa_chain = RetrievalQA.from_chain_type(llm=ChatOpenAI(model='gpt-4o',max_tokens=10000), chain_type='stuff', retriever=retriever, return_source_documents=True, openai_api_key=os.environ.get('ozz_api_key'))
+        qa_chain = RetrievalQA.from_chain_type(llm=ChatOpenAI(model='gpt-4o',max_tokens=10000), chain_type='stuff', retriever=retriever, return_source_documents=True)
 
         result = qa_chain({"query": query})
 
@@ -1128,7 +1126,7 @@ def generate_image(text="2 cute owls in a forest, Award-Winning Art, Detailed, P
 
         image_urls = rr
     else:
-        openai.api_key=os.getenv("ozz_api_key")
+        openai.api_key=os.getenv("OPENAI_API_KEY")
         prompt = generate_image_prompt(text)
 
         res = openai.Image.create( 
