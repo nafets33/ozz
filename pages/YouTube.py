@@ -246,24 +246,26 @@ if __name__ == "__main__":
     # Example
         # url = "https://www.youtube.com/watch?v=SKbmnCfxz6A"
         url = st.text_input("YouTube URL", )
+        title=None
         if url:
             url_data = get_youtube_video_metadata(url)
             meta_data = url_data
             title = url_data.get('title')
-        translate = st.button(f"translate: {title}")
-        if url and translate:
-            with st.spinner("Translating Youtube Page"):
-                translated_text = youtube_to_english_transcript(url)
-                data_save = {'meta_data': meta_data, 'translated_text': translated_text}
+        if title:
+            translate = st.button(f"translate: {title}")
+            if url and translate:
+                with st.spinner("Translating Youtube Page"):
+                    translated_text = youtube_to_english_transcript(url)
+                    data_save = {'meta_data': meta_data, 'translated_text': translated_text}
 
-                translate_history[title] = data_save
-                save_json(translate_file, translate_history)
+                    translate_history[title] = data_save
+                    save_json(translate_file, translate_history)
 
-            st.write("🔊 Transcription:", translated_text)
-        
-        see_translation = st.selectbox("Tranlations", options=list(translate_history.keys()))
-        if see_translation:
-            st.write(translate_history[see_translation])
+                st.write("🔊 Transcription:", translated_text)
+            
+            see_translation = st.selectbox("Tranlations", options=list(translate_history.keys()), key='translation')
+            if see_translation:
+                st.write(translate_history[see_translation]['translated_text'])
 
     
     # Split into chunks that don’t exceed a token limit
@@ -298,11 +300,11 @@ if __name__ == "__main__":
         ]
         return llm_assistant_response(final_summary_history)
     
+    if st.session_state.get('translation'):
+        if st.button("Summarizes"):
+            data = summarize_large_text(translate_history[see_translation].get('translated_text'))
 
-    if st.button("Summarizes"):
-        data = summarize_large_text(translate_history[see_translation].get('translated_text'))
-
-        st.write(data)
+            st.write(data)
 
 
 

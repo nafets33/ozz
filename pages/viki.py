@@ -4,7 +4,6 @@ from bs4 import BeautifulSoup
 from ozz_auth import all_page_auth_signin
 from pages.Characters import hoots_and_hootie
 from master_ozz.utils import get_last_eight, load_local_json, refreshAsk_kwargs, ozz_master_root_db, init_user_session_state, return_app_ip, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, ozz_characters, CreateEmbeddings, Retriever, init_constants
-from streamlit_extras.switch_page_button import switch_page
 from dotenv import load_dotenv
 from custom_voiceGPT import custom_voiceGPT, VoiceGPT_options_builder
 import requests

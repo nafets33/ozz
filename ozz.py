@@ -22,7 +22,6 @@ import streamlit_antd_components as sac
 # from pydub import AudioSegment
 # import io
 # import time
-from streamlit_extras.switch_page_button import switch_page
 import pandas as pd
 import time
 from datetime import datetime
@@ -65,14 +64,14 @@ authenticator = all_page_auth_signin(force_db_root).get('authenticator')
 user_session_state = init_user_session_state()
 ip_address, streamlit_ip = return_app_ip() # "http://localhost:8501"
 
-if not check_fastapi_status(ip_address=ip_address):
-    if st.button("API"):
-        run_pq_fastapi_server()
-        time.sleep(3)
-        st.rerun()
+# if not check_fastapi_status(ip_address=ip_address):
+#     if st.button("API"):
+#         run_pq_fastapi_server()
+#         time.sleep(3)
+#         st.rerun()
 
 if force_db_root and 'ozz_guest' in st.session_state:
-    switch_page('stefan')
+    st.switch_page('pages/stefan.py')
 
 with st.sidebar:
     st.write(f"force db, {force_db_root}")

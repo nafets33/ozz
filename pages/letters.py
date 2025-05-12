@@ -4,7 +4,6 @@ import os
 from bs4 import BeautifulSoup
 import re
 from master_ozz.utils import llm_assistant_response, ozz_characters,handle_prompt, get_last_eight, init_constants, page_line_seperator, load_local_json, ozz_master_root, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, generate_visual_prompt
-from streamlit_extras.switch_page_button import switch_page
 from ozz_auth import all_page_auth_signin
 from streamlit_tags import st_tags
 import requests

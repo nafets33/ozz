@@ -3,7 +3,6 @@ import os
 from bs4 import BeautifulSoup
 from ozz_auth import all_page_auth_signin
 from master_ozz.utils import init_constants, save_json, init_text_audio_db, ozz_master_root_db, init_user_session_state, hoots_and_hootie_keywords, return_app_ip, ozz_master_root, sign_in_client_user, print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, init_constants, refreshAsk_kwargs
-from streamlit_extras.switch_page_button import switch_page
 from dotenv import load_dotenv
 from custom_voiceGPT import custom_voiceGPT, VoiceGPT_options_builder
 from PIL import Image
@@ -15,7 +14,7 @@ import streamlit.components.v1 as components
 
 all_page_auth_signin(force_db_root=True)
 
-calendly_url = "https://calendly.com/stapinski89/30min"  # replace with your actual link
+calendly_url = "https://calendly.com/nstapinski/30min"  # replace with your actual link
 constants = init_constants()
 ozz_db = constants['OZZ_DB']
 # Embed Calendly using iframe

@@ -3,8 +3,7 @@ import os
 from bs4 import BeautifulSoup
 from ozz_auth import all_page_auth_signin
 from pages.Characters import hoots_and_hootie
-from master_ozz.utils import setup_instance, save_json, refreshAsk_kwargs, ozz_master_root_db, init_user_session_state, return_app_ip, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, ozz_characters, CreateEmbeddings, Retriever, init_constants
-from streamlit_extras.switch_page_button import switch_page
+from master_ozz.utils import hoots_and_hootie_vars, save_json, refreshAsk_kwargs, ozz_master_root_db, init_user_session_state, return_app_ip, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, ozz_characters, CreateEmbeddings, Retriever, init_constants
 from dotenv import load_dotenv
 from custom_voiceGPT import custom_voiceGPT, VoiceGPT_options_builder
 import requests
@@ -38,7 +37,11 @@ def ozz():
     
     characters = ozz_characters()
     st.session_state['characters'] = characters
-    self_image = st.sidebar.selectbox("Speak To", options=characters.keys(), key='self_image')
+    if 'ozz_guest' in st.session_state:
+        st.info("Welcome to Divergent Thinkers")
+        st.session_state['self_image'] = 'stefan'
+    else:
+        self_image = st.sidebar.selectbox("Speak To", options=characters.keys(), key='self_image')
     
     if st.sidebar.toggle("sy_prompt"):
         header_prompt = st.text_area("System_Prompt", characters[st.session_state.get('self_image')].get('main_prompt'))
@@ -47,9 +50,6 @@ def ozz():
     
     refresh_ask = refreshAsk_kwargs(header_prompt=header_prompt)
 
-    if 'ozz_guest' in st.session_state:
-        st.info("Welcome to Divergent Thinkers")
-        st.session_state['hh_vars']['self_image'] = 'stefan.png'
 
     root_db = ozz_master_root_db()
     db_DB_audio = os.path.join(root_db, 'audio')
@@ -64,24 +64,22 @@ def ozz():
     db_root = st.session_state['db_root']
     session_state_file_path = os.path.join(db_root, 'session_state.json')
 
-    st.session_state['hh_vars']['self_image'] = st.session_state['self_image']
-
-    width=st.session_state['hh_vars']['width'] if 'hc_vars' in st.session_state else 350
-    height=st.session_state['hh_vars']['height'] if 'hc_vars' in st.session_state else 350
-    self_image=st.session_state['hh_vars']['self_image'] if 'hc_vars' in st.session_state else f"{st.session_state.get('self_image')}.png"
-    face_recon=st.session_state['hh_vars']['face_recon'] if 'hc_vars' in st.session_state else False
-    show_video=st.session_state['hh_vars']['show_video'] if 'hc_vars' in st.session_state else False
-    input_text=st.session_state['hh_vars']['input_text'] if 'hc_vars' in st.session_state else True
-    show_conversation=st.session_state['hh_vars']['show_conversation'] if 'hc_vars' in st.session_state else True
-    no_response_time=st.session_state['hh_vars']['no_response_time'] if 'hc_vars' in st.session_state else 3
-    refresh_ask=st.session_state['hh_vars']['refresh_ask'] if 'hc_vars' in st.session_state else {}
+    width=350 #st.session_state['hh_vars']['width'] if 'hc_vars' in st.session_state else 350
+    height=350# st.session_state['hh_vars']['height'] if 'hc_vars' in st.session_state else 350
+    self_image=f"{st.session_state.get('self_image')}.png" #st.session_state['hh_vars']['self_image'] if 'hc_vars' in st.session_state else f"{st.session_state.get('self_image')}.png"
+    face_recon= False # st.session_state['hh_vars']['face_recon'] if 'hc_vars' in st.session_state else False
+    show_video=False #st.session_state['hh_vars']['show_video'] if 'hc_vars' in st.session_state else False
+    input_text=True #st.session_state['hh_vars']['input_text'] if 'hc_vars' in st.session_state else True
+    show_conversation=True #st.session_state['hh_vars']['show_conversation'] if 'hc_vars' in st.session_state else True
+    no_response_time=3 #st.session_state['hh_vars']['no_response_time'] if 'hc_vars' in st.session_state else 3
+    refresh_ask=refreshAsk_kwargs() #st.session_state['hh_vars']['refresh_ask'] if 'hc_vars' in st.session_state else refreshAsk_kwargs()
 
     tabs = st.tabs(['Talk To Stefan', 'Cool Things I Build'])
 
 
     embedding_default = []
     with tabs[0]:
-        if self_image == 'stefan.png':
+        if self_image == 'stefan':
             cols = st.columns((5,3))
             with cols[0]:
                 st.header(f"Stefans '''~Conscience'''...")

@@ -114,32 +114,30 @@ def init_clientUser_dbroot(client_username, force_db_root=False, queenKING=False
 
 def init_pollen_dbs(db_root, prod, queens_chess_pieces=['queen_king.json'], queenKING=False, init=True, db_return={}):
     # db_return = {f'{queens_chess_piece}': f'{queens_chess_piece}'}
-    for queens_chess_piece in queens_chess_pieces:
-        # WORKERBEE don't check if file exists, only check on init
-        if prod:
-            PB_QUEEN_Pickle = os.path.join(db_root, f'{queens_chess_piece}')
-        else:
-            # print("My Queen Sandbox")
-            PB_QUEEN_Pickle = os.path.join(db_root, f'sandbox_{queens_chess_piece}')
-        if init:
-            if os.path.exists(PB_QUEEN_Pickle) == False:
-                print(f"Init {PB_QUEEN_Pickle}")
-                if queens_chess_piece == 'session_state.json': # master_conv_history, conv_history
-                    save_json(PB_QUEEN_Pickle, {})
-                elif queens_chess_piece == 'master_conversation_history.json': # master_conv_history
-                    save_json(PB_QUEEN_Pickle, [])
-                elif queens_chess_piece == 'conversation_history.json': # master_conv_history
-                    save_json(PB_QUEEN_Pickle, [])
-                else:
-                    save_json(PB_QUEEN_Pickle, [])
-
-        if queenKING:
-            st.session_state[queens_chess_piece] = PB_QUEEN_Pickle
-        
-        db_return[queens_chess_piece] = queens_chess_piece
+    print("INSTANCE SETUP")
+    if init:
+        for queens_chess_piece in queens_chess_pieces:
+            for PB_QUEEN_Pickle in [os.path.join(db_root, f'{queens_chess_piece}'), os.path.join(db_root, f'sandbox_{queens_chess_piece}')]:
+                # WORKERBEE don't check if file exists, only check on init
+                # if prod:
+                #     PB_QUEEN_Pickle = os.path.join(db_root, f'{queens_chess_piece}')
+                # else:
+                #     # print("My Queen Sandbox")
+                #     PB_QUEEN_Pickle = os.path.join(db_root, f'sandbox_{queens_chess_piece}')
+                
+                    if os.path.exists(PB_QUEEN_Pickle) == False:
+                        print(f"Init {PB_QUEEN_Pickle}")
+                        if queens_chess_piece == 'session_state.json': # master_conv_history, conv_history
+                            save_json(PB_QUEEN_Pickle, {})
+                        elif queens_chess_piece == 'master_conversation_history.json': # master_conv_history
+                            save_json(PB_QUEEN_Pickle, [])
+                        elif queens_chess_piece == 'conversation_history.json': # master_conv_history
+                            save_json(PB_QUEEN_Pickle, [])
+                        else:
+                            save_json(PB_QUEEN_Pickle, [])
 
 
-    return db_return
+    return True
 
 def live_sandbox__setup_switch(pq_env, switch_env=False):
 
@@ -175,7 +173,7 @@ def live_sandbox__setup_switch(pq_env, switch_env=False):
         print_line_of_error("live sb switch")
 
 def setup_instance(client_username, switch_env, force_db_root, queenKING, prod=None, init=False):
-
+    
     if force_db_root == False:
         client_dbs = os.path.join(ozz_master_root(), "client_user_dbs")
         if os.path.exists(client_dbs) == False:
@@ -187,7 +185,6 @@ def setup_instance(client_username, switch_env, force_db_root, queenKING, prod=N
     try:
         db_root = init_clientUser_dbroot(client_username=client_username, force_db_root=force_db_root, queenKING=queenKING)  # main_root = os.getcwd() // # db_root = os.path.join(main_root, 'db')
         st.session_state['db_root'] = db_root
-        init_user_session_state()
         if prod is not None:
             init_pollen_dbs(db_root, prod, queens_chess_pieces, queenKING, init)
             return prod
@@ -202,6 +199,7 @@ def setup_instance(client_username, switch_env, force_db_root, queenKING, prod=N
             
             init_pollen_dbs(db_root, prod, queens_chess_pieces, queenKING, init)
             
+            init_user_session_state()
             st.session_state['prod'] = prod
             return prod
     except Exception as e:
