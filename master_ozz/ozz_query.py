@@ -171,13 +171,13 @@ def determine_embedding(current_query, use_embedding=None):
     return db_name, current_query
 
 
-def handle_prompt(self_image, conversation_history, main_prompt=None, characters=characters, system_info=False):
+def handle_prompt(self_image, conversation_history, main_prompt="", characters=characters, system_info=""):
     try:
         
         self_image_name = self_image.split('.')[0]
         
         if not main_prompt:
-            main_prompt = characters[self_image_name].get('main_prompt')
+            main_prompt = characters[self_image_name].get('main_prompt', "")
         
         if len(conversation_history) == 0: # FIRST ASK
             conversation_history.append({"role": "system", "content": main_prompt})
@@ -673,11 +673,10 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
     print("USE EMBED", use_embeddings)
     if first_ask:
         system_info = " this is your first interaction, be polite and ask them a question on what they want to talk about, work, physics, basketball, AI, investments, family, fun. "
-        conversation_history = handle_prompt(self_image, conversation_history, system_info=system_info)
 
-        conversation_history =  conversation_history.clear() if len(conversation_history) > 0 else conversation_history
         conversation_history = [] if not conversation_history else conversation_history
-        conversation_history = handle_prompt(self_image, conversation_history)
+        conversation_history =  conversation_history.clear() if len(conversation_history) > 0 else conversation_history
+        conversation_history = handle_prompt(self_image, conversation_history, system_info=system_info)
         conversation_history.append({"role": "user", "content": current_query})
         session_state = client_user_session_state_return(text, response_type='response', returning_question=False, use_embeddings=use_embeddings)
     else:
