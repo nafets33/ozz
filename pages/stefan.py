@@ -175,7 +175,7 @@ def ozz():
             st.image(os.path.join(pollen, f'{fi}.png'))
 
     with tabs[2]:
-        resume_path = os.path.join(ozz_master_root_db(), 'resume.png')
+        resume_path = os.path.join(pollen, 'resume.png')
         # Read the PDF file as binary
         st.image(resume_path)
 
