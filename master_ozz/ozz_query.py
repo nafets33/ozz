@@ -261,7 +261,11 @@ def ai_create_name_for_session(master_conversation_history):
     return True
 
 ### MAIN 
-def Scenarios(text: list, current_query: str , conversation_history: list , master_conversation_history: list, session_state={}, audio_file=None, self_image='hootsAndHootie.png', client_user=None, use_embeddings=None, df_master_audio=None, check_for_story=False):
+def Scenarios(text: list, current_query: str , conversation_history: list , master_conversation_history: list, 
+              session_state={}, audio_file=None, self_image='hootsAndHootie.png', 
+              client_user=None, use_embeddings=None, df_master_audio=None, check_for_story=False,
+              show_video=False,
+              ):
     scenario_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     OZZ = {}
     s3_filepath = f'{client_user}/'
@@ -446,7 +450,7 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
                 conversation_history.append({"role": "assistant", "content": response})
                 
                 # return audio file
-                audio_file = 'stefan_max_conv_len.mp3' # handle_audio(user_query, response, audio_file=audio_file, self_image=self_image)
+                audio_file = 'stefan_max_conv_len.mp3' if show_video else False # handle_audio(user_query, response, audio_file=audio_file, self_image=self_image)
 
                 text[-1].update({'resp': response})
                 session_state['text'] = text
@@ -487,24 +491,12 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
             audio_file = resp_func.get('audio_file')
             session_state = resp_func.get('session_state')
             conversation_history.append({"role": "assistant", "content": response, })
-            audio_file = handle_audio(user_query, response, audio_file, self_image, s3_filepath)
+            audio_file = handle_audio(user_query, response, audio_file, self_image, s3_filepath) if show_video else False
             return scenario_return(response, conversation_history, audio_file, session_state, self_image)
 
     # Common Phrases # WORKERBEE Add check against audio_text DB
     # print("common phrases")
     s = datetime.now()
-    # for query, response in common_phrases.items():
-    #     if query.lower() == current_query.lower():
-    #         print("QUERY already found in db: ", query)
-
-    #         # Appending the response from json file
-    #         conversation_history.append({"role": "assistant", "content": response})
-    #         ## find audio file to set to new_audio False
-    #         # return audio file
-    #         audio_file = handle_audio(user_query, response, audio_file=audio_file, self_image=self_image, s3_filepath=s3_filepath) 
-    #         print('common phrases:', (datetime.now() - s).total_seconds())
-    #         # self_image = 'hoots_waves.gif'
-    #         return scenario_return(response, conversation_history, audio_file, session_state, self_image)
 
     if len(df_master_audio) == 1:
         response = df_master_audio.iloc[-1].get('text')
@@ -512,7 +504,7 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
         conversation_history.append({"role": "assistant", "content": response})
         ## find audio file to set to new_audio False
         # return audio file
-        audio_file = handle_audio(user_query, response, audio_file=audio_file, self_image=self_image) 
+        audio_file = handle_audio(user_query, response, audio_file=audio_file, self_image=self_image) if show_video else False 
         print('common phrases:', (datetime.now() - s).total_seconds())
         # self_image = 'hoots_waves.gif'
         return scenario_return(response, conversation_history, audio_file, session_state, self_image)
@@ -568,7 +560,8 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
     
     
     conversation_history.append({"role": "assistant", "content": response})
-    audio_file = handle_audio(user_query, response=response, audio_file=audio_file, self_image=self_image, s3_filepath=s3_filepath)
+
+    audio_file = handle_audio(user_query, response=response, audio_file=audio_file, self_image=self_image, s3_filepath=s3_filepath) if show_video else False
 
     if 'viki' in self_image:
         copy_conversation_history = copy.deepcopy(conversation_history)
@@ -626,6 +619,8 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
     
     
         return ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply)
+
+    show_video = refresh_ask.get('show_video', False)
 
     db_root = init_clientUser_dbroot(client_username=client_user, force_db_root=force_db_root)
 
@@ -694,7 +689,7 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
     storytime = True if session_state['story_time'] else False
 
     # Call the Scenario Function and get the response accordingly
-    scenario_resp = Scenarios(text, current_query, conversation_history, master_conversation_history, session_state, self_image=self_image, client_user=client_user, use_embeddings=use_embeddings, df_master_audio=df_master_audio)
+    scenario_resp = Scenarios(text, current_query, conversation_history, master_conversation_history, session_state, self_image=self_image, client_user=client_user, use_embeddings=use_embeddings, df_master_audio=df_master_audio, show_video=show_video)
     response = scenario_resp.get('response')
     response = clean_response(response)
 

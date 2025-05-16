@@ -50,7 +50,7 @@ def load_ozz_voice():
 @router.post("/voiceGPT", status_code=status.HTTP_200_OK)
 def load_ozz_voice(api_key=Body(...), text=Body(...), self_image=Body(...), refresh_ask=Body(...), face_data=Body(...), client_user=Body(...), force_db_root=Body(...), session_listen=Body(...), before_trigger_vars=Body(...), tigger_type=Body(...)):
     # print(f'face data {face_data}')
-    print(f'trig TYPE: {tigger_type}')
+    print(f'trig TYPE: {tigger_type} {before_trigger_vars}')
     
     if api_key != os.environ.get("ozz_key"): # fastapi_pollenq_key
         print("Auth Failed", api_key)

@@ -33,12 +33,17 @@ def ozz():
         st.write(f"force db, {force_db_root}")
             
     client_user = st.session_state['ozz_guest']
-    st.write(f"welcome {client_user}")
+    with st.sidebar:
+        st.write(f"welcome {client_user}")
+    
+    st.title("Stefan Stapinski")
+    
+
     
     characters = ozz_characters()
     st.session_state['characters'] = characters
     if 'ozz_guest' in st.session_state:
-        st.info("Welcome to Divergent Thinkers")
+        # st.info("Welcome to Divergent Thinkers")
         st.session_state['self_image'] = 'stefan'
     else:
         self_image = st.sidebar.selectbox("Speak To", options=characters.keys(), key='self_image')
@@ -74,7 +79,7 @@ def ozz():
     no_response_time=3 #st.session_state['hh_vars']['no_response_time'] if 'hc_vars' in st.session_state else 3
     refresh_ask=refreshAsk_kwargs() #st.session_state['hh_vars']['refresh_ask'] if 'hc_vars' in st.session_state else refreshAsk_kwargs()
 
-    tabs = st.tabs(['Talk To Stefan', 'Cool Things I Build'])
+    tabs = st.tabs(['Talk To Stefan', 'Cool Things I Build', '411'])
 
 
     embedding_default = []
@@ -114,6 +119,7 @@ def ozz():
         llm_audio=st.empty()
     
     with tabs[0]:
+        show_video = st.toggle("Chat Only", False, help="Turn OFF Voice")
         hoots_and_hootie(
             width=width,
             height=height,
@@ -125,24 +131,53 @@ def ozz():
             no_response_time=no_response_time,
             refresh_ask=refresh_ask,
             use_embeddings=use_embeddings,
+            agent_actions=["Generate A Summary", "Create a Story", "Generate An Image"]
             )
+
+        with st.expander("3 Ways to chat", True):
+            cols = st.columns((3,3))
+            with cols[0]:
+                st.info("1: RECOMMENDED --> Click And Ask Button: Each time you click you can speak your question")
+                st.info("2: Conversational Mode Button: Once you click, use Keyword 'Stefan', ex: 'Stefan How Are you today' (If stefan responds with a question you can directly answer it and don't need to say his name)")
+                st.info("3: Chat Form: Type your questions and hit enter")
+            with cols[1]:
+                st.error("Speach ONLY works on Desktop and does not work on Mobile")
+                st.error("Please note: Sometimes questions may be misunderstood and the response may result in inchorent manner.")
+                st.error("The LLM that uses RAG (i.e. this one) needs extra context to undestand each new query from user, Having responses tailor more accurately requires more engineering")
+
+
+
 
     with tabs[1]:
         pollen = os.path.join(ozz_master_root(), 'pollen')
-        fis = ['1', '2', '3']
-        st.write("# My Latest Project, A AI Portfolio Manager 🤖")
+        fis = ['1', "1_1", '2', '3']
+        # cols = st.columns((8,2))
+        # with cols[0]:
+        # st.write("# An AI Portfolio Manager")
+        # with cols[1]:
+        st.markdown(
+            '<h2 style="font-size:32px;">📄 <a <a href="https://quantqueen.com/LiveBot" target="_blank">Trading Engine Manage a Portfolio In Real Time</a>',
+            unsafe_allow_html=True
+        )
+        st.write("An AI Portfolio Manager")
+        
         for fi in fis:
             if fi == '1':
                 msg = "# 1. Setup A Portfolio♛"
-            elif fi == '2':
+            elif fi == '1_1':
                 msg = "# 2. Watch it Make Money🤑"
             elif fi == '3':
                 msg = "# 3. Trade alongside and Work Together, Manage your Investments with AI"
-
-            st.write(msg)
+            else:
+                msg = None
+            if msg:
+                st.write(msg)
             st.image(os.path.join(pollen, f'{fi}.png'))
 
-
+    with tabs[2]:
+        resume_path = os.path.join(ozz_master_root_db(), 'resume.png')
+        # Read the PDF file as binary
+        st.image(resume_path)
 
 
     with selected_audio_file.container():
@@ -155,17 +190,6 @@ def ozz():
         # st.info(kw)
         st.audio(response.content, format="audio/mp3")  
 
-
-    with st.expander("3 Ways to chat", True):
-        cols = st.columns((3,3))
-        with cols[0]:
-            st.info("1: RECOMMENDED --> Click And Ask Button: Each time you click you can speak your question")
-            st.info("2: Conversational Mode Button: Once you click, use Keyword 'Stefan', ex: 'Stefan How Are you today' (If stefan responds with a question you can directly answer it and don't need to say his name)")
-            st.info("3: Chat Form: Type your questions and hit enter")
-        with cols[1]:
-            st.error("Speach ONLY works on Desktop and does not work on Mobile")
-            st.error("Please note: Sometimes questions may be misunderstood and the response may result in inchorent manner.")
-            st.error("The LLM that uses RAG (i.e. this one) needs extra context to undestand each new query from user, Having responses tailor more accurately requires more engineering")
 
 
     if client_user == 'stefanstapinski@gmail.com':

@@ -24,9 +24,9 @@ def hoots_and_hootie(width=350, height=350,
                      use_embeddings=[],
                      before_trigger={},
                      phrases=[],
-                     agent_actions=["action 1", "action 2"],
+                     agent_actions=["Generate A Summary", "Create a Story"],
                      ):
-    
+    refresh_ask['show_video'] = show_video
     to_builder = VoiceGPT_options_builder.create()
     to = to_builder.build()
 
@@ -105,7 +105,7 @@ def ozz():
     height=350# st.session_state['hh_vars']['height'] if 'hc_vars' in st.session_state else 350
     self_image=f"{st.session_state.get('self_image')}.png" #st.session_state['hh_vars']['self_image'] if 'hc_vars' in st.session_state else f"{st.session_state.get('self_image')}.png"
     face_recon= False # st.session_state['hh_vars']['face_recon'] if 'hc_vars' in st.session_state else False
-    show_video=False #st.session_state['hh_vars']['show_video'] if 'hc_vars' in st.session_state else False
+    # show_video=False #st.session_state['hh_vars']['show_video'] if 'hc_vars' in st.session_state else False
     input_text=True #st.session_state['hh_vars']['input_text'] if 'hc_vars' in st.session_state else True
     show_conversation=True #st.session_state['hh_vars']['show_conversation'] if 'hc_vars' in st.session_state else True
     no_response_time=3 #st.session_state['hh_vars']['no_response_time'] if 'hc_vars' in st.session_state else 3
@@ -153,6 +153,7 @@ def ozz():
     phrases = hoots_and_hootie_keywords(characters, self_image.split(".")[0])
 
     with tabs[0]:
+        show_video = st.toggle("Chat Only", False, help="Turn OFF Voice")
         hoots_and_hootie(
             width=width,
             height=height,

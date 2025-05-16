@@ -48,28 +48,28 @@ def ozz():
     db_root = st.session_state['db_root']
     session_state_file_path = os.path.join(db_root, 'session_state.json')
 
-    st.session_state['hh_vars']['self_image'] = st.session_state['self_image']
+    # st.session_state['hh_vars']['self_image'] = st.session_state['self_image']
 
-    width=st.session_state['hh_vars']['width'] if 'hc_vars' in st.session_state else 350
-    height=st.session_state['hh_vars']['height'] if 'hc_vars' in st.session_state else 350
-    self_image=st.session_state['hh_vars']['self_image'] if 'hc_vars' in st.session_state else f"{st.session_state.get('self_image')}.png"
-    face_recon=st.session_state['hh_vars']['face_recon'] if 'hc_vars' in st.session_state else False
-    show_video=st.session_state['hh_vars']['show_video'] if 'hc_vars' in st.session_state else False
-    input_text=st.session_state['hh_vars']['input_text'] if 'hc_vars' in st.session_state else True
-    show_conversation=st.session_state['hh_vars']['show_conversation'] if 'hc_vars' in st.session_state else True
-    no_response_time=st.session_state['hh_vars']['no_response_time'] if 'hc_vars' in st.session_state else 4
-    refresh_ask=st.session_state['hh_vars']['refresh_ask'] if 'hc_vars' in st.session_state else {}
+    # width=st.session_state['hh_vars']['width'] if 'hc_vars' in st.session_state else 350
+    # height=st.session_state['hh_vars']['height'] if 'hc_vars' in st.session_state else 350
+    self_image= st.session_state['self_image'] # st.session_state['hh_vars']['self_image'] if 'hc_vars' in st.session_state else f"{st.session_state.get('self_image')}.png"
+    # face_recon=False #st.session_state['hh_vars']['face_recon'] if 'hc_vars' in st.session_state else False
+    # show_video=st.session_state['hh_vars']['show_video'] if 'hc_vars' in st.session_state else False
+    # input_text=st.session_state['hh_vars']['input_text'] if 'hc_vars' in st.session_state else True
+    # show_conversation=st.session_state['hh_vars']['show_conversation'] if 'hc_vars' in st.session_state else True
+    # no_response_time=st.session_state['hh_vars']['no_response_time'] if 'hc_vars' in st.session_state else 4
+    # refresh_ask=st.session_state['hh_vars']['refresh_ask'] if 'hc_vars' in st.session_state else {}
 
-
+    show_video = st.toggle("Chat Only", False, help="Turn OFF Voice")
     hoots_and_hootie(
-        width=width,
-        height=height,
+        # width=width,
+        # height=height,
         self_image=self_image,
-        face_recon=face_recon,
+        # face_recon=face_recon,
         show_video=show_video,
-        input_text=input_text,
-        show_conversation=show_conversation,
-        no_response_time=no_response_time,
+        # input_text=input_text,
+        # show_conversation=show_conversation,
+        # no_response_time=no_response_time,
         refresh_ask=refresh_ask,
         use_embeddings=False,
         )
