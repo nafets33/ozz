@@ -173,9 +173,8 @@ def determine_embedding(current_query, use_embedding=None):
 
 def handle_prompt(self_image, conversation_history, main_prompt="", characters=characters, system_info=""):
     try:
-        
         self_image_name = self_image.split('.')[0]
-        
+
         if not main_prompt:
             main_prompt = characters[self_image_name].get('main_prompt', "")
         
@@ -188,7 +187,8 @@ def handle_prompt(self_image, conversation_history, main_prompt="", characters=c
 
         return conversation_history
     except Exception as e:
-        print_line_of_error(e)
+        print_line_of_error(f"ERRRRRRRRORRRRRR {e}")
+        return []
 
 
 def story_time_params():
@@ -269,6 +269,7 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
     scenario_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     OZZ = {}
     s3_filepath = f'{client_user}/'
+    print("show_video", show_video)
 
     def scenario_return(response, conversation_history, audio_file, session_state, self_image=None):
         return {'response': response,
@@ -435,7 +436,6 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
 
     # Scenario Limit
     df_mch = pd.DataFrame(conversation_history)
-
     if len(df_mch) > 0:
         if 'client_user' in df_mch.columns:
             df_mch['datetime'] = pd.to_datetime(df_mch['datetime'], format="%Y-%m-%d %H-%M-%S %p %Z", errors='coerce')
@@ -621,6 +621,7 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
         return ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply)
 
     show_video = refresh_ask.get('show_video', False)
+    print("show_video", show_video)
 
     db_root = init_clientUser_dbroot(client_username=client_user, force_db_root=force_db_root)
 
@@ -653,13 +654,20 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
     # Session State
     session_state = load_local_json(session_state_file_path)
     session_state['session_listen'] = session_listen
-    if 'viki' in self_image:
+    if self_image_name == 'viki':
         use_embeddings = False
+    elif self_image_name == 'stefan':
+        use_embeddings = ['stefan']
     else:
         use_embeddings=session_state.get('use_embeddings')
 
+    system_info=refresh_ask.get('header_prompt', "")
+    if self_image_name == 'stefan':
+        system_info = f'Keep length of responses to be respective of the conversation question, try not to respond to little or to much. {system_info}'
+    
+
     # handle prompt 1 and ensure light conv history
-    conversation_history = handle_prompt(self_image, conversation_history, main_prompt=True, characters=characters, system_info=refresh_ask.get('header_prompt'))
+    conversation_history = handle_prompt(self_image, conversation_history, main_prompt=True, characters=characters, system_info=system_info)
     conversation_history = get_last_eight(conversation_history)
 
     # # If query was already ASKED find audio and don't call LLM # WORKERBEE
@@ -671,16 +679,17 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
 
 
     print("USE EMBED", use_embeddings)
+    
     if first_ask:
-        system_info = " this is your first interaction, be polite and ask them a question on what they want to talk about, work, physics, basketball, AI, investments, family, fun. "
-
-        conversation_history = [] if not conversation_history else conversation_history
-        conversation_history =  conversation_history.clear() if len(conversation_history) > 0 else conversation_history
+        system_info = f" this is your first interaction, be polite and ask them a question on what they want to talk about, work, physics, basketball, AI, investments, family, fun. {system_info} "
+        print(system_info)
+        if conversation_history:
+            conversation_history = []
         conversation_history = handle_prompt(self_image, conversation_history, system_info=system_info)
         conversation_history.append({"role": "user", "content": current_query})
         session_state = client_user_session_state_return(text, response_type='response', returning_question=False, use_embeddings=use_embeddings)
     else:
-        system_info = " this is not your first interaction, be more percise with answers, don't ask how there days is going or other introduction questions "
+        system_info = f" this is not your first interaction, be more percise with answers, don't ask how there days is going or other introduction questions {system_info} "
         conversation_history = handle_prompt(self_image, conversation_history, system_info=system_info)
         session_state = session_state
         conversation_history.append({"role": "user", "content": current_query})

@@ -808,12 +808,12 @@ def CreateEmbeddings(textChunks :str ,persist_directory : str):
     return vector_store
 
 def get_last_eight(lst=[], num_items=3):
-    if len(lst) <= 1:
+# def get_last_items(lst, num_items=3):
+    if not lst:
+        return []
+    if len(lst) == 1:
         return lst
-
-    max_items = min(len(lst), num_items)
-
-    return [lst[0]] + lst[-(max_items - 1):]
+    return lst[:1] + lst[-(num_items - 1):]
 
 
 def handle_prompt(characters, self_image, conversation_history, main_prompt=None, system_info=False):
