@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
 const Dictaphone = ({
-  commands,
+  commands = [],
   myFunc,
   listenAfterReply = false,
   no_response_time = 3,
@@ -18,87 +18,112 @@ const Dictaphone = ({
     browserSupportsSpeechRecognition,
     isMicrophoneAvailable,
   } = useSpeechRecognition();
-  
-  const [show_transcript, setShowTranscript] = useState(true);
+
+  const [showTranscript, setShowTranscript] = useState(true);
+  const [fullTranscript, setFullTranscript] = useState("");
+  const lastSpokenTimeRef = useRef(Date.now());
+  const silenceTimeoutRef = useRef(null);
 
   const showTranscript_func = () => setShowTranscript((prev) => !prev);
-  const clearTranscript_func = () => resetTranscript();
+  const clearTranscript_func = () => {
+    resetTranscript();
+    setFullTranscript("");
+  };
 
+  // Accumulate final transcripts
   useEffect(() => {
-    if (finalTranscript !== "") {
-      console.log("Got final result:", finalTranscript);
-      console.log("Listening?", listening);
-      console.log("listenAfterReply:", listenAfterReply);
+    if (finalTranscript) {
+      setFullTranscript(prev => `${prev} ${finalTranscript}`.trim());
+      resetTranscript();
+      lastSpokenTimeRef.current = Date.now(); // Update last spoken time
+    }
+  }, [finalTranscript]);
 
-      // Clear the previous script if a keyword is found or if the transcript exceeds limits
-      if (session_listen && finalTranscript.split(" ").length > 500000) {
-        console.log("Transcript exceeds X words");
-        for (let i = 0; i < commands.length; i++) {
-          myFunc(finalTranscript, commands[i], 6);
-        }
-        resetTranscript();
-        return;
-      }
+  // Detect silence
+  useEffect(() => {
+    if (interimTranscript) {
+      lastSpokenTimeRef.current = Date.now();
+      clearTimeout(silenceTimeoutRef.current);
+    } else if (fullTranscript) {
+      silenceTimeoutRef.current = setTimeout(() => {
+        const now = Date.now();
+        if (now - lastSpokenTimeRef.current >= no_response_time * 1000) {
+          console.log("Processing full transcript after silence:", fullTranscript);
 
-      if (!session_listen && finalTranscript.split(" ").length > 10000) {
-        console.log("Transcript exceeds 10000 words. Clearing.");
-        resetTranscript();
-        return;
-      }
+          // Ensure transcript is not reset prematurely
+          if (fullTranscript.trim() === "") return;
 
-      // Clear any existing timers to prevent multiple triggers
-      const timer = setTimeout(() => {
-        // Check if user is still speaking
-        if (interimTranscript) {
-          console.log("User is still speaking, resetting timer...");
-          return; // Reset timer and do not trigger API
-        }
+          // Process based on session mode
+          if (session_listen && fullTranscript.split(" ").length > 500000) {
+            commands.forEach(cmd => myFunc(fullTranscript, cmd, 6));
+            setFullTranscript("");
+            return;
+          }
 
-        // Proceed to check for keywords
-        for (let i = 0; i < commands.length; i++) {
-          const { keywords, api_body } = commands[i];
-          for (let j = 0; j < keywords.length; j++) {
-            const keyword = new RegExp(keywords[j], "i");
-            const isKeywordFound = finalTranscript.search(keyword) !== -1;
+          // if (!session_listen && fullTranscript.split(" ").length > 10000) {
+          //   setFullTranscript("");
+          //   return;
+          // }
 
-            if ((isKeywordFound || listenAfterReply || listenButton) && !apiInProgress) {
-              if (listenAfterReply) {
-                myFunc(finalTranscript, { api_body: { keyword: "" } }, 3);
-              } else if (isKeywordFound) {
-                myFunc(finalTranscript, commands[i], 1);
-              } else if (listenButton) {
-                myFunc(finalTranscript, commands[i], 5);
+          // Match keywords
+          for (const cmd of commands) {
+            const { keywords, api_body } = cmd;
+            for (const kw of keywords) {
+              const keywordRegex = new RegExp(kw, "i");
+              const found = fullTranscript.search(keywordRegex) !== -1;
+
+              if ((found || listenAfterReply || listenButton) && !apiInProgress) {
+                if (listenAfterReply) {
+                  myFunc(fullTranscript, { api_body: { keyword: "" } }, 3);
+                } else if (found) {
+                  myFunc(fullTranscript, cmd, 1);
+                } else if (listenButton) {
+                  myFunc(fullTranscript, cmd, 5);
+                }
+                setFullTranscript("");
+                return;
               }
-              resetTranscript();
-              return;
             }
           }
-        }
-        console.log("Waiting for a keyword");
-      }, no_response_time * 1000);
 
-      return () => clearTimeout(timer); // Clear the timer on component unmount or when useEffect runs again
+          console.log("No keyword matched.");
+        }
+      }, no_response_time * 1000);
     }
-  }, [finalTranscript, interimTranscript, listening, listenAfterReply, commands, no_response_time, resetTranscript, apiInProgress, listenButton]);
+
+    return () => clearTimeout(silenceTimeoutRef.current);
+  }, [interimTranscript, fullTranscript, no_response_time, commands, listenAfterReply, listenButton, apiInProgress, myFunc, session_listen]);
+
+
+  // Start listening on mount if needed
+  useEffect(() => {
+    if ((session_listen || listenButton || listenAfterReply) && !listening) {
+      SpeechRecognition.startListening({ continuous: true, interimResults: true });
+    }
+  }, [session_listen, listenButton, listenAfterReply, listening]);
 
   if (!browserSupportsSpeechRecognition) {
-    return <span>No browser support</span>;
+    return <span>Your browser does not support speech recognition.</span>;
   }
 
   if (!isMicrophoneAvailable) {
-    return <span>Please allow access to the microphone</span>;
+    return <span>Please enable microphone access.</span>;
   }
 
   return (
     <>
-      {show_transcript && (
+      {showTranscript && (
         <div style={{ display: "flex", flexDirection: "column", maxHeight: "250px", height: '250px', overflowY: "auto", border: "1px solid #ccc", padding: "10px" }}>
-          <span>You said: {finalTranscript || interimTranscript}</span>
-          <span>Listening: {listening ? "on" : "off"}</span>
+          <span><strong>You said:</strong></span>
+          <span>
+            {fullTranscript}{" "}
+            <span style={{ color: "gray" }}>{interimTranscript}</span>
+          </span>
+          <span><strong>Listening:</strong> {listening ? "on" : "off"}</span>
         </div>
       )}
       <button onClick={showTranscript_func} style={{ marginTop: "10px" }}>
-        {show_transcript ? "Hide Transcript" : "Show Transcript"}
+        {showTranscript ? "Hide Transcript" : "Show Transcript"}
       </button>
       <button onClick={clearTranscript_func} style={{ marginTop: "10px" }}>
         Clear Transcript

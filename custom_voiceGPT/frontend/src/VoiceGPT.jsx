@@ -450,7 +450,7 @@ useEffect(() => {
                     <div
                       className="chat-user"
                       style={{
-                        backgroundColor: '#f2f2f2',
+                        backgroundColor: '#e4eafe',
                         textAlign: 'right',
                         marginLeft: 'auto',
                         padding: '5px',
@@ -498,10 +498,27 @@ useEffect(() => {
                 onChange={handleInputText}
                 onKeyDown={handleOnKeyDown}
               />
+
+              {listening && (
+                          <div
+                            style={{
+                              width: '89%',
+                              height: '10px',
+                              backgroundImage: 'linear-gradient(90deg, green, transparent 50%, green)',
+                              animation: 'flashLine 1s infinite',
+                              marginTop: '5px',
+                            }}
+                          >
+                            <div style={{ fontSize: '12px', color: 'black' }}>{buttonName_listen}</div>
+                          </div>
+                        )}
+
+
             </div>
             <hr style={{ margin: '3px 0' }} />
           </>
         )}
+
 
       {/* Buttons with indicators under each */}
       <div style={{ display: 'flex', marginTop: '3px' }}>
@@ -523,19 +540,7 @@ useEffect(() => {
           >
             {buttonName}
           </button>
-          {listening && (
-            <div
-              style={{
-                width: '89%',
-                height: '10px',
-                backgroundImage: 'linear-gradient(90deg, green, transparent 50%, green)',
-                animation: 'flashLine 1s infinite',
-                marginTop: '5px',
-              }}
-            >
-              <div style={{ fontSize: '12px', color: 'black' }}>{buttonName_listen}</div>
-            </div>
-          )}
+
         </div>
 
         {/* Button 2 with Conversational Mode Indicator */}
@@ -605,7 +610,7 @@ useEffect(() => {
           )}
         </div>
 
-        {/* Toggle Image Button */}
+        {/* Toggle Image Button
         <div style={{ flex: 1, textAlign: 'center' }}>
           <button
             style={{
@@ -622,7 +627,7 @@ useEffect(() => {
           >
             {listening ? "Stop Listening" : ""}
           </button>
-        </div>
+        </div> */}
       </div>
 
     {/* Agent Actions Horizontal Button-Style Multi-Select */}
