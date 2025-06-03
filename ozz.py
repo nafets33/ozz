@@ -71,8 +71,8 @@ ip_address, streamlit_ip = return_app_ip() # "http://localhost:8501"
 #         time.sleep(3)
 #         st.rerun()
 
-if force_db_root and 'ozz_guest' in st.session_state:
-    st.switch_page('pages/stefan.py')
+# if force_db_root and 'ozz_guest' in st.session_state:
+#     st.switch_page('pages/stefan.py')
 
 with st.sidebar:
     st.write(f"force db, {force_db_root}")
@@ -123,8 +123,8 @@ if st.session_state.get('admin'):
         st.dataframe(df_mch)
     with st.expander("SneakPeak Master Conv"):
         db_root = os.path.join(OZZ_DB, 'sneakpeak')
-        sp_mastet_conv_history = load_local_json(master_conversation_history_file_path)
         master_conversation_history_file_path = os.path.join(db_root, 'master_conversation_history.json')
+        sp_mastet_conv_history = load_local_json(master_conversation_history_file_path)
         df = pd.DataFrame(sp_mastet_conv_history)
         st.dataframe(df)
     with st.expander("Master Text Audio"):

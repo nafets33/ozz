@@ -14,6 +14,31 @@ import ipdb
 load_dotenv(os.path.join(ozz_master_root(),'.env'))
 #### CHARACTERS ####
 
+def mark_down_text(
+    text="Hello There",
+    align="center",
+    color="navy",
+    fontsize="23",
+    font="Arial",
+    hyperlink=False,
+    sidebar=False
+):
+    if hyperlink:
+        st.markdown(
+            """<a style='display: block; text-align: {};' href="{}">{}</a>
+            """.format(
+                align, hyperlink, text
+            ),
+            unsafe_allow_html=True,
+        )
+    else:
+        if sidebar:
+            st.sidebar.markdown(
+                '<p style="text-align: {}; font-family:{}; color:{}; font-size: {}px;">{}</p>'.format(align, font, color, fontsize, text),unsafe_allow_html=True,)
+        else:
+            st.markdown(
+            '<p style="text-align: {}; font-family:{}; color:{}; font-size: {}px;">{}</p>'.format(align, font, color, fontsize, text),unsafe_allow_html=True,)
+    return True
 
 def list_files_by_date(directory):
     files = []
@@ -27,6 +52,7 @@ def list_files_by_date(directory):
 def ozz():
 
     force_db_root=True
+    st.session_state['force_db_root'] = force_db_root
     user_session_state = init_user_session_state()
     
     with st.sidebar:
@@ -36,9 +62,13 @@ def ozz():
     with st.sidebar:
         st.write(f"welcome {client_user}")
     
-    st.title("Stefan Stapinski")
-    
+    st.title("Stefan Stapinski's ~Conscience")
 
+    cols = st.columns((3,3))
+    with cols[1]:
+        mark_down_text("🗣️ Speach & Voice Recognitation 🎙️ ONLY works on a Computer ... I'll fix for Mobile eventually 🛠️", fontsize=15)
+    with cols[0]:
+        mark_down_text("Maybe one day :p .. It's just RAG. Responses may be delay'd, ⚡faster-thinking/processing costs more 💰", fontsize=15)
     
     characters = ozz_characters()
     st.session_state['characters'] = characters
@@ -79,18 +109,13 @@ def ozz():
     no_response_time=3 #st.session_state['hh_vars']['no_response_time'] if 'hc_vars' in st.session_state else 3
     refresh_ask=refreshAsk_kwargs() #st.session_state['hh_vars']['refresh_ask'] if 'hc_vars' in st.session_state else refreshAsk_kwargs()
 
-    tabs = st.tabs(['Talk To Stefan', 'Cool Things I Build', '411'])
+    tabs = st.tabs(['Talk To Stefan', 'Latest Project', '411'])
 
 
     embedding_default = []
     with tabs[0]:
         if self_image == 'stefan':
             cols = st.columns((5,3))
-            with cols[0]:
-                st.header(f"Stefans '''~Conscience'''...")
-                text="...Well sort of, it's just a RAG...Responses may be delay'd, ⚡faster-thinking and processing always costs more 💰"
-                st.write(text)
-
             embedding_default = ['stefan']
             st.session_state['use_embeddings'] = embedding_default
             save_json(session_state_file_path, user_session_state)
@@ -108,18 +133,14 @@ def ozz():
             user_session_state['use_embeddings'] = use_embeddings
             save_json(session_state_file_path, user_session_state)
             st.info("saved")
-    
 
-    # cols = st.columns((5,3))
-    # with cols[1]:
-    #     user_output = st.empty()
     with st.sidebar:
         # rep_output = st.empty()
         selected_audio_file=st.empty()
         llm_audio=st.empty()
     
     with tabs[0]:
-        show_video = st.toggle("Chat Only", False, help="Turn OFF Voice")
+        show_video = st.toggle("Turn On Stefan's Real Voice", False, help="Toggles Turns On/Off the Real Voice for the responses, it will delay the response time")
         hoots_and_hootie(
             width=width,
             height=height,
@@ -133,46 +154,35 @@ def ozz():
             use_embeddings=use_embeddings,
             agent_actions=["Generate A Summary", "Create a Story", "Generate An Image"]
             )
-
-        with st.expander("3 Ways to chat", True):
-            cols = st.columns((3,3))
-            with cols[0]:
-                st.info("1: RECOMMENDED --> Click And Ask Button: Each time you click you can speak your question")
-                st.info("2: Conversational Mode Button: Once you click, use Keyword 'Stefan', ex: 'Stefan How Are you today' (If stefan responds with a question you can directly answer it and don't need to say his name)")
-                st.info("3: Chat Form: Type your questions and hit enter")
-            with cols[1]:
-                st.error("Speach ONLY works on Desktop and does not work on Mobile")
-                st.error("Please note: Sometimes questions may be misunderstood and the response may result in inchorent manner.")
-                st.error("The LLM that uses RAG (i.e. this one) needs extra context to undestand each new query from user, Having responses tailor more accurately requires more engineering")
-
-
-
+        st.write("*** Note, if you click 'Start Conversation' use key phase 'Hey Stefan' to get a response from the Transcript")
 
     with tabs[1]:
         pollen = os.path.join(ozz_master_root(), 'pollen')
         fis = ['1', "1_1", '2', '3']
-        # cols = st.columns((8,2))
+        # cols = st.columns((5,3))
         # with cols[0]:
         # st.write("# An AI Portfolio Manager")
+        # with cols[0]:
+        mark_down_text("My Latest side project -- An AI Portfolio Manager", color="navy", fontsize=25, font="Arial", align="left")
         # with cols[1]:
         st.markdown(
-            '<h2 style="font-size:32px;">📄 <a <a href="https://quantqueen.com/LiveBot" target="_blank">Trading Engine Manage a Portfolio In Real Time</a>',
+            '<h2 style="font-size:13px;">📄 <a <a href="https://quantqueen.com/LiveBot" target="_blank">Link to my Market-Trading-Engine -- Manage a Portfolio - Watch a Live Bot In Real Time</a>',
             unsafe_allow_html=True
         )
-        st.write("An AI Portfolio Manager")
         
         for fi in fis:
             if fi == '1':
-                msg = "# 1. Setup A Portfolio♛"
+                msg = "1. Setup A Portfolio ♟️"
             elif fi == '1_1':
-                msg = "# 2. Watch it Make Money🤑"
+                msg = "2. Watch your Customized-AI-Manager Manage Your Account ⚙️"
             elif fi == '3':
-                msg = "# 3. Trade alongside and Work Together, Manage your Investments with AI"
+                msg = "Monitor TimeSeries Calculated Price-Weighted-Poisitions ♚"
             else:
-                msg = None
-            if msg:
-                st.write(msg)
-            st.image(os.path.join(pollen, f'{fi}.png'))
+                msg = "3. Trade Alongside - Work Together, Customize the rules of your AI-Manager ♛"
+            # if msg:
+            #     mark_down_text(msg, fontsize=18, align="left")
+            with st.expander(f"{msg}"):
+                st.image(os.path.join(pollen, f'{fi}.png'))
 
     with tabs[2]:
         resume_path = os.path.join(pollen, 'resume.png')

@@ -39,7 +39,7 @@ def hoots_and_hootie(width=350, height=350,
         self_image=self_image,
         width=width,
         height=height,
-        key=f'hoots&hootie {show_video}',
+        key=f'{self_image} {show_video}',
         hello_audio="test_audio.mp3",
         face_recon=face_recon, # True False, if face for 4 seconds, trigger api unless text being recorded trigger api, else pass
         show_video=show_video, # True False, show the video on page
