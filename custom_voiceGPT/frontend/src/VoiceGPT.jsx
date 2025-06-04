@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import { Streamlit } from "streamlit-component-lib";
+// import { Streamlit } from "streamlit-component-lib";
 import SpeechRecognition from "react-speech-recognition";
 import Dictaphone from "./Dictaphone";
 import MediaDisplay from "./MediaDisplay";
 
 // import Dictaphone_ss from "./Dictaphone_ss";
-import * as faceapi from "@vladmandic/face-api";
-import DOMPurify from 'dompurify';
+// import * as faceapi from "@vladmandic/face-api";
+// import DOMPurify from 'dompurify';
 
 let timer = null;
 let faceTimer = null;
@@ -402,6 +402,8 @@ useEffect(() => {
   const background_color_chat = refresh_ask?.color_dict?.background_color_chat || 'transparent';
   const splitImage = self_image.split('.')[0]; // Split by dot
   const placeholder = `Chat with ${splitImage}`;
+  console.log("session_listen", session_listen)
+
 
   return (
     <>
@@ -499,21 +501,6 @@ useEffect(() => {
                 onKeyDown={handleOnKeyDown}
               />
 
-              {listening && (
-                          <div
-                            style={{
-                              width: '89%',
-                              height: '10px',
-                              backgroundImage: 'linear-gradient(90deg, green, transparent 50%, green)',
-                              animation: 'flashLine 1s infinite',
-                              marginTop: '5px',
-                            }}
-                          >
-                            <div style={{ fontSize: '12px', color: 'black' }}>{buttonName_listen}</div>
-                          </div>
-                        )}
-
-
             </div>
             <hr style={{ margin: '3px 0' }} />
           </>
@@ -529,8 +516,8 @@ useEffect(() => {
               fontSize: '12px',
               padding: '5px',
               margin: '5px 0',
-              backgroundColor: '#3498db',
-              color: 'white',
+              backgroundColor: listenButton ? '#478728': "rgb(196, 230, 252)",
+              color: 'black',
               border: '1px solid #2980b9',
               borderRadius: '4px',
               cursor: 'pointer',
@@ -550,8 +537,8 @@ useEffect(() => {
               fontSize: '12px',
               padding: '5px',
               margin: '5px 0',
-              backgroundColor: '#2980b9',
-              color: 'white',
+              backgroundColor: convo_button ? "rgb(87, 188, 100)": "rgb(196, 230, 252)",
+              color: 'black',
               border: '1px solid #2980b9',
               borderRadius: '4px',
               cursor: 'pointer',
@@ -561,6 +548,21 @@ useEffect(() => {
           >
             {convo_button ? "End Conversation" : "Start Conversation"}
           </button>
+          
+          {listening && (
+                          <div
+                            style={{
+                              width: '89%',
+                              height: '10px',
+                              backgroundImage: 'linear-gradient(90deg, green, transparent 50%, green)',
+                              animation: 'flashLine 1s infinite',
+                              marginTop: '5px',
+                            }}
+                          >
+                            <div style={{ fontSize: '12px', color: 'black' }}>{buttonName_listen}</div>
+                          </div>
+                        )}
+
           {speaking && (
             <div
               style={{
@@ -573,21 +575,23 @@ useEffect(() => {
               }}
             >
               <div style={{ fontSize: '12px', color: 'black' }}>Speaking</div>
+            
             </div>
           )}
         </div>
 
         {/* Button 3 with Session Started Indicator */}
+
         <div style={{ flex: 1, textAlign: 'center' }}>
           <button
             style={{
               fontSize: '12px',
               padding: '5px',
               margin: '5px 0',
-              backgroundColor: '#2980b9',
-              color: 'white',
+              backgroundColor: session_listen ? "rgb(250, 234, 131)": "rgb(196, 230, 252)",
+              color: 'black',
               border: '1px solid #2980b9',
-              borderRadius: '4px',
+              borderRadius: '1px',
               cursor: 'pointer',
               width: '89%',
             }}
@@ -610,24 +614,6 @@ useEffect(() => {
           )}
         </div>
 
-        {/* Toggle Image Button
-        <div style={{ flex: 1, textAlign: 'center' }}>
-          <button
-            style={{
-              fontSize: '12px',
-              padding: '5px',
-              margin: '5px 0',
-              backgroundColor: '#7f8c8d',
-              color: 'white',
-              border: '1px solid #7f8c8d',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-            onClick={stopListening}
-          >
-            {listening ? "Stop Listening" : ""}
-          </button>
-        </div> */}
       </div>
 
     {/* Agent Actions Horizontal Button-Style Multi-Select */}
