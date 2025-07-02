@@ -4,6 +4,8 @@ import axios from "axios";
 import SpeechRecognition from "react-speech-recognition";
 import Dictaphone from "./Dictaphone";
 import MediaDisplay from "./MediaDisplay";
+import './spinner.css';
+import ReactMarkdown from 'react-markdown';
 
 // import Dictaphone_ss from "./Dictaphone_ss";
 // import * as faceapi from "@vladmandic/face-api";
@@ -474,18 +476,21 @@ useEffect(() => {
                           <img src={imageSrc} alt="response" style={{ width: '50px' }} />
                         </div>
                       )}
-                      <div
-                        className="chat-response-text"
-                        style={{ flex: 1, wordBreak: 'break-word' }}
-                        dangerouslySetInnerHTML={{ __html: answer.resp || "thinking..." }}
-                      />
-                    </div>
-                  </div>
-                ))}
+              <div
+                className="chat-response-text"
+                style={{ flex: 1, wordBreak: 'break-word' }}
+              >
+                {answer.resp
+                  ? <span dangerouslySetInnerHTML={{ __html: answer.resp }} />
+                  : <span className="spinner" />}
               </div>
-            )}
+            </div>
           </div>
-        </div>
+        ))}
+      </div>
+    )}
+  </div>
+</div>
 
         {/* Input text section */}
         {input_text && (

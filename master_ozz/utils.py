@@ -816,7 +816,7 @@ def get_last_eight(lst=[], num_items=3):
     return lst[:1] + lst[-(num_items - 1):]
 
 
-def handle_prompt(characters, self_image, conversation_history, main_prompt=None, system_info=False):
+def handle_prompt(characters, self_image, conversation_history, main_prompt="", system_info=""):
     try:
         
         self_image_name = self_image.split('.')[0]
@@ -903,7 +903,7 @@ def MergeIndexes(db_locations : list, new_location : str = None):
     return dbPrimary.docstore._dict
 
 
-def ozz_characters(population=['stefan', 'hootsAndHootie', 'viki']): # class
+def ozz_characters(population=['stefan', 'hootsAndHootie', 'viki', 'general']): # class
     my_characters = {}
     def char_attributes(split_query_by, voice_id, main_prompt, conv_rules):
         return {'split_query_by':split_query_by, 'voice_id':voice_id, 
@@ -982,7 +982,11 @@ If her answer is good please ask another one of the interview questions.
 If you don't understand the query from the user try move forward with practicing the interview and ask the interview questions. 
 
 """
-
+        else:
+            split_query_by=["general"]
+            voice_id = 'zrHiDhphv9ZnVXBqCLjz'
+            main_prompt = """
+            """ 
 
         my_characters[char] = char_attributes(split_query_by, voice_id, main_prompt, conv_rules)
 

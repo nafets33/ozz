@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 
 const Dictaphone = ({
@@ -27,7 +27,8 @@ const Dictaphone = ({
     resetTranscript();
     setEditableTranscript(""); // Clear editable transcript
   };
-
+  const textareaRef = useRef(null);
+  const cursorPosRef = useRef(null);
   // Logic to process transcript based on session_listen
   const processTranscript = () => {
     if (finalTranscript !== "") {
@@ -36,6 +37,16 @@ const Dictaphone = ({
       // console.log("session_listen:", session_listen);
       // console.log("apiInProgress:", apiInProgress);
   
+      if (listenButton) {
+      // When session_listen is false and not using listenButton, just append
+      myFunc(finalTranscript, { api_body: {} }, 5);
+      setEditableTranscript((prev) => `${prev} ${finalTranscript}`.trim());
+      resetTranscript();
+      setEditableTranscript("");
+      return;
+      }
+
+
       if (session_listen) {
         // Check for keywords only when session_listen is true
         let keywordFound = false;
@@ -63,6 +74,10 @@ const Dictaphone = ({
         }
       } else {
         // When session_listen is false, focus on capturing speech-to-text
+        if (textareaRef.current) {
+          cursorPosRef.current = textareaRef.current.selectionStart;
+        }
+
         console.log("Recording speech-to-text without keyword triggers");
         setEditableTranscript((prev) => `${prev} ${finalTranscript}`.trim());
         resetTranscript(); // Clear finalTranscript after appending
@@ -79,6 +94,15 @@ const Dictaphone = ({
     setEditableTranscript(e.target.value); // Update editable transcript based on user input
   };
 
+  useEffect(() => {
+    if (textareaRef.current && cursorPosRef.current !== null) {
+      textareaRef.current.selectionStart = cursorPosRef.current;
+      textareaRef.current.selectionEnd = cursorPosRef.current;
+      cursorPosRef.current = null;
+    }
+    }, [editableTranscript]);
+
+
   if (!browserSupportsSpeechRecognition) {
     return <span>No browser support</span>;
   }
@@ -89,6 +113,51 @@ const Dictaphone = ({
 
   return (
     <>
+      <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
+        <button
+          onClick={() => {
+            myFunc(editableTranscript, { api_body: {} }, 5);
+            resetTranscript();
+            setEditableTranscript("");
+          }}
+          style={{
+            backgroundColor: "rgb(196, 230, 252)",
+            color: "black",
+            border: "none",
+            padding: "10px 20px",
+            borderRadius: "5px",
+            cursor: "pointer",
+          }}
+        >
+          Send Transcript
+        </button>
+        <button
+          onClick={showTranscript_func}
+          style={{
+            backgroundColor: "white",
+            color: "grey",
+            border: "none",
+            padding: "10px 20px",
+            borderRadius: "5px",
+            cursor: "pointer",
+          }}
+        >
+          {show_transcript ? "Hide Transcript" : "Show Transcript"}
+        </button>
+        <button
+          onClick={clearTranscript_func}
+          style={{
+            backgroundColor: "white",
+            color: "grey",
+            border: "none",
+            padding: "10px 20px",
+            borderRadius: "5px",
+            cursor: "pointer",
+          }}
+        >
+          Clear Transcript
+        </button>
+      </div>
       {show_transcript && (
         <div
           style={{
@@ -107,7 +176,14 @@ const Dictaphone = ({
           <span>
             <strong>Transcript:</strong>
           </span>
+      {/* Live preview of interim transcript */}
+        {interimTranscript && (
+          <div style={{ color: "#888", fontStyle: "italic", marginBottom: "8px" }}>
+            {interimTranscript}
+          </div>
+        )}
           <textarea
+            ref={textareaRef}
             value={editableTranscript}
             onChange={handleTranscriptChange}
             style={{
@@ -122,52 +198,6 @@ const Dictaphone = ({
           />
         </div>
       )}
-<button
-  onClick={() => {
-    myFunc(editableTranscript, { api_body: {} }, 5); // Pass the editable transcript to myFunc
-    resetTranscript(); // Reset the transcript after sending
-    setEditableTranscript(""); // Clear the editable transcript state
-  }}
-  style={{
-    marginTop: "10px",
-    backgroundColor: "rgb(196, 230, 252)",
-    color: "black",
-    border: "none",
-    padding: "10px 20px",
-    borderRadius: "5px",
-    cursor: "pointer",
-  }}
->
-  Send Transcript
-</button>
-      <button
-        onClick={showTranscript_func}
-        style={{
-          marginTop: "10px",
-          backgroundColor: "white",
-          color: "grey",
-          border: "none",
-          padding: "10px 20px",
-          borderRadius: "5px",
-          cursor: "pointer",
-        }}
-      >
-        {show_transcript ? "Hide Transcript" : "Show Transcript"}
-      </button>
-      <button
-        onClick={clearTranscript_func}
-        style={{
-          marginTop: "10px",
-          backgroundColor: "white",
-          color: "grey",
-          border: "none",
-          padding: "10px 20px",
-          borderRadius: "5px",
-          cursor: "pointer",
-        }}
-      >
-        Clear Transcript
-      </button>
     </>
   );
 };

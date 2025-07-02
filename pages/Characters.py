@@ -52,7 +52,7 @@ def hoots_and_hootie(width=350, height=350,
         before_trigger={'how are you': 'hoots_waves__272.mp3', 'phrases': phrases},
         api_audio=f"{st.session_state['ip_address']}/api/data/",
         agent_actions=agent_actions,
-        # use_embeddings=use_embeddings,
+        use_embeddings=use_embeddings,
         commands=[{
             "keywords": phrases, # keywords are case insensitive
             "api_body": {"keyword": "hey hoots"},

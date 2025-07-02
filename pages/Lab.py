@@ -22,6 +22,7 @@ def lab():
     constants = init_constants()
     DATA_PATH = constants.get('DATA_PATH')
     PERSIST_PATH = constants.get('PERSIST_PATH')
+    input_text_data = st.text_area("Add your text data here", height=200)
 
     def delete_files_in_directory(directory):
         try:
@@ -73,6 +74,11 @@ def lab():
         if files is not None:
             if st.sidebar.button('Train'):
                 with st.sidebar.status("Training Model..."):
+                    if input_text_data:
+                        # If input_text_data is provided, save it to a file
+                        with open(os.path.join(DATA_PATH, 'input_text_data.txt'), 'w') as f:
+                            f.write(input_text_data)
+
                     load_files = Directory(DATA_PATH)
                     # clean data WORKERBEE
                     # load_files = clean_data(data)
@@ -105,7 +111,9 @@ def lab():
     conversation_history = get_last_eight(conversation_history, num_items=4)
 
     characters = ozz_characters()
-
+    col_2 = st.empty()
+    with col_2.container():
+        self_image = st.selectbox("Speak To", options=characters.keys(), key='self_image')
     first_ask = True if 'refresh_count' in st.session_state and st.session_state['refresh_count'] > 0 else False
     if first_ask:
         print("FIRST INTERACTION")
@@ -132,30 +140,38 @@ def lab():
                     Retriever_db = os.path.join(PERSIST_PATH, db_name)
                     if return_only_text:
                         r_response = Retriever(query, Retriever_db, search_kwards_num=search_kwards_num, score_threshold=score_threshold, return_only_text=return_only_text )
-                        source_documents = [i.page_content for i in source_documents]
-                        print(source_documents)
+                        source_documents = [i.page_content for i in r_response]
                         # Handle Prompt
-                        conversation_history = handle_prompt(characters, "stefan", conversation_history)
-                        st.write(conversation_history)
-                        current_query = query + f""". Use the following information below to try and answer the above query. 
-                        If the informaiton is not relevant to the above query then do not lie and ask the user if they could be more specific in their ask. 
+                        conversation_history = handle_prompt(characters, self_image, conversation_history)
+                        current_query = query + f""". Use the following information below as context RAG Source Documents: . 
                         {source_documents}
                         """
                         conversation_history.append({"role": "user", "content": current_query})
+                        st.write(conversation_history)
+                        
                         llm_response = llm_assistant_response(conversation_history)
                         llm_result['llm_result'] = llm_response
 
             # if return_only_text == False:
             with st.chat_message('ai'):
-                response = Retriever(query, Retriever_db, search_kwards_num=4, score_threshold=score_threshold, return_only_text=False)
-                query = response.get("query")
-                result = response.get("result")
-                llm_result = llm_result.get('llm_result')
-                st.write("LLM: ", llm_result)
-                ret_source_documents = response.get("source_documents")
-                st.write(ret_source_documents)
+                # response = Retriever(query, Retriever_db, search_kwards_num=4, score_threshold=score_threshold, return_only_text=False)
+                # query = response.get("query")
+                # result = response.get("result")
+                # llm_result = llm_result.get('llm_result')
+                # response = Retriever(current_query, Retriever_db, search_kwards_num=search_kwards_num, score_threshold=score_threshold, return_only_text=True)
+                # if return_only_text:
+                #     source_documents = [i.page_content for i in response]
+                #     current_query = current_query + f""". Use the following information below to try and answer the above query. 
+                #     If the informaiton is not relevant to the above query then do not lie and ask the user if they could be more specific in their ask. 
+                #     Below is source context:
+                #     {source_documents}
+                #     """
+                #     response = llm_assistant_response(conversation_history)
+                st.write("LLM: ", llm_response)
+                # ret_source_documents = response.get("source_documents")
+                # st.write(ret_source_documents)
                 
-                st.write("RETRIEVER ", result)
+                # st.write("RETRIEVER ", result)
                 st.markdown("###### Here are top 3 search results",unsafe_allow_html=True)
                 for index, document in enumerate(r_response):
                     with st.status(f"Document {index+1}"):

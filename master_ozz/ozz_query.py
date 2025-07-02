@@ -422,8 +422,65 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
         
         return current_query, session_state
 
-    def handle_code_blocks(response):
-        return response
+    import re
+
+    def llm_response_to_html(response: str) -> str:
+        """
+        Converts an LLM response string into HTML, handling code blocks, inline code,
+        lists, tables, and links.
+        """
+        # Handle code blocks (```language ... ```)
+        def code_block_replacer(match):
+            code = match.group(2)
+            language = match.group(1) or ""
+            return f'<pre><code class="language-{language}">{code}</code></pre>'
+
+        html = re.sub(r"```(\w*)\n(.*?)```", code_block_replacer, response, flags=re.DOTALL)
+
+        # Handle inline code (`code`)
+        html = re.sub(r"`([^`]+)`", r'<code>\1</code>', html)
+
+        # Handle links [text](url)
+        html = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', html)
+
+        # Handle unordered lists
+        def ul_replacer(match):
+            items = match.group(0).strip().split('\n')
+            items = [f"<li>{item.lstrip('- ').strip()}</li>" for item in items]
+            return "<ul>" + "".join(items) + "</ul>"
+        html = re.sub(r"(^- .+(?:\n- .+)*)", ul_replacer, html, flags=re.MULTILINE)
+
+        # Handle ordered lists
+        def ol_replacer(match):
+            items = match.group(0).strip().split('\n')
+            items = []
+            for item in match.group(0).strip().split('\n'):
+                clean_item = re.sub(r'^\d+\.\s*', '', item).strip()
+                items.append(f"<li>{clean_item}</li>")
+            return "<ol>" + "".join(items) + "</ol>"
+        html = re.sub(r"(^\d+\. .+(?:\n\d+\. .+)*)", ol_replacer, html, flags=re.MULTILINE)
+
+        # Handle tables (simple markdown tables)
+        def table_replacer(match):
+            lines = match.group(0).strip().split('\n')
+            header = lines[0].split('|')[1:-1]
+            rows = [line.split('|')[1:-1] for line in lines[2:]]
+            ths = ''.join(f"<th>{cell.strip()}</th>" for cell in header)
+            trs = ''.join('<tr>' + ''.join(f"<td>{cell.strip()}</td>" for cell in row) + '</tr>' for row in rows)
+            return f"<table><thead><tr>{ths}</tr></thead><tbody>{trs}</tbody></table>"
+        html = re.sub(
+            r"((?:\|.+\|\n)+\|[-:| ]+\|\n(?:\|.+\|\n?)+)",
+            table_replacer,
+            html
+        )
+
+        # Handle newlines as <br> (except inside <pre>...</pre>)
+        def br_replacer(match):
+            return match.group(0).replace('\n', '<br>')
+        html = re.sub(r'(<pre>.*?</pre>)', br_replacer, html, flags=re.DOTALL)
+        html = re.sub(r'(?<!</pre>)\n', '<br>', html)
+
+        return html
 
     print('QUERY ', current_query)
     # print('SSTATE ', {i: v for i, v in session_state.items() if i != 'text'})
@@ -540,12 +597,11 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
         response = Retriever(current_query, Retriever_db, return_only_text=return_only_text)
         if return_only_text:
             source_documents = [i.page_content for i in response]
-            current_query = current_query + f""". Use the following information below to try and answer the above query. 
-            If the informaiton is not relevant to the above query then do not lie and ask the user if they could be more specific in their ask. 
-            {handle_questions}
-
-            Below is source context:
+            current_query = current_query + f""".
+            Below is source context to use for creating a response:
             {source_documents}
+
+            {handle_questions}
             """
             llm_convHistory.append({"role": "user", "content": current_query})
             response = llm_assistant_response(llm_convHistory)
@@ -572,9 +628,13 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
         conversation_history.append({"role": "assistant", "content": f'{response} -TRANSLATED- {russ_response}'})
         response = f'{response} -TRANSLATED- {russ_response}'
 
+    response = llm_response_to_html(response)
+    # response = pd.DataFrame([response]).to_html(escape=False, index=False, header=False).replace('\n', '')
+    print("RESPONSE", response)
+
     return scenario_return(response, conversation_history, audio_file, session_state, self_image)
 
-def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, page_direct=False, listen_after_reply=False, session_listen=False, before_trigger_vars={}):
+def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, page_direct=False, listen_after_reply=False, session_listen=False, selected_actions=[], use_embeddings=[]):
     
     def ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply=False, session_state=None):
         json_data = {'text': text, 
@@ -654,12 +714,12 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
     # Session State
     session_state = load_local_json(session_state_file_path)
     session_state['session_listen'] = session_listen
-    if self_image_name == 'viki':
-        use_embeddings = False
-    elif self_image_name == 'stefan':
-        use_embeddings = ['stefan']
-    else:
-        use_embeddings=session_state.get('use_embeddings')
+    # if self_image_name == 'viki':
+    #     use_embeddings = False
+    # elif self_image_name == 'stefan':
+    #     use_embeddings = ['stefan']
+    # else:
+    # use_embeddings = session_state.get('use_embeddings')
 
     system_info=refresh_ask.get('header_prompt', "")
     if self_image_name == 'stefan':
@@ -678,18 +738,19 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
         df_master_audio = df_master_audio[(df_master_audio['self_image']==self_image_name) & (df_master_audio['text']==current_query)]
 
 
-    print("USE EMBED", use_embeddings)
+    print("EMBEDDINGS: ", use_embeddings)
     
     if first_ask:
-        system_info = f" this is your first interaction, be polite and ask them a question on what they want to talk about, work, physics, basketball, AI, investments, family, fun. {system_info} "
-        print(system_info)
+        if self_image_name == 'stefan':
+            system_info = f" this is your first interaction, be polite and ask them a question on what they want to talk about, work, physics, basketball, AI, investments, family, fun. {system_info} "
+            print(system_info)
         if conversation_history:
             conversation_history = []
         conversation_history = handle_prompt(self_image, conversation_history, system_info=system_info)
         conversation_history.append({"role": "user", "content": current_query})
         session_state = client_user_session_state_return(text, response_type='response', returning_question=False, use_embeddings=use_embeddings)
     else:
-        system_info = f" this is not your first interaction, be more percise with answers, don't ask how there days is going or other introduction questions {system_info} "
+        # system_info = f" this is not your first interaction, be more percise with answers, don't ask how there days is going or other introduction questions {system_info} "
         conversation_history = handle_prompt(self_image, conversation_history, system_info=system_info)
         session_state = session_state
         conversation_history.append({"role": "user", "content": current_query})
@@ -709,12 +770,13 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
 
     # Save Data
     # def save_response(text, current_query, response, client_user, self_image, session_state, master_conversation_history)
-    session_listen = session_state.get('session_listen')
+    # session_listen = session_state.get('session_listen')
     master_conversation_history.append({"role": "user", "content": current_query, 'client_user': client_user, 'datetime': return_timestamp_string(), 'session': session_listen, })
     master_conversation_history.append({"role": "assistant", "content": response, "self_image": self_image, 'datetime': return_timestamp_string(), 'session': session_listen})
     text[-1].update({'resp': response})
     session_state['text'] = text
-    
+
+
     # # Question Return?
     # if response.endswith("?"):
     #     session_state['returning_question'] = True
@@ -723,6 +785,8 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
     #     session_state['returning_question'] = False
     #     session_state['response_type'] = 'response'
     # listen_after_reply = session_state['returning_question'] # True if session_state.get('response_type') == 'question' else False
+    
+    
     listen_after_reply=False
 
     page_direct= False # if redirect, add redirect page into session_state
