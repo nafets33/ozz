@@ -31,7 +31,50 @@ def hoots_and_hootie(width=350, height=350,
     to = to_builder.build()
 
     force_db_root = True if 'force_db_root' in st.session_state and st.session_state['force_db_root'] else False
+    
+    datatree = {}
+    # datatree = {
+    #     "node1": {
+    #         "field_name": "Node 1",
+    #         "hyperlink": "Node 1",
+    #         "children": {
+    #             "node1a": {
+    #                 "field_name": "Node 1A",
+    #                 "hyperlink": "Node 1A",
+    #             },
+    #             "node1b": {
+    #                 "field_name": "Node 1B",
+    #                 "hyperlink": "Node 1B",
+    #                 "children": {
+    #                     "node1b1": {
+    #                         "field_name": "Node 1B-1",
+    #                         "hyperlink": "Node 1B-1",
+    #                     },
+    #                 },
+    #             },
+    #         },
+    #     },
+    #     "node2": {
+    #         "field_name": "Node 2",
+    #         "hyperlink": "Node 2",
+    #         "children": {
+    #             "node2a": {
+    #                 "field_name": "Node 2A",
+    #                 "hyperlink": "Node 2A",
+    #             },
+    #         },
+    #     },
+    #     "node3": {
+    #         "field_name": "Node 3",
+    #         "hyperlink": "Node 3",
+    #     },
+    # }
 
+    # for i in range(25):
+    #     datatree = {**datatree, f"node{i+4}": {
+    #         "field_name": f"Nodeeeeeeeeeeeeeeeeeee {i+4}",
+    #         "hyperlink": f"Node {i+4}",
+    #     }}
     custom_voiceGPT(
         api=f"{st.session_state['ip_address']}/api/data/voiceGPT",
         api_key=os.environ.get('ozz_key'),
@@ -60,7 +103,9 @@ def hoots_and_hootie(width=350, height=350,
             "keywords": ["bye Hoots"],
             "api_body": {"keyword": "bye hoots"},
         }
-        ]
+        ],
+        datatree=datatree,
+        datatree_title="",
     )
 
     return True
@@ -154,7 +199,7 @@ def ozz():
     phrases = hoots_and_hootie_keywords(characters, self_image.split(".")[0])
 
     with tabs[0]:
-        show_video = st.toggle("Chat Only", False, help="Turn OFF Voice")
+        show_video = st.toggle("Toggle Real Voice", False)
         hoots_and_hootie(
             width=width,
             height=height,

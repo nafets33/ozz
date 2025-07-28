@@ -1,15 +1,14 @@
 import json
 import os
-import openai
 from dotenv import load_dotenv
 import shutil
-import string
 import pandas as pd
 from datetime import datetime
 import pytz
 import re
 import copy
-# from collections import deque
+import re
+
 
 os.umask(0o000)
 est = pytz.timezone("US/Eastern")
@@ -17,8 +16,15 @@ est = pytz.timezone("US/Eastern")
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-from master_ozz.utils import llm_assistant_response, get_last_eight, ozz_characters, init_stories ,hoots_and_hootie_vars, common_phrases_for_Questions, save_json, load_local_json, init_clientUser_dbroot, init_text_audio_db, print_line_of_error, ozz_master_root, ozz_master_root_db, generate_audio, save_audio, Retriever, init_constants
+from master_ozz.utils import (llm_assistant_response, llm_response_to_html,
+                              get_last_eight, ozz_characters, init_stories ,
+                              hoots_and_hootie_vars, common_phrases_for_Questions, 
+                              save_json, load_local_json, init_clientUser_dbroot, 
+                              init_text_audio_db, print_line_of_error, ozz_master_root, ozz_master_root_db, 
+                              generate_audio, save_audio, Retriever, init_constants, 
+)
 import ipdb
+tesing_ONLY = False
 
 main_root = ozz_master_root()  # os.getcwd()
 load_dotenv(os.path.join(main_root, ".env"))
@@ -59,6 +65,7 @@ def remove_exact_string(string_a, string_b):
     final_string_a = ''.join(split_strings)
 
     return final_string_a
+
 
 def split_string(current_query, last_response):
     if last_response:
@@ -422,65 +429,8 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
         
         return current_query, session_state
 
-    import re
 
-    def llm_response_to_html(response: str) -> str:
-        """
-        Converts an LLM response string into HTML, handling code blocks, inline code,
-        lists, tables, and links.
-        """
-        # Handle code blocks (```language ... ```)
-        def code_block_replacer(match):
-            code = match.group(2)
-            language = match.group(1) or ""
-            return f'<pre><code class="language-{language}">{code}</code></pre>'
 
-        html = re.sub(r"```(\w*)\n(.*?)```", code_block_replacer, response, flags=re.DOTALL)
-
-        # Handle inline code (`code`)
-        html = re.sub(r"`([^`]+)`", r'<code>\1</code>', html)
-
-        # Handle links [text](url)
-        html = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', html)
-
-        # Handle unordered lists
-        def ul_replacer(match):
-            items = match.group(0).strip().split('\n')
-            items = [f"<li>{item.lstrip('- ').strip()}</li>" for item in items]
-            return "<ul>" + "".join(items) + "</ul>"
-        html = re.sub(r"(^- .+(?:\n- .+)*)", ul_replacer, html, flags=re.MULTILINE)
-
-        # Handle ordered lists
-        def ol_replacer(match):
-            items = match.group(0).strip().split('\n')
-            items = []
-            for item in match.group(0).strip().split('\n'):
-                clean_item = re.sub(r'^\d+\.\s*', '', item).strip()
-                items.append(f"<li>{clean_item}</li>")
-            return "<ol>" + "".join(items) + "</ol>"
-        html = re.sub(r"(^\d+\. .+(?:\n\d+\. .+)*)", ol_replacer, html, flags=re.MULTILINE)
-
-        # Handle tables (simple markdown tables)
-        def table_replacer(match):
-            lines = match.group(0).strip().split('\n')
-            header = lines[0].split('|')[1:-1]
-            rows = [line.split('|')[1:-1] for line in lines[2:]]
-            ths = ''.join(f"<th>{cell.strip()}</th>" for cell in header)
-            trs = ''.join('<tr>' + ''.join(f"<td>{cell.strip()}</td>" for cell in row) + '</tr>' for row in rows)
-            return f"<table><thead><tr>{ths}</tr></thead><tbody>{trs}</tbody></table>"
-        html = re.sub(
-            r"((?:\|.+\|\n)+\|[-:| ]+\|\n(?:\|.+\|\n?)+)",
-            table_replacer,
-            html
-        )
-
-        # Handle newlines as <br> (except inside <pre>...</pre>)
-        def br_replacer(match):
-            return match.group(0).replace('\n', '<br>')
-        html = re.sub(r'(<pre>.*?</pre>)', br_replacer, html, flags=re.DOTALL)
-        html = re.sub(r'(?<!</pre>)\n', '<br>', html)
-
-        return html
 
     print('QUERY ', current_query)
     # print('SSTATE ', {i: v for i, v in session_state.items() if i != 'text'})
@@ -609,10 +559,14 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
             response = response.get('result')
 
     else:
-        print("CALL LLM - GPT")
-        current_query =  handle_questions + current_query
-        llm_convHistory.append({"role": "user", "content": current_query})
-        response = llm_assistant_response(llm_convHistory)
+        if not tesing_ONLY:
+            print("CALL LLM - GPT")
+            current_query =  handle_questions + current_query
+            llm_convHistory.append({"role": "user", "content": current_query})
+            response = llm_assistant_response(llm_convHistory)
+        else:
+            print("TESING ONLY - RETURNING TEST RESPONSE")
+            response = "This is a test response, please ignore it. I am not connected to the LLM right now. Please try again later."
     
     
     conversation_history.append({"role": "assistant", "content": response})

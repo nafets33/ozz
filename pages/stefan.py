@@ -3,7 +3,7 @@ import os
 from bs4 import BeautifulSoup
 from ozz_auth import all_page_auth_signin
 from pages.Characters import hoots_and_hootie
-from master_ozz.utils import hoots_and_hootie_vars, save_json, refreshAsk_kwargs, ozz_master_root_db, init_user_session_state, return_app_ip, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, ozz_characters, CreateEmbeddings, Retriever, init_constants
+from master_ozz.utils import llm_response_to_html, save_json, refreshAsk_kwargs, ozz_master_root_db, init_user_session_state, return_app_ip, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, ozz_characters, CreateEmbeddings, Retriever, init_constants
 from dotenv import load_dotenv
 from custom_voiceGPT import custom_voiceGPT, VoiceGPT_options_builder
 import requests
@@ -185,9 +185,110 @@ def ozz():
                 st.image(os.path.join(pollen, f'{fi}.png'))
 
     with tabs[2]:
-        resume_path = os.path.join(pollen, 'resume.png')
+        resume_path = os.path.join(pollen, 'resume_2.png')
         # Read the PDF file as binary
-        st.image(resume_path)
+        # st.image(resume_path)
+        # Header
+        st.markdown("""
+        # Stefan Stapinski  
+        📞 (408) 693-1760 | 📧 StefanStapinski@gmail.com | 🌐 [Interview My AI](https://divergent-thinkers.com/stefan)  
+        > _“We can do anything that we want to do.”_
+        """)
+
+        # Summary
+        st.markdown("## SUMMARY")
+        st.markdown("""
+        **Systems Architect | Product Manager | Full-Stack Engineer | Revenue Accountant**  
+        Innovative and pragmatic builder with 10+ years of experience leading the architecture, engineering, and product strategy behind scalable internal platforms and AI-driven tools. Proven track record in automating revenue systems, shipping products with lean teams, and bridging business needs with engineering execution. Self-taught in most technologies.
+        """)
+
+        # Technical Toolkit
+        st.markdown("## TECHNICAL TOOLKIT")
+        st.markdown("""
+        **Languages & Frameworks:** Python, SQL, JavaScript, React, Node.js, Go, Rust, Django, VBA  
+        **Infrastructure:** Docker, Kubernetes, Git, REST APIs, LLMs, OpenAI, RAG, Selenium, Gensim, Machin  
+        **Data:** SQL, Postgres, Looker, Tableau, Excel, JSON, Power Query, MongoDB, Superset  
+        **Business Systems:** Salesforce, NetSuite, JIRA, SharePointAPI, Revenue Recognition (ASC 606), Confluence  
+        **Other:** MCP Agents, Master Excel Modeling, Automation, NLP, Custom GPT Agents, Google Cloud, VM Instances, Ngnix, VIM, Linux
+        """)
+
+        # Experience
+        st.markdown("## EXPERIENCE")
+
+        st.markdown("""
+        ### **Roku Inc.** – *Senior Manager, Ad Revenue Operations (Solutions Engineering)*  
+        **New York, NY | 2021 – Present**  
+        - Built 3 full-stack internal platforms saving ~$5M/year and protected team headcount during layoffs  
+        - Built AI agent assistant with vector search, NLP, Sharepoint, Slack & Confluence API integrations  
+        - Architected Roku’s Ad Revenue Platform (8+ yrs active), oversaw rebuild with 1 PM & 7 engineers  
+        - Created Publisher Revenue Share System, saving $2M/year for 5+ years
+
+        ---
+
+        ### **Roku Inc.** – *Ad Revenue Operations Manager*  
+        **Los Gatos, CA | 2018 – 2021**  
+        - Automated ASC 606 models, reducing manual effort by 25+ hrs/month  
+        - Built ETL pipelines, cutting reconciliation time by 30+ hrs/month  
+        - Streamlined campaign creation with Power Query + Python automation
+
+        ---
+
+        ### **Roku Inc.** – *Revenue Analyst*  
+        **Los Gatos, CA | 2016 – 2018**  
+        - Optimized Excel models to save 20+ hrs/month  
+        - Led internal tool development and system integration
+
+        ---
+
+        ### **Daily.Jobs** – *Software Engineer*  
+        **San Jose, CA | 2017 – 2020**  
+        - Built NLP resume parser with Gensim  
+        - Built scrapers & indexing systems via Selenium
+
+        ---
+
+        ### **RocketFuel Inc.** – *Revenue Analyst*  
+        **Redwood City, CA | 2014 – 2016**  
+        - Managed internal revenue tools and dashboards  
+        - Reviewed contracts, ensured SOX compliance
+
+        ---
+
+        ### **EverView** – *Financial Analyst*  
+        **Monterey, CA | 2013 – 2014**  
+        - Created strategic revenue forecasts based on market data
+
+        ---
+
+        ### **Peach’s Restaurant** – *Operations Manager*  
+        **North Conway, NH | 2013**  
+        - Managed 10-person team, handled accounting, operations, cost-efficiency
+
+        ---
+
+        ### **Bank of New York Mellon** – *Derivatives Operations Specialist*  
+        **Pittsburgh, PA | 2012**  
+        - Settled complex derivatives, handled multi-currency operations
+        """)
+
+        # Education
+        st.markdown("## EDUCATION")
+        st.markdown("""
+        **Duquesne University** – *BS in Business Finance*  
+        _Pittsburgh, PA | 2011_  
+        **Study Abroad:** ICN Business School – Nancy, France  
+        **Coursework:** Derivatives, Financial Engineering, Systems Analysis, Statistical Math
+        """)
+
+        # Projects & Learning
+        st.markdown("## PROJECTS & LEARNING")
+        st.markdown("""
+        - 🌐 [Divergent-Thinkers.com/stefan](https://divergent-thinkers.com/stefan): Conversational AI agent trained on myself  
+        - 🌐 [QuantQueen.com/LiveBot](https://quantqueen.com/LiveBot): AI Portfolio Manager / Trading Engine  
+        - 💻 [GitHub](https://github.com/nafets33)  
+        - 🧠 Certifications & Courses: CS50x, Codecademy Python, GPT Tooling, StackOverflow MVP 🌟  
+        - 🛠️ Self-taught in: NLP, LLMs, Confluence AI Agents, API Integrations, AdTech Systems
+        """)
 
 
     with selected_audio_file.container():
