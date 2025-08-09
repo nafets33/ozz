@@ -9,6 +9,7 @@ const Dictaphone = ({
   apiInProgress = false,
   listenButton = false,
   session_listen = false,
+  initialFinalTranscript = "",
 }) => {
   const {
     finalTranscript,
@@ -21,6 +22,7 @@ const Dictaphone = ({
 
   const [editableTranscript, setEditableTranscript] = useState(""); // State for editable transcript
   const [show_transcript, setShowTranscript] = useState(true);
+  const [debouncedTranscript, setDebouncedTranscript] = useState("");
 
   const showTranscript_func = () => setShowTranscript((prev) => !prev);
   const clearTranscript_func = () => {
@@ -82,6 +84,9 @@ const Dictaphone = ({
     }
   };
 
+    useEffect(() => {
+    if (initialFinalTranscript) setEditableTranscript((prev) => `${prev} ${initialFinalTranscript}`.trim());
+  }, []);
   
   // Use processTranscript in useEffect to handle updates
   useEffect(() => {

@@ -25,6 +25,8 @@ def hoots_and_hootie(width=350, height=350,
                      before_trigger={},
                      phrases=[],
                      agent_actions=["Generate A Summary", "Create a Story"],
+                     answers=[],
+                     initialFinalTranscript=None,
                      ):
     refresh_ask['show_video'] = show_video
     to_builder = VoiceGPT_options_builder.create()
@@ -106,6 +108,8 @@ def hoots_and_hootie(width=350, height=350,
         ],
         datatree=datatree,
         datatree_title="",
+        answers=answers,#[{'user': 'hey', 'resp': 'hey hey'}],
+        initialFinalTranscript=initialFinalTranscript, #"hey hey hoots"
     )
 
     return True

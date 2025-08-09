@@ -77,7 +77,11 @@ const [showTooltip_conv, setShowTooltip_conv] = useState(false);
   const [datatree, setDataTree] = useState(kwargs.datatree || {});
   const [datatreeTitle, setDataTreeTitle] = useState(kwargs.datatree_title || "");
 
-  
+useEffect(() => {
+  if (kwargs.answers) {
+    setAnswers(kwargs.answers);
+  }
+}, [kwargs.answers]);
 
 const [selectedNodes, setSelectedNodes] = useState([]);
 
@@ -327,12 +331,10 @@ const convo_mode = () => {
 };
 
 useEffect(() => {
-  if (listening) {
-    console.log("Listening has started");
-  } else {
-    console.log("Listening has stopped");
+  if (!listening && convo_button) {
+    listenContinuously();
   }
-}, [listening]);
+}, [listening, convo_button]);
 
 
   const listenSession = () =>{
@@ -485,7 +487,7 @@ useEffect(() => {
       console.log("api call on listen...", command);
       console.log("selected_nodes", selectedNodes);
       setApiInProgress(true); // Set API in progress to true
-      stopListening()
+      // stopListening()
       // how do I get the dataframe from type?
       let dataframe = null;
       if (type === "dataframe_edit" && command.api_body && command.api_body.dataframe) {
@@ -574,10 +576,11 @@ useEffect(() => {
       }
       else if (listenButton) {
       setlistenButton(false)
+      stopListening()
       }
       else if (convo_button){
         console.log("convo mode")
-        listenContinuously()
+        // listenContinuously()
       }
 
       if (data["dataframe"]) {
@@ -820,28 +823,7 @@ function findNodeByKey(tree, key) {
   <>
     <hr style={{ margin: '3px 0' }} />
     <div className="form-group" style={{ display: "flex", alignItems: "center" }}>
-      <button
-        onClick={click_listenButton}
-        style={{
-          marginLeft: 8,
-          background: listenButton ? 'rgb(26, 182, 28)' : "rgb(19, 123, 193)",
-          border: 'none',
-          borderRadius: '50%',
-          width: 36,
-          height: 36,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          color: 'white',
-          fontSize: 20,
-          boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-          transition: 'background 0.2s',
-        }}
-        title="Click and Ask"
-      >
-        <span role="img" aria-label="microphone">🎤</span>
-      </button>
+
       <input
         className="form-control"
         type="text"
@@ -851,103 +833,6 @@ function findNodeByKey(tree, key) {
         onKeyDown={handleOnKeyDown}
         style={{ flex: 1 }}
       />
-
-<button
-  onClick={convo_mode}
-  onMouseEnter={() => setShowTooltip_conv(true)}
-  onMouseLeave={() => setShowTooltip_conv(false)}
-  style={{
-    marginLeft: 8,
-    background: convo_button ? 'rgb(26, 182, 28)' : "rgb(19, 123, 193)",
-    border: 'none',
-    borderRadius: '50%',
-    width: 36,
-    height: 36,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    color: 'white',
-    fontSize: 20,
-    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-    transition: 'background 0.2s',
-    position: 'relative',
-  }}
->
-<span role="img" aria-label={convo_button ? "paper" : "x"}>
-  {convo_button ? "🎧" : "🔇"}
-</span>  {showTooltip_conv && (
-    <span
-      style={{
-        position: "absolute",
-        top: "-38px",
-        left: "50%",
-        transform: "translateX(-50%)",
-        background: "#222",
-        color: "#fff",
-        padding: "4px 10px",
-        borderRadius: "4px",
-        fontSize: "13px",
-        whiteSpace: "nowrap",
-        zIndex: 1000,
-        pointerEvents: "none",
-      }}
-    >
-      {convo_button ? "Listening On" : "Listening OFF"}
-    </span>
-  )}
-</button>
-
-
-<button
-  onClick={listenSession}
-  onMouseEnter={() => setShowTooltip(true)}
-  onMouseLeave={() => setShowTooltip(false)}
-  style={{
-    marginLeft: 8,
-    background: session_listen ? 'rgb(26, 182, 28)' : "rgb(19, 123, 193)",
-    border: 'none',
-    borderRadius: '50%',
-    width: 36,
-    height: 36,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    color: 'white',
-    fontSize: 20,
-    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-    transition: 'background 0.2s',
-    position: 'relative',
-  }}
->
-<span role="img" aria-label={session_listen ? "paper" : "x"}>
-  {session_listen ? "📄" : "📄"}
-</span>  {showTooltip && (
-<span
-  style={{
-    position: "absolute",
-    top: "-38px",
-    left: "50%",
-    transform: "translateX(-50%)",
-    background: "#222",
-    color: "#fff",
-    padding: "4px 10px",
-    borderRadius: "4px",
-    fontSize: "13px",
-    whiteSpace: "normal",      // allow text to wrap
-    maxWidth: "220px",         // prevent it from being too wide
-    textAlign: "center",       // center the text
-    zIndex: 1000,
-    pointerEvents: "none",
-  }}
->
-  {session_listen ? "ON" : "Keep Transcript Inplace"}
-</span>
-  )}
-</button>
-
-
 
     </div>
     <hr style={{ margin: '3px 0' }} />
@@ -1075,6 +960,128 @@ function findNodeByKey(tree, key) {
               </div>
           )}
 
+    <div className="form-group" style={{ display: "flex", alignItems: "left" }}>
+
+      <button
+        onClick={click_listenButton}
+        style={{
+          marginLeft: 8,
+          background: listenButton ? 'rgb(26, 182, 28)' : "rgb(19, 123, 193)",
+          border: 'none',
+          borderRadius: '50%',
+          width: 36,
+          height: 36,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          color: 'white',
+          fontSize: 20,
+          boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+          transition: 'background 0.2s',
+        }}
+        title="Click and Ask"
+      >
+        <span role="img" aria-label="microphone">🎤</span>
+      </button>
+      
+<button
+  onClick={convo_mode}
+  onMouseEnter={() => setShowTooltip_conv(true)}
+  onMouseLeave={() => setShowTooltip_conv(false)}
+  style={{
+    marginLeft: 8,
+    background: convo_button ? 'rgb(26, 182, 28)' : "rgb(19, 123, 193)",
+    border: 'none',
+    borderRadius: '50%',
+    width: 36,
+    height: 36,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    color: 'white',
+    fontSize: 20,
+    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+    transition: 'background 0.2s',
+    position: 'relative',
+  }}
+>
+<span role="img" aria-label={convo_button ? "paper" : "x"}>
+  {convo_button ? "🎧" : "🔇"}
+</span>  {showTooltip_conv && (
+    <span
+      style={{
+        position: "absolute",
+        top: "-38px",
+        left: "50%",
+        transform: "translateX(-50%)",
+        background: "#222",
+        color: "#fff",
+        padding: "4px 10px",
+        borderRadius: "4px",
+        fontSize: "13px",
+        whiteSpace: "nowrap",
+        zIndex: 1000,
+        pointerEvents: "none",
+      }}
+    >
+      {convo_button ? "Listening On" : "Listening OFF"}
+    </span>
+  )}
+</button>
+
+
+<button
+  onClick={listenSession}
+  onMouseEnter={() => setShowTooltip(true)}
+  onMouseLeave={() => setShowTooltip(false)}
+  style={{
+    marginLeft: 8,
+    background: session_listen ? 'rgb(26, 182, 28)' : "rgb(19, 123, 193)",
+    border: 'none',
+    borderRadius: '50%',
+    width: 36,
+    height: 36,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    color: 'white',
+    fontSize: 20,
+    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+    transition: 'background 0.2s',
+    position: 'relative',
+  }}
+>
+<span role="img" aria-label={session_listen ? "paper" : "x"}>
+  {session_listen ? "📄" : "📄"}
+</span>  {showTooltip && (
+<span
+  style={{
+    position: "absolute",
+    top: "-38px",
+    left: "50%",
+    transform: "translateX(-50%)",
+    background: "#222",
+    color: "#fff",
+    padding: "4px 10px",
+    borderRadius: "4px",
+    fontSize: "13px",
+    whiteSpace: "normal",      // allow text to wrap
+    maxWidth: "220px",         // prevent it from being too wide
+    textAlign: "center",       // center the text
+    zIndex: 1000,
+    pointerEvents: "none",
+  }}
+>
+  {session_listen ? "ON" : "Keep Transcript Inplace"}
+</span>
+  )}
+</button>
+
+</div>
+
 
               {/* Agent Actions Horizontal Button-Style Multi-Select */}
                 {Array.isArray(agent_actions) && agent_actions.length > 0 && (
@@ -1131,6 +1138,7 @@ function findNodeByKey(tree, key) {
             listenButton={listenButton}
             session_listen={session_listen}
             listening={listening}
+            initialFinalTranscript={kwargs.initialFinalTranscript || ""}
           />
         </div>
       </div>
