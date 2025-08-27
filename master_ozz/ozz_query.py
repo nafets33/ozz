@@ -535,38 +535,35 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
     # except Exception as e:
     #     print_line_of_error(e)
 
-    handle_questions = f"If you are not asking a question do not put any question mark symbols in the response. If you are asking a question make sure the question mark symbol is exactly at the end of the text: "
+    # handle_questions = f"If you are not asking a question do not put any question mark symbols in the response. If you are asking a question make sure the question mark symbol is exactly at the end of the text: "
     
     use_embedding = use_embeddings[0] if use_embeddings else None
     db_name, current_query = determine_embedding(current_query, use_embedding=use_embedding)
     return_only_text=True
     llm_convHistory = copy.deepcopy(conversation_history)
-    if db_name:
-        print("USE EMBEDDINGS: ", db_name)
-        Retriever_db = os.path.join(PERSIST_PATH, db_name)
-        response = Retriever(current_query, Retriever_db, return_only_text=return_only_text)
-        if return_only_text:
-            source_documents = [i.page_content for i in response]
-            current_query = current_query + f""".
-            Below is source context to use for creating a response:
-            {source_documents}
+    if not tesing_ONLY:
+        if db_name:
+            print("USE EMBEDDINGS: ", db_name)
+            Retriever_db = os.path.join(PERSIST_PATH, db_name)
+            response = Retriever(current_query, Retriever_db, return_only_text=return_only_text)
+            if return_only_text:
+                source_documents = [i.page_content for i in response]
+                current_query = current_query + f""".
+                Below is source context to use for creating a response:
+                {source_documents}
 
-            {handle_questions}
-            """
-            llm_convHistory.append({"role": "user", "content": current_query})
-            response = llm_assistant_response(llm_convHistory)
+                """
+                llm_convHistory.append({"role": "user", "content": current_query})
+                response = llm_assistant_response(llm_convHistory)
+            else:
+                response = response.get('result')
         else:
-            response = response.get('result')
-
-    else:
-        if not tesing_ONLY:
             print("CALL LLM - GPT")
-            current_query =  handle_questions + current_query
             llm_convHistory.append({"role": "user", "content": current_query})
             response = llm_assistant_response(llm_convHistory)
-        else:
-            print("TESING ONLY - RETURNING TEST RESPONSE")
-            response = "This is a test response, please ignore it. I am not connected to the LLM right now. Please try again later."
+    else:
+        print("TESING ONLY - RETURNING TEST RESPONSE")
+        response = "This is a test response, please ignore it. I am not connected to the LLM right now. Please try again later."
     
     
     conversation_history.append({"role": "assistant", "content": response})
@@ -696,10 +693,12 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
     
     if first_ask:
         if self_image_name == 'stefan':
-            system_info = f" this is your first interaction, be polite and ask them a question on what they want to talk about, work, physics, basketball, AI, investments, family, fun. {system_info} "
+            system_info = f"""This is your first interaction, be polite and ask them a question on what they want to talk about, work, physics, basketball, AI, investments, family, fun.
+            Ask who the user is and what they want to discuss.
+            If the user is interviewing you for a job, be very professional and give them a great interview.
+              """
             print(system_info)
-        if conversation_history:
-            conversation_history = []
+        conversation_history = [] if conversation_history else conversation_history
         conversation_history = handle_prompt(self_image, conversation_history, system_info=system_info)
         conversation_history.append({"role": "user", "content": current_query})
         session_state = client_user_session_state_return(text, response_type='response', returning_question=False, use_embeddings=use_embeddings)
@@ -708,8 +707,6 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
         conversation_history = handle_prompt(self_image, conversation_history, system_info=system_info)
         session_state = session_state
         conversation_history.append({"role": "user", "content": current_query})
-
-    storytime = True if session_state['story_time'] else False
 
     # Call the Scenario Function and get the response accordingly
     scenario_resp = Scenarios(text, current_query, conversation_history, master_conversation_history, session_state, self_image=self_image, client_user=client_user, use_embeddings=use_embeddings, df_master_audio=df_master_audio, show_video=show_video)

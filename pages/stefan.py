@@ -5,7 +5,7 @@ from ozz_auth import all_page_auth_signin
 from pages.Characters import hoots_and_hootie
 from master_ozz.utils import llm_response_to_html, save_json, refreshAsk_kwargs, ozz_master_root_db, init_user_session_state, return_app_ip, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, ozz_characters, CreateEmbeddings, Retriever, init_constants
 from dotenv import load_dotenv
-from custom_voiceGPT import custom_voiceGPT, VoiceGPT_options_builder
+# from custom_voiceGPT import custom_voiceGPT, VoiceGPT_options_builder
 import requests
 import base64
 import ipdb
@@ -62,14 +62,14 @@ def ozz():
     with st.sidebar:
         st.write(f"welcome {client_user}")
     
-    st.title("Stefan Stapinski's ~Conscience")
-
-    cols = st.columns((3,3))
-    with cols[1]:
-        mark_down_text("🗣️ Speach & Voice Recognitation 🎙️ ONLY works on a Computer ... I'll fix for Mobile eventually 🛠️", fontsize=15)
-    with cols[0]:
-        mark_down_text("Maybe one day :p .. It's just RAG. Responses may be delay'd, ⚡faster-thinking/processing costs more 💰", fontsize=15)
-    
+    mark_down_text(
+        text="Stefan Stapinski's ~Conscience",
+        color="#1a237e",  # dark blue shade
+        fontsize=18,
+        font="Arial",
+        align="center"
+    )
+  
     characters = ozz_characters()
     st.session_state['characters'] = characters
     if 'ozz_guest' in st.session_state:
@@ -114,7 +114,7 @@ def ozz():
 
     embedding_default = []
     with tabs[0]:
-        if self_image == 'stefan':
+        if "stefan" in self_image:
             cols = st.columns((5,3))
             embedding_default = ['stefan']
             st.session_state['use_embeddings'] = embedding_default
@@ -140,6 +140,15 @@ def ozz():
         llm_audio=st.empty()
     
     with tabs[0]:
+
+        # st.write(use_embeddings)
+        cols = st.columns((3,3))
+        with cols[1]:
+            mark_down_text("🗣️ Speach & Voice Recognitation ONLY works on a Desktop-Computer ... I'll fix for Mobile eventually 🛠️", fontsize=15)
+        with cols[0]:
+            mark_down_text("It's just RAG. Responses may be delay'd, ⚡faster-thinking/processing costs more 💰", fontsize=15)
+  
+
         show_video = st.toggle("Turn On Stefan's Real Voice", False, help="Toggles Turns On/Off the Real Voice for the responses, it will delay the response time")
         hoots_and_hootie(
             width=width,
@@ -153,7 +162,7 @@ def ozz():
             refresh_ask=refresh_ask,
             use_embeddings=use_embeddings,
             agent_actions=["Create a Story", "Generate An Image", "Generate A Video Story", "Coffee"],
-            answers=[{'user': 'What should we talk about', 'resp': 'I would suggest philosophy, physics, or stoicism.'}],
+            answers=[{'user': 'What should we talk about', 'resp': 'I would suggest philosophy, physics, Franz Liszt.'}],
             initialFinalTranscript=None,
             )
         # st.write("*** Note, if you click 'Start Conversation' use key phase 'Hey Stefan' to get a response from the Transcript")
@@ -172,6 +181,7 @@ def ozz():
             unsafe_allow_html=True
         )
         
+    
         for fi in fis:
             if fi == 'header':
                 msg = "1. Setup A Portfolio ♟️ Watch your Customized-AI-Manager Manage Your Account ⚙️"
@@ -198,8 +208,8 @@ def ozz():
 
         ## SUMMARY
         **Systems Architect | Product Manager | Full-Stack Engineer | Revenue Accountant**  
-        Innovative and pragmatic builder with 10+ years of experience leading the architecture, engineering, and product strategy & build of internal platforms and AI-driven tools.  
-        Proven track record in automating revenue systems, shipping products with lean teams, and bridging business needs with engineering execution. Self-taught in most technologies.  
+        Innovative and pragmatic builder with 10+ years of experience leading the architecture, engineering, & build of internal platforms + AI-driven tools.  
+        Proven track record in automating revenue systems, managing teams in multiple orgs, and bridging business needs with engineering execution. Self-taught in most technologies.  
         Once you learn math, philosophy & physics, the world can be how you make it.
 
         ## TECHNICAL TOOLKIT
@@ -210,12 +220,20 @@ def ozz():
         **Other:** MCP Agents, Master Excel Modeling, Automation, NLP, Custom GPT Agents, Google Cloud, VM Instances, Nginx, VIM, Linux, Gensim, Selenium, Certbot
 
         ## EXPERIENCE
+    
+        ### **Roku Inc.** – *Senior Manager, Revenue Accounting Systems Solutions (Solutions Engineering)*  
+        **New York, NY | 2025 – Present**  
+        - Gen-AI ambassador for the Finance Org, building vector stores, agentic assistants, and applied-AI tools for Finance team tasks.  
+        - Lead Architect on content revenue sharing internal system, guiding feature roadmaps across 2 engineering orgs.  
+        - Built and maintained a server for Agents capable of actions via MCP, Confluence API, Glean API, SharePoint API, Slack API, and internal big data (GCP).  
+        - I Manage Revenue team internal platform processes, features, and system enhancements.  
+
+
         ### **Roku Inc.** – *Senior Manager, Ad Revenue Operations (Solutions Engineering)*  
-        **New York, NY | 2021 – Present**  
+        **New York, NY | 2021 – 2024**  
         - Created 3 full-stack internal platforms & managed the servers, directly saving ~$5M/year and protecting headcount across 3 rounds of company-wide layoffs — never lost a team member.  
         - Managed the platform team to rebuild all 3 platforms within the greater engineering orgs (Enterprise/Ads).  
         - Lead Gen-AI ambassador for the Finance Org, building vector stores, agentic assistants, and curating assistant knowledge-bases to orchestrate tasks.  
-        - Personally built and maintained server for Agents capable of actions via MCP, Confluence API, Glean API, SharePoint API, Slack API, and internal big data (GCP).  
         - Architected Roku’s Ad Revenue Platform (9+ years active), oversaw rebuild with 1 PM & 7 engineers.  
         - Architected Roku’s Publisher Revenue Share System, saving $2M/year for 5 years, leading 1 PM & 4 engineers.
 
@@ -302,4 +320,5 @@ if __name__ == '__main__':
     all_page_auth_signin(True)
     st.session_state['ozz_guest'] = 'Stefan'
     ozz()
+
 

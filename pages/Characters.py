@@ -29,6 +29,7 @@ def hoots_and_hootie(width=350, height=350,
                      initialFinalTranscript=None,
                      ):
     refresh_ask['show_video'] = show_video
+    refresh_ask['use_embeddings'] = use_embeddings
     to_builder = VoiceGPT_options_builder.create()
     to = to_builder.build()
 
@@ -97,7 +98,7 @@ def hoots_and_hootie(width=350, height=350,
         before_trigger={'how are you': 'hoots_waves__272.mp3', 'phrases': phrases},
         api_audio=f"{st.session_state['ip_address']}/api/data/",
         agent_actions=agent_actions,
-        use_embeddings=use_embeddings,
+        # use_embeddings=use_embeddings,
         commands=[{
             "keywords": phrases, # keywords are case insensitive
             "api_body": {"keyword": "hey hoots"},

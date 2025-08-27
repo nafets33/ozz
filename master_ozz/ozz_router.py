@@ -53,13 +53,21 @@ async def load_ozz_voice(request: Request, api_key=Body(...), text=Body(...), se
     body = await request.json()
     print("Full Request Body:", body)
     selected_actions = body.get('selected_actions', [])
-    use_embeddings = body.get('use_embeddings', [])
+    # print(refresh_ask)
+    use_embeddings = refresh_ask.get('use_embeddings', [])
 
-    print(f'trig TYPE: {tigger_type} {before_trigger_vars}')
+    print(f'trig TYPE: {tigger_type}')
     
     if api_key != os.environ.get("ozz_key"): # fastapi_pollenq_key
         print("Auth Failed", api_key)
         return "NOTAUTH"
 
-    json_data = ozz_query(text, self_image, refresh_ask, client_user, force_db_root, session_listen, before_trigger_vars, selected_actions, use_embeddings)
+    json_data = ozz_query(text=text, 
+                          self_image=self_image, 
+                          refresh_ask=refresh_ask, 
+                          client_user=client_user, 
+                          force_db_root=force_db_root, 
+                          session_listen=session_listen, 
+                          selected_actions=selected_actions, 
+                          use_embeddings=use_embeddings)
     return JSONResponse(content=json_data)

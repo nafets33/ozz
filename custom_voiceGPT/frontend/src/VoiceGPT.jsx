@@ -5,11 +5,7 @@ import SpeechRecognition from "react-speech-recognition";
 import Dictaphone from "./Dictaphone";
 import MediaDisplay from "./MediaDisplay";
 import './spinner.css';
-import ReactMarkdown from 'react-markdown';
 
-// import Dictaphone_ss from "./Dictaphone_ss";
-// import * as faceapi from "@vladmandic/face-api";
-// import DOMPurify from 'dompurify';
 
 let timer = null;
 let faceTimer = null;
@@ -301,40 +297,43 @@ const SidebarTree = ({ datatree = {}, onSelectionChange, collapsed, setCollapsed
 
 
 
-  const stopListening = () => {
-    setlistening(false);
-    SpeechRecognition.stopListening();
-    console.log("Stopping Listening, isListening=", listening)
-  }
-
-  const listenContinuously = () =>{
+  const listenContinuously = async () =>{
     setlistening(true)
     SpeechRecognition.startListening({
       continuous: true,
-      language: "en-GB",
+      language: "en-US",
     })
 
 }
+const [isMobile, setIsMobile] = useState(false);
+useEffect(() => {
+  const checkMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  setIsMobile(checkMobile);
+}, []);
 
-
-const convo_mode = () => {
-  console.log("listening?", listening);
-  if (!listening) {
-    console.log("Starting to listen...");
-    setconvo_button(true)
+// Update convo_mode function:
+const convo_mode = async () => {
+  console.log("convo_mode - listening?", listening, "isMobile:", isMobile, "convo_button:", convo_button);
+  
+  if (!convo_button) {
+    console.log("Starting continuous listening...");
+    setconvo_button(true);
     listenContinuously();
   } else {
-    console.log("Stopping listening...");
-    setconvo_button(false)
-    stopListening();
+    console.log("Stopping continuous listening...");
+    setconvo_button(false);
+    setlistening(false);
+    SpeechRecognition.stopListening();
   }
 };
 
-useEffect(() => {
-  if (!listening && convo_button) {
-    listenContinuously();
-  }
-}, [listening, convo_button]);
+// Also update your stopListening function to properly sync the states:
+const stopListening = () => {
+  setlistening(false);
+  setconvo_button(false); // Add this line to sync the states
+  SpeechRecognition.stopListening();
+  console.log("Stopping Listening, isListening=", listening);
+};
 
 
   const listenSession = () =>{
@@ -629,26 +628,26 @@ function findNodeByKey(tree, key) {
   const [showSidebar, setShowSidebar] = useState(false);
   const [sidebarWide, setSidebarWide] = useState(450);
 
-  return (
-    <div style={{ display: "flex", width: "100%" }}>
-
-      {/* Sidebar Toggle and Sidebar */}
-      <div style={{ display: "flex", flexDirection: "column" }}>
+return (
+  <div style={{ display: "flex", width: "100%", minHeight: "100vh" }}>
+    {/* Sidebar Toggle and Sidebar - Only show if not mobile or if sidebar is open */}
+    {(!isMobile || showSidebar) && (
+      <div style={{ display: "flex", flexDirection: "column", flexShrink: 0 }}>
         {/* Sidebar Toggle Button */}
-        <div style={{ display: "flex", alignItems: "center", padding: "4px 8px" }}>
+        <div style={{ display: "flex", alignItems: "center", padding: isMobile ? "2px 4px" : "4px 8px" }}>
           <button
             onClick={() => setShowSidebar((prev) => !prev)}
             style={{
-              fontSize: "18px",
-              padding: "4px 10px",
-              marginRight: "6px",
+              fontSize: isMobile ? "16px" : "18px",
+              padding: isMobile ? "2px 8px" : "4px 10px",
+              marginRight: isMobile ? "3px" : "6px",
               border: "none",
               borderRadius: "50%",
               background: "transparent",
               color: "#2980b9",
               cursor: "pointer",
-              height: "32px",
-              width: "32px",
+              height: isMobile ? "28px" : "32px",
+              width: isMobile ? "28px" : "32px",
               boxShadow: "none",
               outline: "none",
               transition: "background 0.2s",
@@ -658,186 +657,227 @@ function findNodeByKey(tree, key) {
             {showSidebar ? "⏴" : "⏵"}
           </button>
         </div>
+        
         {/* Sidebar Width Toggle Button (only visible when sidebar is open) */}
-          {showSidebar && (
-            <button
-              onClick={() => setSidebarWide((prev) => (prev === 450 ? 250 : 450))}
-              style={{
-                // fontSize: "10px",
-                // padding: "2px 3px",
-                border: "transparent",
-                // borderRadius: "1px",
-                background: "transparent",
-                cursor: "pointer",
-                height: "32px",
-                margin: "6px 0 0 0",
-                width: "32px",
-                alignSelf: "flex-end",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: "50%",
-                boxShadow: "none",
-                transition: "background 0.2s",
-                }}
-              >
-                {sidebarWide === 450 ? (
-                <span>⏪</span>
-                ) : (
-                <span>⏩</span>
-                )}
-              </button>
-              )}
-              {/* Sidebar Tree */}
+        {showSidebar && !isMobile && (
+          <button
+            onClick={() => setSidebarWide((prev) => (prev === 450 ? 250 : 450))}
+            style={{
+              border: "transparent",
+              background: "transparent",
+              cursor: "pointer",
+              height: "32px",
+              margin: "6px 0 0 0",
+              width: "32px",
+              alignSelf: "flex-end",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: "50%",
+              boxShadow: "none",
+              transition: "background 0.2s",
+            }}
+          >
+            {sidebarWide === 450 ? <span>⏪</span> : <span>⏩</span>}
+          </button>
+        )}
+        
+        {/* Sidebar Tree */}
         {showSidebar && (
-          <div style={{ width: sidebarWide, borderRight: "1px solid #ccc", padding: 10, transition: "width 0.2s" }}>
+          <div 
+            style={{ 
+              width: isMobile ? "280px" : sidebarWide, 
+              borderRight: "1px solid #ccc", 
+              padding: isMobile ? 5 : 10, 
+              transition: "width 0.2s",
+              maxHeight: isMobile ? "50vh" : "none",
+              overflowY: isMobile ? "auto" : "visible"
+            }}
+          >
             <SidebarTree
               datatree={datatree}
               onSelectionChange={setSelectedNodes}
               collapsed={collapsed}
               setCollapsed={setCollapsed}
             />          
-            </div>
+          </div>
+        )}
+      </div>
+    )}
+
+    {/* Main Content */}
+    <div 
+      style={{ 
+        flex: 1, 
+        padding: isMobile ? "4px" : "8px", // Reduce padding on mobile
+        minWidth: 0 // Prevent flex item from overflowing
+      }}
+    >
+      {/* Mobile-only sidebar toggle when sidebar is hidden */}
+      {isMobile && !showSidebar && (
+        <div style={{ marginBottom: "8px" }}>
+          <button
+            onClick={() => setShowSidebar(true)}
+            style={{
+              fontSize: "16px",
+              padding: "4px 8px",
+              border: "1px solid #2980b9",
+              borderRadius: "4px",
+              background: "transparent",
+              color: "#2980b9",
+              cursor: "pointer",
+            }}
+          >
+            {showSidebar ? "⏴" : "⏵"}
+          </button>
+        </div>
+      )}
+
+      <div>
+        {firstKey && nodeObj ? (
+          <div style={{ fontSize: isMobile ? "14px" : "16px", marginBottom: "8px" }}>
+            Working Page:{" "}
+            {nodeLink ? (
+              <a href={nodeLink} target="_blank" rel="noopener noreferrer">
+                {nodeTitle}
+              </a>
+            ) : (
+              nodeTitle
+            )}
+          </div>
+        ) : (
+          <div></div>
+        )}
+
+        {/* Show other selected nodes, if any */}
+        {selectedNodes.length > 1 && (
+          <div style={{ marginTop: 8, fontSize: isMobile ? "12px" : "14px" }}>
+            <strong>Extra Context:</strong>{" "}
+            {selectedNodes.slice(1).map((key, idx) => {
+              const node = findNodeByKey(datatree, key);
+              return (
+                <span key={key} style={{ marginRight: 8 }}>
+                  {node?.field_name || key}
+                  {idx < selectedNodes.length - 2 ? "," : ""}
+                </span>
+              );
+            })}
+          </div>
         )}
       </div>
 
-      {/* Main Content */}
-      <div className="p-2" style={{ flex: 1 }}>
-
-<div>
-  {firstKey && nodeObj ? (
-    <div>
-      Working Page:{" "}
-      {nodeLink ? (
-        <a href={nodeLink} target="_blank" rel="noopener noreferrer">
-          {nodeTitle}
-        </a>
-      ) : (
-        nodeTitle
-      )}
-    </div>
-  ) : (
-    <div></div>
-  )}
-
-  {/* Show other selected nodes, if any */}
-  {selectedNodes.length > 1 && (
-    <div style={{ marginTop: 8 }}>
-      <strong>Extra Context:</strong>{" "}
-      {selectedNodes.slice(1).map((key, idx) => {
-        const node = findNodeByKey(datatree, key);
-        return (
-          <span key={key} style={{ marginRight: 8 }}>
-            {node?.field_name || key}
-            {idx < selectedNodes.length - 2 ? "," : ""}
-          </span>
-        );
-      })}
-    </div>
-  )}
-</div>
-  
-        <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-          {/* Image or video section */}
-          <div>
-            {/* Media Display */}
-            <MediaDisplay
-              showImage={showImage}
-              imageSrc={imageSrc}
-              largeHeight={100}
-              largeWidth={100}
-              smallHeight={40}
-              smallWidth={40}
-            />
-          </div>
-
-          {/* Chat window, taking full width if no image is shown */}
-          <div style={{ flex: showImage ? 1 : '100%', overflowY: 'auto', maxHeight: '450px' }}>
-            {show_conversation && (
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  maxHeight: '450px',
-                  height: '450px',
-                  overflowY: 'auto',
-                  // border: '1px solid #ccc',
-                  padding: '10px',
-                }}
-              >
-                {answers.map((answer, idx) => (
-                  <div
-                    key={idx}
-                    className="chat-message-container"
-                    style={{
-                      marginBottom: '5px',
-                      padding: '5px',
-                      borderRadius: '4px',
-                      border: '1px solid #ccc',
-                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-                    }}
-                  >
-                    <div
-                      className="chat-user"
-                      style={{
-                        // backgroundColor: '#e4eafe',
-                        textAlign: 'right',
-                        marginLeft: 'auto',
-                        padding: '5px',
-                      }}
-                    >
-                      {client_user}: <span>{answer.user}</span>
-                    </div>
-                    <div
-                      className="chat-response-container"
-                      style={{
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        backgroundColor: background_color_chat,
-                        padding: '10px',
-                      }}
-                    >
-                      {imageSrc && (
-                        <div className="chat-image" style={{ marginRight: '10px' }}>
-                          <img src={imageSrc} alt="response" style={{ width: '50px' }} />
-                        </div>
-                      )}
-                      <div
-                        className="chat-response-text"
-                        style={{ flex: 1, wordBreak: 'break-word' }}
-                      >
-                        {answer.resp
-                          ? <span dangerouslySetInnerHTML={{ __html: answer.resp }} />
-                          : <span className="spinner" />}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+      {/* Rest of your content stays the same but with mobile padding adjustments */}
+      <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+        {/* Media Display */}
+        <div>
+          <MediaDisplay
+            showImage={showImage}
+            imageSrc={imageSrc}
+            largeHeight={isMobile ? 80 : 100}
+            largeWidth={isMobile ? 80 : 100}
+            smallHeight={isMobile ? 30 : 40}
+            smallWidth={isMobile ? 30 : 40}
+          />
         </div>
 
-        {/* Input text section */}
-{input_text && (
-  <>
-    <hr style={{ margin: '3px 0' }} />
-    <div className="form-group" style={{ display: "flex", alignItems: "center" }}>
+        {/* Chat window */}
+        <div style={{ 
+          flex: showImage ? 1 : '100%', 
+          overflowY: 'auto', 
+          maxHeight: isMobile ? '300px' : '450px' 
+        }}>
+          {show_conversation && (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                maxHeight: isMobile ? '300px' : '450px',
+                height: isMobile ? '300px' : '450px',
+                overflowY: 'auto',
+                padding: isMobile ? '5px' : '10px',
+              }}
+            >
+              {/* Your chat messages - keep existing code */}
+              {answers.map((answer, idx) => (
+                <div
+                  key={idx}
+                  className="chat-message-container"
+                  style={{
+                    marginBottom: '5px',
+                    padding: isMobile ? '3px' : '5px',
+                    borderRadius: '4px',
+                    border: '1px solid #ccc',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                  }}
+                >
+                  {/* Keep your existing chat message content */}
+                  <div
+                    className="chat-user"
+                    style={{
+                      textAlign: 'right',
+                      marginLeft: 'auto',
+                      padding: isMobile ? '3px' : '5px',
+                      fontSize: isMobile ? '12px' : '14px'
+                    }}
+                  >
+                    {client_user}: <span>{answer.user}</span>
+                  </div>
+                  <div
+                    className="chat-response-container"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      backgroundColor: background_color_chat,
+                      padding: isMobile ? '5px' : '10px',
+                    }}
+                  >
+                    {imageSrc && (
+                      <div className="chat-image" style={{ marginRight: isMobile ? '5px' : '10px' }}>
+                        <img src={imageSrc} alt="response" style={{ width: isMobile ? '30px' : '50px' }} />
+                      </div>
+                    )}
+                    <div
+                      className="chat-response-text"
+                      style={{ 
+                        flex: 1, 
+                        wordBreak: 'break-word',
+                        fontSize: isMobile ? '12px' : '14px'
+                      }}
+                    >
+                      {answer.resp
+                        ? <span dangerouslySetInnerHTML={{ __html: answer.resp }} />
+                        : <span className="spinner" />}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
-      <input
-        className="form-control"
-        type="text"
-        placeholder={placeholder}
-        value={textString}
-        onChange={handleInputText}
-        onKeyDown={handleOnKeyDown}
-        style={{ flex: 1 }}
-      />
-
-    </div>
-    <hr style={{ margin: '3px 0' }} />
-  </>
-)}
+      {/* Input text section - keep existing but adjust for mobile */}
+      {input_text && (
+        <>
+          <hr style={{ margin: '3px 0' }} />
+          <div className="form-group" style={{ display: "flex", alignItems: "center" }}>
+            <input
+              className="form-control"
+              type="text"
+              placeholder={placeholder}
+              value={textString}
+              onChange={handleInputText}
+              onKeyDown={handleOnKeyDown}
+              style={{ 
+                flex: 1,
+                fontSize: isMobile ? '14px' : '16px',
+                padding: isMobile ? '6px' : '8px'
+              }}
+            />
+          </div>
+          <hr style={{ margin: '3px 0' }} />
+        </>
+      )}
 
           {editingDataframe &&
             Array.isArray(editingDataframe) &&
@@ -960,30 +1000,34 @@ function findNodeByKey(tree, key) {
               </div>
           )}
 
-    <div className="form-group" style={{ display: "flex", alignItems: "left" }}>
-
-      <button
-        onClick={click_listenButton}
-        style={{
-          marginLeft: 8,
-          background: listenButton ? 'rgb(26, 182, 28)' : "rgb(19, 123, 193)",
-          border: 'none',
-          borderRadius: '50%',
-          width: 36,
-          height: 36,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          color: 'white',
-          fontSize: 20,
-          boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-          transition: 'background 0.2s',
-        }}
-        title="Click and Ask"
-      >
-        <span role="img" aria-label="microphone">🎤</span>
-      </button>
+<div className="form-group" style={{ 
+        display: "flex", 
+        alignItems: "left", 
+        flexWrap: "wrap",
+        gap: isMobile ? "4px" : "8px"
+      }}>
+        <button
+          onClick={click_listenButton}
+          style={{
+            marginLeft: isMobile ? 4 : 8,
+            background: listenButton ? 'rgb(26, 182, 28)' : "rgb(19, 123, 193)",
+            border: 'none',
+            borderRadius: '50%',
+            width: isMobile ? 32 : 36,
+            height: isMobile ? 32 : 36,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            color: 'white',
+            fontSize: isMobile ? 16 : 20,
+            boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+            transition: 'background 0.2s',
+          }}
+          title="Click and Ask"
+        >
+          <span role="img" aria-label="microphone">🎤</span>
+        </button>
       
 <button
   onClick={convo_mode}
