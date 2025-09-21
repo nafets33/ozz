@@ -24,7 +24,9 @@ from master_ozz.utils import (llm_assistant_response, llm_response_to_html,
                               generate_audio, save_audio, Retriever, init_constants, 
 )
 import ipdb
-tesing_ONLY = False
+
+testing_ONLY = False
+# testing_ONLY = True
 
 main_root = ozz_master_root()  # os.getcwd()
 load_dotenv(os.path.join(main_root, ".env"))
@@ -268,10 +270,11 @@ def ai_create_name_for_session(master_conversation_history):
     return True
 
 ### MAIN 
-def Scenarios(text: list, current_query: str , conversation_history: list , master_conversation_history: list, 
+def Scenarios(text: list, trigger_type:str, current_query: str , conversation_history: list , master_conversation_history: list, 
               session_state={}, audio_file=None, self_image='hootsAndHootie.png', 
               client_user=None, use_embeddings=None, df_master_audio=None, check_for_story=False,
               show_video=False,
+              replacementPrompt=None, originalText=None,
               ):
     scenario_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     OZZ = {}
@@ -430,11 +433,7 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
         return current_query, session_state
 
 
-
-
     print('QUERY ', current_query)
-    # print('SSTATE ', {i: v for i, v in session_state.items() if i != 'text'})
-    
     user_query = current_query
 
     # WATERFALL OF QUERY RESPONSE
@@ -541,7 +540,16 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
     db_name, current_query = determine_embedding(current_query, use_embedding=use_embedding)
     return_only_text=True
     llm_convHistory = copy.deepcopy(conversation_history)
-    if not tesing_ONLY:
+    if not testing_ONLY:
+        if str(trigger_type) == '9':
+            current_query = f"""
+            Your response will be used to replace the current set of text in the users editor so your response must be exactly and only for that. 
+            Thus, use the following user request, the replacement prompt, to create a response that will replace the live workings.
+            Here is the user request, replacement prompt: {replacementPrompt}
+            Here is the other context that can be considered to formulate your final response output, use if only relevant of the replacement prompt. 
+            {originalText}
+
+            """
         if db_name:
             print("USE EMBEDDINGS: ", db_name)
             Retriever_db = os.path.join(PERSIST_PATH, db_name)
@@ -585,8 +593,8 @@ def Scenarios(text: list, current_query: str , conversation_history: list , mast
 
     return scenario_return(response, conversation_history, audio_file, session_state, self_image)
 
-def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, page_direct=False, listen_after_reply=False, session_listen=False, selected_actions=[], use_embeddings=[]):
-    
+def ozz_query(text, trigger_type, self_image, refresh_ask, client_user, force_db_root=False, page_direct=False, listen_after_reply=False, session_listen=False, selected_actions=[], use_embeddings=[], replacementPrompt=None, originalText=None):
+
     def ozz_query_json_return(text, self_image, audio_file, page_direct, listen_after_reply=False, session_state=None):
         json_data = {'text': text, 
                     'audio_path': audio_file, 
@@ -636,11 +644,6 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
 
     db_root = init_clientUser_dbroot(client_username=client_user, force_db_root=force_db_root)
 
-    # handle character from self_image
-    # handle command type, if you don't know command type you need to ask?
-    # if 'this is a command' in current_query or "please do this": ## handle command requests:
-    #     if "save this" in current_query:
-    #         save_json()
     self_image_name = self_image.split('.')[0]
     split_query_by = characters[self_image_name].get('split_query_by')
     text, current_query = clean_current_query_from_previous_ai_response(text, split_query_by)
@@ -652,7 +655,7 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
     
     first_ask = True if len(text) <= 1 else False
 
-    common_phrases_ = common_phrases_for_Questions()
+    # common_phrases_ = common_phrases_for_Questions() # search for common phrases
 
     ## Load Client session and conv history # based on character
     master_conversation_history_file_path = os.path.join(db_root, 'master_conversation_history.json')
@@ -665,17 +668,8 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
     # Session State
     session_state = load_local_json(session_state_file_path)
     session_state['session_listen'] = session_listen
-    # if self_image_name == 'viki':
-    #     use_embeddings = False
-    # elif self_image_name == 'stefan':
-    #     use_embeddings = ['stefan']
-    # else:
-    # use_embeddings = session_state.get('use_embeddings')
 
     system_info=refresh_ask.get('header_prompt', "")
-    if self_image_name == 'stefan':
-        system_info = f'Keep length of responses to be respective of the conversation question, try not to respond to little or to much. {system_info}'
-    
 
     # handle prompt 1 and ensure light conv history
     conversation_history = handle_prompt(self_image, conversation_history, main_prompt=True, characters=characters, system_info=system_info)
@@ -692,12 +686,13 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
     print("EMBEDDINGS: ", use_embeddings)
     
     if first_ask:
-        if self_image_name == 'stefan':
-            system_info = f"""This is your first interaction, be polite and ask them a question on what they want to talk about, work, physics, basketball, AI, investments, family, fun.
-            Ask who the user is and what they want to discuss.
-            If the user is interviewing you for a job, be very professional and give them a great interview.
-              """
-            print(system_info)
+        if trigger_type != '9': # not replacing text
+            if self_image_name == 'stefan':
+                system_info = f"""This is your first interaction, be polite and ask them a question on what they want to talk about, work, physics, basketball, AI, investments, family, fun.
+                Ask who the user is and what they want to discuss.
+                If the user is interviewing you for a job, be very professional and give them a great interview.
+                """
+                print(system_info)
         conversation_history = [] if conversation_history else conversation_history
         conversation_history = handle_prompt(self_image, conversation_history, system_info=system_info)
         conversation_history.append({"role": "user", "content": current_query})
@@ -709,7 +704,20 @@ def ozz_query(text, self_image, refresh_ask, client_user, force_db_root=False, p
         conversation_history.append({"role": "user", "content": current_query})
 
     # Call the Scenario Function and get the response accordingly
-    scenario_resp = Scenarios(text, current_query, conversation_history, master_conversation_history, session_state, self_image=self_image, client_user=client_user, use_embeddings=use_embeddings, df_master_audio=df_master_audio, show_video=show_video)
+    scenario_resp = Scenarios(text, 
+                              trigger_type, 
+                              current_query, 
+                              conversation_history, 
+                              master_conversation_history, 
+                              session_state, 
+                              self_image=self_image, 
+                              client_user=client_user, 
+                              use_embeddings=use_embeddings, 
+                              df_master_audio=df_master_audio, 
+                              show_video=show_video,
+                              replacementPrompt=replacementPrompt,
+                              originalText=originalText,
+                              )
     response = scenario_resp.get('response')
     response = clean_response(response)
 

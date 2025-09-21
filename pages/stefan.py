@@ -3,16 +3,15 @@ import os
 from bs4 import BeautifulSoup
 from ozz_auth import all_page_auth_signin
 from pages.Characters import hoots_and_hootie
-from master_ozz.utils import llm_response_to_html, save_json, refreshAsk_kwargs, ozz_master_root_db, init_user_session_state, return_app_ip, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, ozz_characters, CreateEmbeddings, Retriever, init_constants
+from master_ozz.utils import page_line_seperator, save_json, refreshAsk_kwargs, ozz_master_root_db, init_user_session_state, return_app_ip, ozz_master_root, set_streamlit_page_config_once, sign_in_client_user, print_line_of_error, Directory, ozz_characters, CreateEmbeddings, Retriever, init_constants
 from dotenv import load_dotenv
-# from custom_voiceGPT import custom_voiceGPT, VoiceGPT_options_builder
 import requests
-import base64
-import ipdb
+import streamlit.components.v1 as components
+
 
 # from custom_button import cust_Button
 load_dotenv(os.path.join(ozz_master_root(),'.env'))
-#### CHARACTERS ####
+calendly_url = "https://calendly.com/stapinskistefan/30min"  # replace with your actual link
 
 def mark_down_text(
     text="Hello There",
@@ -61,9 +60,20 @@ def ozz():
     client_user = st.session_state['ozz_guest']
     with st.sidebar:
         st.write(f"welcome {client_user}")
-    
+
+    book_s = st.button("Book Time with the Real Stefan", use_container_width=False)
+    if book_s:
+        mark_down_text(text="Available Times 📅", color="#1a237e", align='left')
+        components.iframe(
+            src=calendly_url,
+            height=800,
+            width=700,
+            scrolling=True
+        )
+        page_line_seperator(color="#1a237e")
+
     mark_down_text(
-        text="Stefan Stapinski's ~Conscience",
+        text='Stefan Stapinski\'s "Conscience"',
         color="#1a237e",  # dark blue shade
         fontsize=18,
         font="Arial",
@@ -142,11 +152,11 @@ def ozz():
     with tabs[0]:
 
         # st.write(use_embeddings)
-        cols = st.columns((3,3))
-        with cols[1]:
-            mark_down_text("🗣️ Speach & Voice Recognitation ONLY works on a Desktop-Computer ... I'll fix for Mobile eventually 🛠️", fontsize=15)
-        with cols[0]:
-            mark_down_text("It's just RAG. Responses may be delay'd, ⚡faster-thinking/processing costs more 💰", fontsize=15)
+        # cols = st.columns((3,3))
+        # with cols[1]:
+        mark_down_text("🗣️ Speach & Voice Recognitation ONLY works on a Desktop-Computer ... I'll fix for Mobile eventually 🛠️", fontsize=15, align='right')
+        # with cols[0]:
+        mark_down_text("RAG Responses may be delay'd, ⚡faster-thinking/processing costs more 💰", fontsize=15, align='right')
   
 
         show_video = st.toggle("Turn On Stefan's Real Voice", False, help="Toggles Turns On/Off the Real Voice for the responses, it will delay the response time")

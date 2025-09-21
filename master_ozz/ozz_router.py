@@ -52,22 +52,28 @@ async def load_ozz_voice(request: Request, api_key=Body(...), text=Body(...), se
     # Print the entire body of the POST request
     body = await request.json()
     print("Full Request Body:", body)
+    replacementPrompt = body.get('replacementPrompt', None)
+    originalText = body.get('originalText', None)
     selected_actions = body.get('selected_actions', [])
     # print(refresh_ask)
     use_embeddings = refresh_ask.get('use_embeddings', [])
-
-    print(f'trig TYPE: {tigger_type}')
+    trigger_type = str(tigger_type)
+    print(f'trig TYPE: {trigger_type}')
     
     if api_key != os.environ.get("ozz_key"): # fastapi_pollenq_key
         print("Auth Failed", api_key)
         return "NOTAUTH"
 
-    json_data = ozz_query(text=text, 
+    json_data = ozz_query(text=text,
+                          trigger_type=trigger_type,
                           self_image=self_image, 
                           refresh_ask=refresh_ask, 
                           client_user=client_user, 
                           force_db_root=force_db_root, 
                           session_listen=session_listen, 
                           selected_actions=selected_actions, 
-                          use_embeddings=use_embeddings)
+                          use_embeddings=use_embeddings,
+                          replacementPrompt=replacementPrompt,
+                          originalText=originalText, #honestly just use replace on text
+                          )
     return JSONResponse(content=json_data)

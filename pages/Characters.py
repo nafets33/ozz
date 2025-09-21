@@ -8,6 +8,7 @@ from custom_voiceGPT import custom_voiceGPT, VoiceGPT_options_builder
 import requests
 import base64
 from ozz_auth import all_page_auth_signin
+import random
 
 # from custom_button import cust_Button
 load_dotenv(os.path.join(ozz_master_root(),'.env'))
@@ -78,6 +79,103 @@ def hoots_and_hootie(width=350, height=350,
     #         "field_name": f"Nodeeeeeeeeeeeeeeeeeee {i+4}",
     #         "hyperlink": f"Node {i+4}",
     #     }}
+
+
+
+    # Chess-themed names for random selection
+    chess_pieces = ["King", "Queen", "Rook", "Bishop", "Knight", "Pawn"]
+    chess_colors = ["White", "Black", "Silver", "Golden", "Royal", "Ancient"]
+    chess_terms = ["Gambit", "Castle", "Check", "Mate", "Opening", "Endgame", "Fork", "Pin", "Skewer", "Discovery"]
+    chess_players = ["Fischer", "Kasparov", "Carlsen", "Capablanca", "Tal", "Karpov", "Botvinnik", "Alekhine"]
+
+    def generate_chess_name():
+        """Generate a random chess-themed name"""
+        combinations = [
+            f"{random.choice(chess_colors)} {random.choice(chess_pieces)}",
+            f"{random.choice(chess_pieces)} {random.choice(chess_terms)}",
+            f"{random.choice(chess_players)}'s {random.choice(chess_terms)}",
+            f"The {random.choice(chess_colors)} {random.choice(chess_terms)}",
+            f"{random.choice(chess_terms)} of {random.choice(chess_players)}"
+        ]
+        return random.choice(combinations)
+
+    # Updated datatree with chess theme
+    datatree = {
+        "grandmaster": {
+            "field_name": "Grandmaster's Hall",
+            "hyperlink": "http://divergent-thinkers.com/kewl/grandmaster",
+            "children": {
+                "opening": {
+                    "field_name": generate_chess_name(),
+                    "hyperlink": "http://divergent-thinkers.com/kewl/opening-theory",
+                },
+                "middlegame": {
+                    "field_name": generate_chess_name(),
+                    "hyperlink": "http://divergent-thinkers.com/kewl/middlegame-tactics",
+                    "children": {
+                        "tactics": {
+                            "field_name": generate_chess_name(),
+                            "hyperlink": "http://divergent-thinkers.com/kewl/tactical-patterns",
+                        },
+                        "strategy": {
+                            "field_name": generate_chess_name(),
+                            "hyperlink": "http://divergent-thinkers.com/kewl/strategic-plans",
+                        },
+                    },
+                },
+            },
+        },
+        "tournament": {
+            "field_name": "Championship Arena",
+            "hyperlink": "http://divergent-thinkers.com/kewl/tournament",
+            "children": {
+                "world_championship": {
+                    "field_name": generate_chess_name(),
+                    "hyperlink": "http://divergent-thinkers.com/kewl/world-championship",
+                },
+                "olympiad": {
+                    "field_name": generate_chess_name(),
+                    "hyperlink": "http://divergent-thinkers.com/kewl/chess-olympiad",
+                },
+            },
+        },
+        "library": {
+            "field_name": "Chess Library",
+            "hyperlink": "http://divergent-thinkers.com/kewl/library",
+            "children": {
+                "classics": {
+                    "field_name": generate_chess_name(),
+                    "hyperlink": "http://divergent-thinkers.com/kewl/classic-games",
+                },
+                "modern": {
+                    "field_name": generate_chess_name(),
+                    "hyperlink": "http://divergent-thinkers.com/kewl/modern-chess",
+                },
+            },
+        },
+    }
+
+    # Generate additional random chess-themed nodes
+    for i in range(15):
+        node_key = f"chess_node_{i+1}"
+        node_name = generate_chess_name()
+        datatree[node_key] = {
+            "field_name": node_name,
+            "hyperlink": f"http://divergent-thinkers.com/kewl/chess-{i+1}",
+        }
+        
+        # Some nodes get children
+        if i % 3 == 0:
+            datatree[node_key]["children"] = {
+                f"sub_{i}_a": {
+                    "field_name": generate_chess_name(),
+                    "hyperlink": f"http://divergent-thinkers.com/kewl/chess-{i+1}-a",
+                },
+                f"sub_{i}_b": {
+                    "field_name": generate_chess_name(),
+                    "hyperlink": f"http://divergent-thinkers.com/kewl/chess-{i+1}-b",
+                },
+            }
     custom_voiceGPT(
         api=f"{st.session_state['ip_address']}/api/data/voiceGPT",
         api_key=os.environ.get('ozz_key'),
@@ -108,7 +206,7 @@ def hoots_and_hootie(width=350, height=350,
         }
         ],
         datatree=datatree,
-        datatree_title="",
+        datatree_title="Chess Connections" if datatree else "",
         answers=answers,#[{'user': 'hey', 'resp': 'hey hey'}],
         initialFinalTranscript=initialFinalTranscript, #"hey hey hoots"
     )

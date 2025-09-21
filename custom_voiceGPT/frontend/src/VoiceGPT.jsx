@@ -7,10 +7,10 @@ import MediaDisplay from "./MediaDisplay";
 import './spinner.css';
 
 
-let timer = null;
-let faceTimer = null;
+// let timer = null;
+// let faceTimer = null;
 let g_anwers = [];
-let firstFace = false;
+// let firstFace = false;
 
 const CustomVoiceGPT = (props) => {
   const { api, kwargs = {} } = props;
@@ -36,7 +36,7 @@ const CustomVoiceGPT = (props) => {
   const [imageSrc_name, setImageSrc_name] = useState(kwargs.self_image);
 
   const [message, setMessage] = useState("");
-  const [answers, setAnswers] = useState([]);
+  const [answers, setAnswers] = useState(kwargs.answers || []);
   const [listenAfterReply, setListenAfterReply] = useState(false);
 
   const [modelsLoaded, setModelsLoaded] = useState(false);
@@ -56,11 +56,11 @@ const [showTooltip_conv, setShowTooltip_conv] = useState(false);
 
   const [before_trigger_vars, before_trigger_] = useState(kwargs.before_trigger); 
   const faceData = useRef([]);
-  const faceTriggered = useRef(false);
-  const videoRef = useRef();
-  const videoHeight = 480;
-  const videoWidth = 640;
-  const canvasRef = useRef();
+  // const faceTriggered = useRef(false);
+  // const videoRef = useRef();
+  // const videoHeight = 480;
+  // const videoWidth = 640;
+  // const canvasRef = useRef();
   const audioRef = useRef(null);
   
 
@@ -73,11 +73,6 @@ const [showTooltip_conv, setShowTooltip_conv] = useState(false);
   const [datatree, setDataTree] = useState(kwargs.datatree || {});
   const [datatreeTitle, setDataTreeTitle] = useState(kwargs.datatree_title || "");
 
-useEffect(() => {
-  if (kwargs.answers) {
-    setAnswers(kwargs.answers);
-  }
-}, [kwargs.answers]);
 
 const [selectedNodes, setSelectedNodes] = useState([]);
 
@@ -305,11 +300,8 @@ const SidebarTree = ({ datatree = {}, onSelectionChange, collapsed, setCollapsed
     })
 
 }
-const [isMobile, setIsMobile] = useState(false);
-useEffect(() => {
-  const checkMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  setIsMobile(checkMobile);
-}, []);
+
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 // Update convo_mode function:
 const convo_mode = async () => {
@@ -345,24 +337,7 @@ const stopListening = () => {
   }
     }
 
-  // useEffect(() => {
-  //   const loadModels = async () => {
-  //     const MODEL_URL = process.env.PUBLIC_URL + "/models";
 
-  //     Promise.all([
-  //       faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-  //       faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-  //       faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-  //       faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
-  //       faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL),
-  //     ]).then(() => setModelsLoaded(true));
-  //   };
-  //   loadModels();
-  //   const interval = setInterval(() => {
-  //     // console.log("faceData.current :>> ", faceData.current);
-  //   }, 3000);
-  //   return () => clearInterval(interval);
-  // }, []);
 
 
   const handleInputText = (event) => {
@@ -381,90 +356,6 @@ const stopListening = () => {
     }
   };
 
-  // const startVideo = () => {
-  //   setCaptureVideo(true);
-  //   navigator.mediaDevices
-  //     .getUserMedia({ video: { width: 300 } })
-  //     .then((stream) => {
-  //       let video = videoRef.current;
-  //       video.srcObject = stream;
-  //       video.play();
-  //     })
-  //     .catch((err) => {
-  //       console.error("error:", err);
-  //     });
-  // };
-
-  // const handleVideoOnPlay = () => {
-  //   setInterval(async () => {
-  //     if (canvasRef && canvasRef.current) {
-  //       canvasRef.current.innerHTML = faceapi.createCanvasFromMedia(
-  //         videoRef.current
-  //       );
-  //       const displaySize = {
-  //         width: videoWidth,
-  //         height: videoHeight,
-  //       };
-
-  //       faceapi.matchDimensions(canvasRef.current, displaySize);
-
-  //       const detections = await faceapi
-  //         .detectAllFaces(
-  //           videoRef.current,
-  //           new faceapi.TinyFaceDetectorOptions()
-  //         )
-  //         .withFaceLandmarks()
-  //         .withFaceExpressions();
-
-  //       const resizedDetections = faceapi.resizeResults(detections, displaySize);
-
-  //       if (resizedDetections.length > 0) {
-  //         faceData.current = resizedDetections;
-  //         if (!faceTriggered.current && face_recon) {
-  //           myFunc("", { api_body: { keyword: "" } }, 2);
-  //           faceTriggered.current = true;
-  //         }
-  //       } else {
-  //         faceTimer && clearTimeout(faceTimer);
-  //         setTimeout(() => {
-  //           faceData.current = [];
-  //         }, 1000);
-  //       }
-
-  //       if (resizedDetections.length > 0 && !firstFace) {
-  //         firstFace = true;
-  //         if (kwargs.hello_audio) {
-  //           const audio = new Audio(kwargs.hello_audio);
-  //           audio.play();
-  //         }
-  //       }
-
-  //       canvasRef &&
-  //         canvasRef.current &&
-  //         canvasRef.current
-  //           .getContext("2d")
-  //           .clearRect(0, 0, videoWidth, videoHeight);
-  //       canvasRef &&
-  //         canvasRef.current &&
-  //         faceapi.draw.drawDetections(canvasRef.current, resizedDetections);
-  //       canvasRef &&
-  //         canvasRef.current &&
-  //         faceapi.draw.drawFaceLandmarks(canvasRef.current, resizedDetections);
-  //       canvasRef &&
-  //         canvasRef.current &&
-  //         faceapi.draw.drawFaceExpressions(
-  //           canvasRef.current,
-  //           resizedDetections
-  //         );
-  //     }
-  //   }, 300);
-  // };
-
-  // const closeWebcam = () => {
-  //   videoRef.current.pause();
-  //   videoRef.current.srcObject.getTracks()[0].stop();
-  //   setCaptureVideo(false);
-  // };
 
   const click_listenButton = () => {
     setlistenButton(true)
@@ -479,6 +370,21 @@ const stopListening = () => {
   const [editedDataframe, setEditedDataframe] = useState(null);
 
   const myFunc = async (ret, command, type) => {
+
+  let originalText = null;
+  let replacementPrompt = null;
+
+  if (type === 9) {
+    console.log("Text replacement test - type 9 detected");
+    originalText = command.api_body?.original_text || ""; // Set original text
+    replacementPrompt = command.api_body?.replacement_prompt || ""; // Set replacement prompt
+
+    console.log("Original text:", originalText);
+    console.log("Replacement prompt:", replacementPrompt);
+  //   // // Return test string for replacement
+  //   // return "TEST REPLACEMENT TEXT - This is a TEST";
+  }
+
     setMessage(` (${command["api_body"]["keyword"]}) ${ret},`);
     const text = [...g_anwers, { user: ret }];
     setAnswers([...text]);
@@ -506,10 +412,19 @@ const stopListening = () => {
         selected_actions: selectedActions,
         selected_nodes: selectedNodes,
         dataframe: dataframe,
+        originalText: originalText,
+        replacementPrompt: replacementPrompt,
       };
       console.log("api");
       const { data } = await axios.post(api, body);
       console.log("data :>> ", data, body);
+      if (type === 9) {
+        let resp = data["text"][data["text"].length - 1].resp || "";
+        console.log("Text replacement response:", resp);
+        
+        return resp;
+      }
+
       if (data["self_image"] && data["self_image"] !== imageSrc_name) {
         fetchImageData(data["self_image"]); // Fetch image data if it's different
       }
@@ -587,16 +502,19 @@ const stopListening = () => {
         setEditedDataframe(data["dataframe"]);
         return; // Exit further processing if you want
 }
+      if (type === 9) {
+        return data["text"][data["text"].length - 1].response || "";
+      }
 
-      
     } catch (error) {
       console.log("api call on listen failed!", error);
       setApiInProgress(false); // Set API in progress to false on error
       setlistenButton(false)
     }
 
-    updateWindowWidth();
+    // updateWindowWidth();
     console.log("ReSize Window")
+    setSelectedActions([]);
   };
 
 // Recursive function to find a node by key in the datatree
@@ -615,15 +533,11 @@ function findNodeByKey(tree, key) {
   const background_color_chat = refresh_ask?.color_dict?.background_color_chat || 'transparent';
   const splitImage = self_image.split('.')[0]; // Split by dot
   const placeholder = `Chat with ${splitImage}`;
-  console.log("session_listen", session_listen)
-  console.log("selectedNodes", selectedNodes)
+
   const firstKey = selectedNodes[0] || null;
   const nodeObj = firstKey ? findNodeByKey(datatree, firstKey) : null;
   const nodeTitle = nodeObj?.field_name;
   const nodeLink = nodeObj?.hyperlink;
-
-//     console.log("selectedNodes", selectedNodes)
-// };
 
   const [showSidebar, setShowSidebar] = useState(false);
   const [sidebarWide, setSidebarWide] = useState(450);
@@ -1107,8 +1021,8 @@ return (
     top: "-38px",
     left: "50%",
     transform: "translateX(-50%)",
-    background: "#222",
-    color: "#fff",
+    background: 'rgb(235, 243, 244)',
+    color: 'rgb(45, 68, 72)',
     padding: "4px 10px",
     borderRadius: "4px",
     fontSize: "13px",
@@ -1119,7 +1033,9 @@ return (
     pointerEvents: "none",
   }}
 >
-  {session_listen ? "ON" : "Keep Transcript Inplace"}
+  {session_listen
+    ? "ON"
+    : `Enable's "hey ${splitImage}" commands & holds Transcript"`}
 </span>
   )}
 </button>
@@ -1183,6 +1099,7 @@ return (
             session_listen={session_listen}
             listening={listening}
             initialFinalTranscript={kwargs.initialFinalTranscript || ""}
+            splitImage={splitImage}
           />
         </div>
       </div>
@@ -1191,3 +1108,108 @@ return (
 }
 
 export default CustomVoiceGPT;
+
+
+  // useEffect(() => {
+  //   const loadModels = async () => {
+  //     const MODEL_URL = process.env.PUBLIC_URL + "/models";
+
+  //     Promise.all([
+  //       faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+  //       faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+  //       faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+  //       faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
+  //       faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL),
+  //     ]).then(() => setModelsLoaded(true));
+  //   };
+  //   loadModels();
+  //   const interval = setInterval(() => {
+  //     // console.log("faceData.current :>> ", faceData.current);
+  //   }, 3000);
+  //   return () => clearInterval(interval);
+  // }, []);
+
+    // const startVideo = () => {
+  //   setCaptureVideo(true);
+  //   navigator.mediaDevices
+  //     .getUserMedia({ video: { width: 300 } })
+  //     .then((stream) => {
+  //       let video = videoRef.current;
+  //       video.srcObject = stream;
+  //       video.play();
+  //     })
+  //     .catch((err) => {
+  //       console.error("error:", err);
+  //     });
+  // };
+
+  // const handleVideoOnPlay = () => {
+  //   setInterval(async () => {
+  //     if (canvasRef && canvasRef.current) {
+  //       canvasRef.current.innerHTML = faceapi.createCanvasFromMedia(
+  //         videoRef.current
+  //       );
+  //       const displaySize = {
+  //         width: videoWidth,
+  //         height: videoHeight,
+  //       };
+
+  //       faceapi.matchDimensions(canvasRef.current, displaySize);
+
+  //       const detections = await faceapi
+  //         .detectAllFaces(
+  //           videoRef.current,
+  //           new faceapi.TinyFaceDetectorOptions()
+  //         )
+  //         .withFaceLandmarks()
+  //         .withFaceExpressions();
+
+  //       const resizedDetections = faceapi.resizeResults(detections, displaySize);
+
+  //       if (resizedDetections.length > 0) {
+  //         faceData.current = resizedDetections;
+  //         if (!faceTriggered.current && face_recon) {
+  //           myFunc("", { api_body: { keyword: "" } }, 2);
+  //           faceTriggered.current = true;
+  //         }
+  //       } else {
+  //         faceTimer && clearTimeout(faceTimer);
+  //         setTimeout(() => {
+  //           faceData.current = [];
+  //         }, 1000);
+  //       }
+
+  //       if (resizedDetections.length > 0 && !firstFace) {
+  //         firstFace = true;
+  //         if (kwargs.hello_audio) {
+  //           const audio = new Audio(kwargs.hello_audio);
+  //           audio.play();
+  //         }
+  //       }
+
+  //       canvasRef &&
+  //         canvasRef.current &&
+  //         canvasRef.current
+  //           .getContext("2d")
+  //           .clearRect(0, 0, videoWidth, videoHeight);
+  //       canvasRef &&
+  //         canvasRef.current &&
+  //         faceapi.draw.drawDetections(canvasRef.current, resizedDetections);
+  //       canvasRef &&
+  //         canvasRef.current &&
+  //         faceapi.draw.drawFaceLandmarks(canvasRef.current, resizedDetections);
+  //       canvasRef &&
+  //         canvasRef.current &&
+  //         faceapi.draw.drawFaceExpressions(
+  //           canvasRef.current,
+  //           resizedDetections
+  //         );
+  //     }
+  //   }, 300);
+  // };
+
+  // const closeWebcam = () => {
+  //   videoRef.current.pause();
+  //   videoRef.current.srcObject.getTracks()[0].stop();
+  //   setCaptureVideo(false);
+  // };
