@@ -179,6 +179,11 @@ def ozz():
 
     with tabs[1]:
         pollen = os.path.join(ozz_master_root(), 'pollen')
+        # Path to the webm file
+        webm_file_path = os.path.join(pollen, 'pollen.webm')
+        # Display the video
+        st.video(webm_file_path)
+
         fis = ['header', 'body', 'footer']
         # cols = st.columns((5,3))
         # with cols[0]:
