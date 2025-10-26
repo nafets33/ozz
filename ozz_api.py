@@ -79,6 +79,10 @@ if __name__ == '__main__':
         ip_address = ip_address.split("//")[-1]
         host = ip_address.split(":")[0]
         port = int(ip_address.split(":")[-1])
+
+        # """ TESTING for Other Devices """
+        # host = '0.0.0.0'  # Allow external access
+        # port = 8000       # Set your desired port (commonly 8000, 5000, or 3001)
     
     # update to handle both
     # parser = ozzapi_script_Parser()

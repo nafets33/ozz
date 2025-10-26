@@ -1,169 +1,858 @@
-
-
-import psycopg2
+import collections
+import datetime
+import json
+import os
+import pandas as pd
+import numpy as np
+import logging
+import json
 import psycopg2
 from psycopg2 import sql
-from psycopg2.extras import DictCursor
+from psycopg2 import extras
+import sys
 
-# # Connect to the PostgreSQL database
-def postgre_db_connect(db_params=False):
-    if not db_params:
-        db_params = {
-            "host": "localhost",
-            "database": "ozz_db",
-            "user": "stefanstapinski",
-            "password": "ozz",
-            "port": 5432
-        }
-    # conn = psycopg2.connect(
-    #     dbname="ozz_db",
-    #     user="stefanstapinski",
-    #     password="ozz",
-    #     host="localhost",
-    #     port=5432,
-    # )
-    conn = psycopg2.connect(**db_params)
-    return conn
+server = os.getenv("server", False)
 
-### START
-# utils.init_pollen_dbs all file creations for users i.e. client_users_db
-# track save
+def print_line_of_error(e='print_error_message'):
+    exc_type, exc_obj, exc_tb = sys.exc_info()
+    print(e, exc_type, exc_tb.tb_lineno)
+    return exc_type, exc_tb.tb_lineno
 
-#sneakpeak == client_user_db
-# client_users.db
-#2 masters, audio and images
+class PollenJsonEncoder(json.JSONEncoder):
+    def default(self, obj):
+        try:
+            # Handle NumPy types
+            if isinstance(obj, (np.int32, np.int64)):  # Add np.int32 here
+                return {"_type": "np.int64", "value": int(obj)}
+            if isinstance(obj, (np.float32, np.float64)):  # Handle float types as well
+                return {"_type": "float", "value": float(obj)}
+            
+            # Handle pandas types
+            if isinstance(obj, pd.DataFrame):
+                return {"_type": "pd.DataFrame", "value": obj.to_dict()}
+            if isinstance(obj, pd.Timestamp):
+                return {"_type": "pd.Timestamp", "value": obj.isoformat()}
+            if isinstance(obj, pd.Series):
+                return {"_type": "pd.Series", "value": obj.to_dict()}
+            
+            # Handle Python datetime
+            if isinstance(obj, datetime.datetime):
+                return {"_type": "datetime.datetime", "value": obj.isoformat()}
+            
+            # Handle collections.deque
+            if isinstance(obj, collections.deque):
+                return {"_type": "collections.deque", "value": list(obj)}
+            
+            # Default handling
+            return super(PollenJsonEncoder, self).default(obj)
+        except Exception as e:
+            # Handle unexpected errors in the encoding process
+            return {"_type": "error", "message": str(e)}
 
-# update save_json & Appends
+class PollenJsonDecoder(json.JSONDecoder):
+    def __init__(self, *args, **kwargs):
+        super(PollenJsonDecoder, self).__init__(
+            object_hook=self.object_hook, *args, **kwargs
+        )
 
-def postgre_db_connect(db_params=False):
-    # Host
-    # ec2-3-230-24-12.compute-1.amazonaws.com
-    # Database
-    # dcp3airkvcc1u1
-    # User
-    # jdudpjkxggkbrv
-    # Port
-    # 5432
-    # Password
-    # c9db217ba584b1a549f9b35536fb52b6416b7c387e9cc3c49fab82614efb167f
-    # URI
-    # postgres://jdudpjkxggkbrv:c9db217ba584b1a549f9b35536fb52b6416b7c387e9cc3c49fab82614efb167f@ec2-3-230-24-12.compute-1.amazonaws.com:5432/dcp3airkvcc1u1
-    # Heroku CLI
-    # heroku pg:psql postgresql-cubic-10426 --app ozz
-    conn = psycopg2.connect(**db_params)
-    return conn
+    def object_hook(self, item):
+        if "_type" in item:
+            if item["_type"] == "np.int64" or item["_type"] == "<class 'numpy.int64'>":
+                return np.int64(item["value"])
+            if item["_type"] == "float":
+                return float(item["value"])
+            if item["_type"] == "pd.DataFrame":
+                return pd.DataFrame.from_dict(item["value"])
+            if item["_type"] == "pd.Timestamp":
+                return pd.Timestamp(item["value"])
+            if item["_type"] == "datetime.datetime":
+                return datetime.datetime.fromisoformat(item["value"])
+            if item["_type"] == "pd.Series":
+                return pd.Series(item["value"])
+            if item["_type"] == "collections.deque":
+                return collections.deque(item["value"])
+        return item
 
 
+class OzzDatabase:
+    @staticmethod
+    def get_connection(server=server):
+        if server:
+            # Reading connection details from environment variables
+            DATABASE_HOST = os.getenv("POLLEN_DATABASE_host_server")
+            DATABASE_PORT = os.getenv("POLLEN_DATABASE_port_server")
+            DATABASE_NAME = os.getenv("POLLEN_DATABASE_name_server")
+            DATABASE_USER = os.getenv("POLLEN_DATABASE_user_server")
+            DATABASE_PASS = os.getenv("POLLEN_DATABASE_pass_server")
+        else:
+            # Reading connection details from environment variables
+            DATABASE_HOST = os.getenv("POLLEN_DATABASE_host", "localhost")
+            DATABASE_PORT = os.getenv("POLLEN_DATABASE_port", "5432")
+            DATABASE_NAME = os.getenv("POLLEN_DATABASE_name", "pollen")
+            DATABASE_USER = os.getenv("POLLEN_DATABASE_user", "postgres")
+            DATABASE_PASS = os.getenv("POLLEN_DATABASE_pass", "12345")
 
+        return psycopg2.connect(
+            host=DATABASE_HOST,
+            port=DATABASE_PORT,
+            dbname=DATABASE_NAME,
+            user=DATABASE_USER,
+            password=DATABASE_PASS,
+        )
 
+    @staticmethod
+    def return_db_conn(return_curser=False):
+        
+        con = OzzDatabase.get_connection()
+        cur = con.cursor()
+        if return_curser:
+            return con, cur
+        
+        # Create table if it doesn't exist
+        create_table_query = """
+        CREATE TABLE IF NOT EXISTS client_users (
+            email VARCHAR(255) PRIMARY KEY,
+            password TEXT NOT NULL,
+            name VARCHAR(255) NOT NULL,
+            phone_no VARCHAR(50),
+            signup_date TIMESTAMP,
+            last_login_date TIMESTAMP,
+            login_count INTEGER
+        );
+        """
+        cur.execute(create_table_query)
+        con.commit()
+        
+        return con, cur
 
-## utils utils
-def insert_audio(conn, audio_data, title):
-    try:
-        # Insert the audio data and title into the database
-        with conn.cursor() as cursor:
-            cursor.execute("INSERT INTO audio_files (audio_data, title) VALUES (%s, %s)", (audio_data, title))
+    @staticmethod
+    def create_table_if_not_exists(table_name):
+        """
+        Create a table if it doesn't exist with the following structure:
+        - id: serial, primary key
+        - key: varchar(255), unique, not null
+        - data: text, not null
+        - created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        - last_modified: timestamp, defaults to CURRENT_TIMESTAMP
+        Returns True if the table was created, False if it already existed.
+        """
+        with OzzDatabase.get_connection() as conn, conn.cursor() as cur:
+            # Check if the table exists already
+            cur.execute("""
+            SELECT to_regclass(%s);
+            """, (table_name,))
+            result = cur.fetchone()[0]
+            
+            if result is None:  # Table does not exist
+                create_table_query = f"""
+                CREATE TABLE {table_name} (
+                    id SERIAL PRIMARY KEY,
+                    key VARCHAR(255) UNIQUE NOT NULL,
+                    data TEXT NOT NULL,
+                    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                    last_modified TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                );
+                """
+                cur.execute(create_table_query)
+                conn.commit()
+                return True  # Table was created
+            else:
+                return False  # Table already exists
+
+    @staticmethod
+    def key_exists(table_name, key):
+        """
+        Checks if a key exists in the specified table.
+
+        :param table_name: The name of the table to search.
+        :param key: The key to check for.
+        :return: True if the key exists, False otherwise.
+        """
+        conn = None
+        try:
+            conn = OzzDatabase.get_connection()
+            cur = conn.cursor()
+
+            # Query to check if the key exists in the table
+            query = f"SELECT EXISTS (SELECT 1 FROM {table_name} WHERE key = %s);"
+            cur.execute(query, (key,))
+            result = cur.fetchone()
+
+            # Return True if the key exists, False otherwise
+            return result[0]
+
+        except Exception as e:
+            return False
+        finally:
+            if conn:
+                conn.close()
+
+    @staticmethod
+    def get_table_name():
+        # Get table name from environment variable
+        ### Tables created
+        # client_user_dbs
+        # db
+        # pollen_store
+        return os.getenv(
+            "POLLEN_TABLE_NAME", "pollen_store"
+        )  # default to "pollen_store" if not set
+
+    @staticmethod
+    def ensure_last_modified_column(table_name):
+        """
+        Adds 'last_modified' column to the table if it doesn't exist.
+        """
+        with OzzDatabase.get_connection() as conn, conn.cursor() as cur:
+            alter_query = f"""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns 
+                    WHERE table_name = '{table_name}' 
+                    AND column_name = 'last_modified'
+                ) THEN
+                    ALTER TABLE {table_name} 
+                    ADD COLUMN last_modified TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+                END IF;
+            END $$;
+            """
+            cur.execute(alter_query)
             conn.commit()
 
-        print(f"Audio with title '{title}' inserted successfully.")
+    @staticmethod
+    def upsert_data(table_name, key, value, console=True, console_table_ignore=[''], main_server=server):
+        """
+        Upsert data into a specified table. If the table doesn't exist, it will be created.
+        Dynamically handles 'last_modified' based on table schema.
+        """
+        # Ensure the table exists before attempting to upsert data
+        OzzDatabase.create_table_if_not_exists(table_name)
+        try:
+            # print(f"saving {key}  size: {sys.getsizeof(value)}")
+            # Check if 'last_modified' column exists
+            # with OzzDatabase.get_connection(main_server) as conn, conn.cursor() as cur:
+            #     cur.execute(f"""
+            #         SELECT column_name 
+            #         FROM information_schema.columns 
+            #         WHERE table_name = %s AND column_name = 'last_modified'
+            #     """, (table_name,))
+            #     has_last_modified = cur.fetchone() is not None
+            # if not has_last_modified:
+            #     OzzDatabase.update_table_schema(table_name)
+            
+            with OzzDatabase.get_connection(main_server) as conn, conn.cursor() as cur:
+                value_json = json.dumps(value, cls=PollenJsonEncoder)
+
+                upsert_query = f"""
+                    INSERT INTO {table_name} (key, data, last_modified)
+                    VALUES (%s, %s, CURRENT_TIMESTAMP)
+                    ON CONFLICT (key) 
+                    DO UPDATE SET data = EXCLUDED.data, last_modified = CURRENT_TIMESTAMP;
+                """
+
+                cur.execute(upsert_query, (key, value_json))
+                conn.commit()
+
+                if console and table_name not in console_table_ignore:
+                    print(f'{key} Upserted to {table_name} server={main_server}')
+        except Exception as e:
+            print_line_of_error(f"issue arrived in upsert_data function {table_name} {key}")
+            # send_email(
+            #     subject=f"Error in upsert_data function for {key}",
+            #     body=f"An error occurred while upserting data into the table {table_name} with key {key}. Error: {e}",
+            # )
+            return False
         
-    except Exception as e:
-        print(f"Error inserting audio: {e}")
-        conn.rollback()  # Rollback changes in case of an error
+        return True
 
-def create_table_origin_query():
-    create_table_sql = """
-    CREATE TABLE audio_files (
-        id serial PRIMARY KEY,
-        title varchar(100),
-        audio_data bytea
-    );
-    
-    """
-
-    return {'create_video_table': create_table_sql}
-
-def confirm_db(tables=['audio_files']):
-    conn = postgre_db_connect()
-    # Create a cursor
-    with conn.cursor(cursor_factory=DictCursor) as cursor:
-        # Check if the table exists
-        for table_name in tables:
+    @staticmethod
+    def upsert_multiple(table_name, data_dict):
+        """
+        Bulk upsert dictionary of data into the specified table.
+        Data values are serialized with a custom JSON encoder if needed.
+        """
+        with OzzDatabase.get_connection() as conn, conn.cursor() as cur:
             try:
-                cursor.execute(sql.SQL("SELECT 1 FROM information_schema.tables WHERE table_name = %s"), [table_name])
-                table_exists = cursor.fetchone()
+                # Prepare records for batch insert (key, data, last_modified)
+                records = [
+                    (key, json.dumps(value, cls=PollenJsonEncoder), datetime.datetime.now()) 
+                    for key, value in data_dict.items()
+                ]
 
-                if not table_exists:
-                    print("missing table ", table_name)
-                    if table_name == 'audio_files':
-                        sql = create_table_origin_query().get('create_video_table')
-                        # Execute the table creation query
-                        cursor.execute(sql)
-                        conn.commit()
+                # Use PostgreSQL's INSERT ON CONFLICT for upsert
+                insert_query = f"""
+                    INSERT INTO {table_name} (key, data, last_modified)
+                    VALUES %s
+                    ON CONFLICT (key) 
+                    DO UPDATE SET 
+                        data = EXCLUDED.data, 
+                        last_modified = CURRENT_TIMESTAMP;
+                """
+                
+                
+                # Use execute_values for efficient batch inserts
+                extras.execute_values(cur, insert_query, records)
+                conn.commit()
+
+            except Exception as e:
+                print("Error during bulk upsert:", e)
+                conn.rollback()
+
+    @staticmethod
+    def retrieve_data(table_name, key, main_server=server):
+        conn = None
+        try:
+            conn = OzzDatabase.get_connection(main_server)
+            cur = conn.cursor()
+
+            # Retrieve using the configured table name
+            cur.execute(
+                f"SELECT data FROM {table_name} WHERE key = %s;",
+                (key,),
+            )
+            result = cur.fetchone()
+
+            if result:
+                # Check the type of the result
+                if isinstance(result[0], str):
+                    serialized_data = result[0]
+                elif isinstance(result[0], dict):
+                    serialized_data = json.dumps(result[0])
+
+                # Always deserialize using custom decoder
+                data = json.loads(serialized_data, cls=PollenJsonDecoder)
+                if len(data) == 0:
+                    print('NO DATA AVAIL for ', key)
+                    return None
+                
+                if isinstance(data, dict):
+                    data['key'] = key
+                    data['table_name'] = table_name
+                    data['db_root'] = key.split("-")[0]
+                    return data
+                elif isinstance(data, list):
+                    # Optionally wrap in a dict, or just return the list
+                    return {
+                        "key": key,
+                        "table_name": table_name,
+                        "db_root": key.split("-")[0],
+                        "data": data
+                    }
+                else:
+                    print(f"Unexpected data type for key {key}: {type(data)}")
+                    return data
+
+        except Exception as e:
+            print_line_of_error(f'ERROR RETERIVING DATA PG {e}')
+        finally:
+            if conn:
+                conn.close()
+        print(f"Key '{key}' not found in table '{table_name}'.")
+        return None
+
+    @staticmethod
+    def copy_table_to_table(source_table, target_table, show_progress=True):
+        """
+        Copy all key/data pairs from source_table to target_table using your upsert/retrieve helpers.
+        """
+        # Get all keys from the source table
+        keys = OzzDatabase.get_all_keys(source_table)
+        if show_progress:
+            from tqdm import tqdm
+            keys_iter = tqdm(keys, desc=f"Copying {source_table} → {target_table}")
+        else:
+            keys_iter = keys
+
+        count = 0
+        for key in keys_iter:
+            data = OzzDatabase.retrieve_data(source_table, key)
+            if data is not None:
+                # Remove helper fields if present
+                data.pop('key', None)
+                data.pop('table_name', None)
+                data.pop('db_root', None)
+                # Upsert into the target table
+                OzzDatabase.upsert_data(target_table, key, data, console=False)
+                count += 1
+        print(f"Copied {count} records from {source_table} to {target_table}")
+
+    # @staticmethod
+    # def retrieve_data_queen_orders(table_name, db_root):
+    # # def retrieve_all_story_bee_data(symbols, main_server=server):
+    #     conn = None
+    #     try:
+    #         conn = OzzDatabase.get_connection(server)
+    #         cur = conn.cursor()
+            
+    #         order_keys = OzzDatabase.get_all_keys(table_name)
+    #         user_keys = [i for i in order_keys if i.startswith(f'{db_root}___')]
+
+    #         placeholders = ','.join(['%s'] * len(user_keys))
+    #         query = f"SELECT key, data FROM {table_name} WHERE key IN ({placeholders});"
+    #         cur.execute(query, user_keys)
+    #         results = cur.fetchall()
+    #         all_data = []
+    #         for key, data in results:
+    #             decoded = json.loads(data, cls=PollenJsonDecoder)
+    #             all_data.append(decoded)
+    #         return all_data
+    #     except Exception as e:
+    #         print_line_of_error(e)
+    #     finally:
+    #         if conn:
+    #             conn.close()
+    #     return None
+
+
+
+    #     # orders = []
+    #     # for orders in user_keys:
+    #     #     order_key = 
+    #     #     orders.append(OzzDatabase.retrieve_data(client_order_store, orders, main_server=main_server))
+
+
+
+    @staticmethod
+    def retrieve_all_story_bee_data(symbols, main_server=server):
+        conn = None
+        merged_data = {"STORY_bee": {}}
+
+        try:
+            conn = OzzDatabase.get_connection(server)
+            cur = conn.cursor()
+
+            # Base query
+            query = f"SELECT key, data FROM {OzzDatabase.get_table_name()} WHERE key LIKE 'STORY_BEE%';"
+            
+            # If symbols are provided, filter by the 3rd underscore value (symbol) in the key
+            if symbols:
+                symbol_conditions = " OR ".join([f"split_part(key, '_', 3) = '{symbol}'" for symbol in symbols])
+                query = f"SELECT key, data FROM {OzzDatabase.get_table_name()} WHERE key LIKE 'STORY_BEE%' AND ({symbol_conditions});"
+            
+            cur.execute(query)
+            results = cur.fetchall()
+            # import ipdb
+            # ipdb.set_trace()
+            for result in results:
+                key_name = result[0]
+                data_dict = result[1]  # Now data column is the second column
+                nested_key = key_name.replace('STORY_BEE_', '')
+
+                # Assuming data_dict is a dict, but if it's a string representation of JSON, use json.loads(data_dict)
+                if type(data_dict) == str:
+                    data_dict = json.loads(data_dict)
+                    merged_data["STORY_bee"][nested_key] = data_dict["STORY_bee"]
+                else:
+                    merged_data["STORY_bee"][nested_key] = data_dict["STORY_bee"]
+
+            merged_data = json.dumps(merged_data)
+            # Always deserialize using custom decoder
+            return json.loads(merged_data, cls=PollenJsonDecoder)
+
+        except Exception as e:
+            print_line_of_error(e)
+        finally:
+            if conn:
+                conn.close()
+
+        return None
+
+
+    @staticmethod
+    def retrieve_all_pollenstory_data(symbols):
+        conn = None
+        merged_data = {"pollenstory": {}}
+
+        try:
+            conn = OzzDatabase.get_connection()
+            cur = conn.cursor()
+
+            # Base query
+            query = f"SELECT key, data FROM {OzzDatabase.get_table_name()} WHERE key LIKE 'POLLEN_STORY%';"
+            
+            # If symbols are provided, filter by the 3rd underscore value (symbol) in the key
+            if symbols:
+                symbol_conditions = " OR ".join([f"split_part(key, '_', 3) = '{symbol}'" for symbol in symbols])
+                query = f"SELECT key, data FROM {OzzDatabase.get_table_name()} WHERE key LIKE 'POLLEN_STORY%' AND ({symbol_conditions});"
+            
+            cur.execute(query)
+            results = cur.fetchall()
+            # ipdb.set_trace()
+
+            for result in results:
+                key_name = result[0]
+                data_dict = result[1]  # Now data column is the second column
+                nested_key = key_name.replace('POLLEN_STORY_', '')
+
+                # Assuming data_dict is a dict, but if it's a string representation of JSON, use json.loads(data_dict)
+                
+                # Assuming data_dict is a dict, but if it's a string representation of JSON, use json.loads(data_dict)
+                if type(data_dict) == str:
+                    data_dict = json.loads(data_dict)
+                    merged_data["pollenstory"][nested_key] = data_dict["pollen_story"]
+                else:
+                    merged_data["pollenstory"][nested_key] = data_dict["pollen_story"]
+
+            merged_data = json.dumps(merged_data)
+            # Always deserialize using custom decoder
+            return json.loads(merged_data, cls=PollenJsonDecoder)
+
+        except Exception as e:
+            print_line_of_error(e)
+        finally:
+            if conn:
+                conn.close()
+
+        return None
+
+
+    @staticmethod
+    def get_all_tables():
+        with OzzDatabase.get_connection() as conn, conn.cursor() as cur:
+            try:
+                # Execute query to fetch all table names in the public schema
+                cur.execute("""
+                    SELECT table_name
+                    FROM information_schema.tables
+                    WHERE table_schema = 'public'
+                    AND table_type = 'BASE TABLE';
+                """)
+                
+                # Fetch all table names
+                tables = cur.fetchall()
+                
+                # Return the list of table names
+                return [table[0] for table in tables]
+    
+            except Exception as e:
+                print("Error Fetch in All Tables:", e)
+
+
+    @staticmethod
+    def get_all_tables_with_sizes():
+        with OzzDatabase.get_connection() as conn, conn.cursor() as cur:
+            try:
+                # Execute query to fetch all table names and their sizes in the public schema
+                cur.execute("""
+                    SELECT 
+                        table_name, 
+                        pg_size_pretty(pg_total_relation_size('public.' || table_name)) AS table_size
+                    FROM information_schema.tables
+                    WHERE table_schema = 'public'
+                    ORDER BY table_name;
+                """)
+                
+                # Fetch all tables and their sizes
+                tables = cur.fetchall()
+                
+                # Check if tables are fetched
+                if not tables:
+                    print("No tables found.")
+                
+                # Return the list of tuples (table_name, table_size)
+                return [(table[0], table[1]) for table in tables]
+
+            except Exception as e:
+                print(f"Error Fetching Table Sizes: {e}")
+                return []
+
+    @staticmethod
+    def get_all_keys(table_name='pollen_store'):
+        with OzzDatabase.get_connection() as conn, conn.cursor() as cur:
+            try:
+                # Execute query to fetch all unique keys in the specified table
+                query = f"SELECT DISTINCT key FROM {table_name} ORDER BY key;"
+                cur.execute(query)
+                
+                # Fetch all unique keys
+                keys = cur.fetchall()
+                
+                # Return the list of keys
+                return [key[0] for key in keys]
+
+            except Exception as e:
+                if table_name == 'client_users':
+                    pass
+                else:
+                    print(f"Error Fetch in all Keys table {table_name} {e}")
+                return []
+
+    @staticmethod
+    def get_keys_by_db_root(table_name, db_root, server=server):
+        with OzzDatabase.get_connection(server) as conn, conn.cursor() as cur:
+            try:
+                query = f"SELECT key, data FROM {table_name} WHERE key LIKE %s;"
+                cur.execute(query, (f"{db_root}___%",))
+                results = cur.fetchall()
+                decoded_data = []
+                for key, serialized_data in results:
+                    if isinstance(serialized_data, str):
+                        serialized_data = serialized_data
+                    elif isinstance(serialized_data, dict):
+                        serialized_data = json.dumps(serialized_data)
+                    else:
+                        print(f"ERROR Unexpected data type for key {key}: {type(serialized_data)}")
+                        continue  # skip if data is not valid
+                    
+                    # Always deserialize using custom decoder
+                    data = json.loads(serialized_data, cls=PollenJsonDecoder)
+
+                    data['key'] = key
+                    data['table_name'] = table_name
+                    data['db_root'] = db_root
+                    decoded_data.append(data)
+                return decoded_data
             except Exception as e:
                 print(f"Error: {e}")
-    # Close the database connection
-    if conn:
-        conn.close()
-    
-    return True
+                return []
 
-def get_all_titles(conn, table_name):
-    try:
-        with conn.cursor() as cursor:
-            # Select all titles from the specified table
-            query = f"SELECT title FROM {table_name}"
-            cursor.execute(query)
-            titles = cursor.fetchall()
+    @staticmethod
+    def update_table_schema(table_name='pollen_store'):
+        """
+        Add a 'last_modified' column to the table if it does not exist.
+        """
+        with OzzDatabase.get_connection() as conn, conn.cursor() as cur:
+            try:
+                # Check if the 'last_modified' column exists
+                cur.execute(
+                    f"""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = %s AND column_name = 'last_modified';
+                    """,
+                    (table_name,)
+                )
+                
+                # If the column doesn't exist, add it
+                if not cur.fetchone():
+                    print(f"Adding 'last_modified' column to {table_name}")
+                    cur.execute(
+                        sql.SQL("""
+                            ALTER TABLE {table} 
+                            ADD COLUMN last_modified TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+                        """).format(table=sql.Identifier(table_name))
+                    )
+                    conn.commit()
+                    print(f"Column 'last_modified' added successfully.")
+                else:
+                    print(f"'last_modified' column already exists in {table_name}.")
 
-            return titles
+            except Exception as e:
+                print("Error updating table schema:", e)
 
-    except Exception as e:
-        print(f"Error retrieving titles: {e}")
+    @staticmethod
+    def get_all_keys_with_timestamps(table_name='db', db_root=None, server=server):
+        """
+        Fetch all keys along with their last modified timestamp from the specified table.
+        """
+        with OzzDatabase.get_connection(server) as conn, conn.cursor() as cur:
+            try:
+                if db_root:
+                    query = f"""
+                        SELECT key, last_modified
+                        FROM {table_name}
+                        WHERE key LIKE %s
+                        ORDER BY last_modified DESC;
+                    """
+                    cur.execute(query, (f'%{db_root}%',))
+                else:
+                    query = f"""
+                        SELECT key, last_modified
+                        FROM {table_name}
+                        ORDER BY last_modified DESC;
+                    """
+                    cur.execute(query)
+                
+                # Fetch all keys and their last modified timestamps
+                results = cur.fetchall()
+                
+                # Return a list of tuples (key, last_modified)
+                return [(key, last_modified) for key, last_modified in results]
 
-def get_audio_by_title(conn, table_name, selected_title):
-    try:
-        with conn.cursor() as cursor:
-            # Select audio data based on the selected title and specified table name
-            query = f"SELECT audio_data FROM {table_name} WHERE title = %s"
-            cursor.execute(query, (selected_title,))
-            audio_data = cursor.fetchone()
+            except Exception as e:
+                if table_name == 'client_users':
+                    pass
+                else:
+                    print_line_of_error(f"GET KEYS Error: {e}")
+                return []
 
-            return audio_data[0] if audio_data else None
+    @staticmethod
+    def get_all_keys_with_timestamps_and_sizes(table_name='db', db_root=None):
+        """
+        Fetch all keys along with their last modified timestamp and human-readable size from the specified table.
+        """
+        def format_size(size_in_bytes):
+            """Convert bytes to a human-readable format."""
+            if size_in_bytes < 1024:
+                return f"{size_in_bytes} B"
+            elif size_in_bytes < 1024**2:
+                return f"{size_in_bytes / 1024:.2f} KB"
+            elif size_in_bytes < 1024**3:
+                return f"{size_in_bytes / (1024**2):.2f} MB"
+            else:
+                return f"{size_in_bytes / (1024**3):.2f} GB"
 
-    except Exception as e:
-        print(f"Error retrieving audio data: {e}")
+        with OzzDatabase.get_connection() as conn, conn.cursor() as cur:
+            try:
+                if db_root:
+                    query = f"""
+                        SELECT key, last_modified, pg_column_size(key) AS size
+                        FROM {table_name}
+                        WHERE key LIKE %s
+                        ORDER BY last_modified DESC;
+                    """
+                    cur.execute(query, (f'%{db_root}%',))
+                else:
+                    query = f"""
+                        SELECT key, last_modified, pg_column_size(key) AS size
+                        FROM {table_name}
+                        ORDER BY last_modified DESC;
+                    """
+                    cur.execute(query)
 
-    # # Example usage:
-    # selected_title = "Your Selected Title"
-    # audio_data = get_audio_by_title(conn, selected_title)
+                # Fetch all keys, timestamps, and sizes
+                results = cur.fetchall()
 
-    # if audio_data:
-    #     # Save the audio data locally (replace 'your_local_file.mp3' with the desired filename)
-    #     with open("your_local_file.mp3", "wb") as local_file:
-    #         local_file.write(audio_data)
-    #     print(f"Audio data for title '{selected_title}' saved locally.")
-    # else:
-    #     print(f"No audio data found for title '{selected_title}'.")
+                # Convert sizes to human-readable format
+                return [(key, last_modified, format_size(size)) for key, last_modified, size in results]
 
-# try:
-#     # Connect to the database
-#     
+            except Exception as e:
+                if table_name != 'client_users':
+                    print_line_of_error(f"GET KEYS Error: {e}")
+                return []
 
-#     # Create a cursor object
-#     cursor = conn.cursor()
 
-#     # Execute the SQL statement to create the table
-#     cursor.execute(create_table_sql)
+    @staticmethod
+    def get_key_timestamp(table_name='db', server=server):
+        """
+        Return only the last modified timestamp for the given key object table.
+        If db_root is provided, returns the latest last_modified for that db_root.
+        Otherwise, returns the latest last_modified in the table.
+        """
+        with OzzDatabase.get_connection(server) as conn, conn.cursor() as cur:
+            try:
+                query = f"""
+                    SELECT last_modified
+                    FROM {table_name}
+                    ORDER BY last_modified DESC
+                    LIMIT 1;
+                """
+                cur.execute(query)
+                result = cur.fetchone()
+                return result[0] if result else None
 
-#     # Commit the changes
-#     conn.commit()
+            except Exception as e:
+                if table_name != 'client_users':
+                    print_line_of_error(f"GET KEYS Error: {e}")
+                return None
 
-#     # Close the cursor and connection
-#     cursor.close()
-#     conn.close()
+    @staticmethod
+    def vacuum_table(table_name='db'):
+        try:
+            conn = OzzDatabase.get_connection()  # Get connection
+            conn.autocommit = True  # Ensure autocommit is enabled
+            
+            with conn.cursor() as cur:
+                cur.execute(f"VACUUM FULL ANALYZE {table_name};")
+                print(f"VACUUM FULL completed for table: {table_name}")
 
-#     print("Table 'audio_files' created successfully.")
+        except Exception as e:
+            print(f"Error running VACUUM FULL: {e}")
 
-# except psycopg2.Error as e:
-#     print("Error creating table:", e)
+        finally:
+            if conn:
+                conn.close()  # Ensure connection is closed
+
+
+    @staticmethod
+    def delete_table(table_name):
+        """
+        Delete the specified table from the database.
+        """
+        with OzzDatabase.get_connection() as conn, conn.cursor() as cur:
+            try:
+                # Drop the table if it exists
+                cur.execute(f"DROP TABLE IF EXISTS {table_name};")
+                conn.commit()
+                print(f"Table '{table_name}' has been deleted successfully.")
+                return True
+            except Exception as e:
+                print(f"Error deleting table '{table_name}':", e)
+                return False
+
+    @staticmethod
+    def delete_key(table_name, key_column, console='del'):
+        """
+        Delete a specific row from the specified table based on the key.
+
+        Parameters:
+        - table_name (str): The name of the table.
+        - key_column (str): The column name that holds the key.
+        # - key_value: The value of the key to delete.
+
+        Returns:
+        - bool: True if the deletion was successful, False otherwise.
+        """
+        # Validate table and column names to prevent SQL injection
+        # if not table_name.isidentifier() or not key_column.isidentifier():
+        #     print("Invalid table name or column name.")
+        #     print("The given table name and column name: ", table_name, key_column)
+        #     return False
+
+        # Construct the query safely
+        delete_query = f"DELETE FROM {table_name} WHERE key = %s"
+
+        try:
+            with OzzDatabase.get_connection() as conn:
+                with conn.cursor() as cur:
+                    # Execute the query
+                    cur.execute(delete_query, (key_column,))
+                    conn.commit()
+                    if console:
+                        msg=(f"Row with key = '{key_column}' has been deleted successfully from table '{table_name}'.")
+                    return True
+        except Exception as e:
+            print(f"Error deleting row with key = '{key_column}' from table '{table_name}': {e}")
+            return False
+
+    @staticmethod
+    def read_client_users(source_table='client_users'):
+        with OzzDatabase.get_connection() as conn, conn.cursor() as cur:
+            try:
+                with OzzDatabase.get_connection() as conn, conn.cursor() as cur:
+
+                    # Fetch data from the source table
+                    cur.execute(f"SELECT * FROM {source_table};")
+                    users = cur.fetchall()
+                    # users = cur.execute("SELECT * FROM client_users").fetchall()
+                    df = pd.DataFrame(users)
+
+                return users, df
+
+            except Exception as e:
+                print("Error client users", e)
+
+
+class PostgresHandler(logging.Handler):
+    def __init__(self, log_name):
+        super().__init__()
+        self.log_name = log_name
+        self.conn = None
+
+    def emit(self, record):
+        # Get a new connection for each emit to ensure thread safety
+        try:
+            self.conn = OzzDatabase.get_connection()
+            log_message = self.format(record)
+            log_level = record.levelname
+            value = f'{log_message, log_level}'
+
+            OzzDatabase.upsert_data("logging_store", self.log_name, value)
+
+        except Exception as e:
+            print(f"Failed to insert log into PostgreSQL: {e}")
+        finally:
+            if self.conn:
+                self.conn.close()

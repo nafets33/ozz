@@ -1,4 +1,6 @@
+honey.txt
 # Byte-compiled / optimized / DLL files
+
 __pycache__/
 *.py[cod]
 *$py.class
@@ -9,6 +11,14 @@ __pycache__/
 client_user_dbs/
 ozz_db/
 node_modules/*
+
+# Master Cookbook - ignore databases and images but keep directories
+master_cookbook/cookbooks_db/*
+!master_cookbook/cookbooks_db/.gitkeep
+master_cookbook/meals_db/*
+!master_cookbook/meals_db/.gitkeep
+master_cookbook/images/*
+!master_cookbook/images/.gitkeep
 
 # Distribution / packaging
 .Python

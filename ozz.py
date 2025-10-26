@@ -1,7 +1,6 @@
 import streamlit as st
 import os
-# from bs4 import BeautifulSoup
-# import re
+import sys
 from dotenv import load_dotenv
 from ozz_auth import all_page_auth_signin
 from master_ozz.utils import (ozz_characters, load_local_json, init_user_session_state, setup_instance, 
@@ -10,23 +9,14 @@ from master_ozz.utils import (ozz_characters, load_local_json, init_user_session
                               print_line_of_error, Directory, CreateChunks, CreateEmbeddings, Retriever, 
                               init_constants, check_fastapi_status, run_pq_fastapi_server
 )
-# from master_ozz.ozz_query import ozz_query
 from pages.Characters import ozz
-from pages.Lab import lab
-from pages.YouTube import youtube
-# import speech_recognition as sr
-# import requests
+from ozz_utils.Lab import lab
+from ozz_utils.YouTube import youtube
 import streamlit_antd_components as sac
-# import base64
-# import ipdb
-# from pydub import AudioSegment
-# import io
-# import time
+
 import pandas as pd
-import time
 from datetime import datetime
 import pytz
-import ipdb
 est = pytz.timezone('US/Eastern')
 
 print("OZZ START")
