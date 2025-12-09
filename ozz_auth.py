@@ -10,16 +10,19 @@ from email.message import EmailMessage
 from master_ozz.utils import print_line_of_error, ozz_master_root, setup_instance, kingdom, sign_in_client_user, return_app_ip, set_streamlit_page_config_once, page_line_seperator
 from custom_button import cust_Button
 import ipdb
+from datetime import datetime
 # from QueenHive import init_pollen_dbs
 
 main_root = ozz_master_root()  # os.getcwd()  # hive root
 load_dotenv(os.path.join(main_root, ".env"))
 
 def all_page_auth_signin(force_db_root=None, page=None):
-    authenticator = signin_main(force_db_root)
+    authenticator = signin_main(force_db_root, page)
     if 'authentication_status' not in st.session_state or st.session_state['authentication_status'] != True: ## None or False
-        if not sign_in_client_user():
-            st.stop()
+        print("NOT SIGNED IN", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        if page not in ['cookbooks']:
+            if not sign_in_client_user():
+                st.stop()
     return {'authenticator': authenticator}
 
 def register_user(authenticator, con, cur):
@@ -257,7 +260,7 @@ def read_user_db(cur):
         }
     return {"usernames": creds}
 
-def signin_main(force_db_root=None):
+def signin_main(force_db_root=None, page=None):
     """Return True or False if the user is signed in"""
 
     def setup_user_pollenqdbs():
@@ -340,7 +343,10 @@ def signin_main(force_db_root=None):
         else:
             # page_line_seperator()
             # sb_main = 'main' if st.session_state.get('signin') else 'sidebar'
-            name, authentication_status, email = authenticator.login("Login", 'main')
+            # if page == 'cookbooks':
+                # st.sidebar.title("🔪 My Cookbook")
+            with st.sidebar:
+                name, authentication_status, email = authenticator.login("Login", 'main')
             st.session_state['auth_email'] = email
             st.session_state['auth_name'] = name
             # if not authentication_status:
@@ -370,7 +376,7 @@ def signin_main(force_db_root=None):
             with st.expander("Forgot Password", expanded=True):
                 forgot_password(authenticator)
             with st.expander("New User"):
-                register_user(authenticator, con, cur)
+                    register_user(authenticator, con, cur)
             
             return authenticator
 

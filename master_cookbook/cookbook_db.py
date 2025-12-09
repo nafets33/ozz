@@ -56,11 +56,15 @@ def get_meal_image_path(image_filename: str) -> str:
     Returns:
         Full path to the image
     """
-    if not image_filename:
+    try:
+        if not image_filename:
+            return None
+        
+        images_dir = get_cookbook_images_dir()
+        return os.path.join(images_dir, image_filename)
+    except Exception as e:
+        print(f"Error getting image path: {e}")
         return None
-    
-    images_dir = get_cookbook_images_dir()
-    return os.path.join(images_dir, image_filename)
 
 
 def delete_meal_image(image_filename: str) -> bool:
@@ -106,6 +110,7 @@ class Meal:
     calories: Optional[int] = None
     created_date: str = field(default_factory=lambda: datetime.now().strftime("%Y-%m-%d"))
     meal_id: Optional[str] = None
+    rating: Optional[float] = None  # User rating from 1.0 to 5.0
 
     # ...existing __post_init__, _generate_meal_id, to_dict, to_json, from_dict, from_json methods...
     
@@ -126,6 +131,10 @@ class Meal:
             raise ValueError(f"Category must be one of {valid_categories}")
         
         self.category = self.category.lower()
+        
+        if self.rating is not None:
+            if not isinstance(self.rating, int) or not (1 <= self.rating <= 5):
+                raise ValueError("Rating must be an integer between 1 and 5")
         
         # Generate meal_id if not provided
         if not self.meal_id:
@@ -187,6 +196,32 @@ class Meal:
     def __str__(self) -> str:
         """String representation of the meal."""
         return f"{self.name} ({self.category}) - {len(self.ingredients)} ingredients"
+
+    def set_rating(self, rating: int) -> bool:
+        """
+        Set the meal's star rating.
+        
+        Args:
+            rating: Integer between 1-5
+            
+        Returns:
+            True if rating was set successfully
+        """
+        if not isinstance(rating, int) or not (1 <= rating <= 5):
+            return False
+        self.rating = rating
+        return True
+    
+    def get_rating_stars(self) -> str:
+        """
+        Get the star rating as emoji string.
+        
+        Returns:
+            String of star emojis (e.g., "⭐⭐⭐⭐⭐")
+        """
+        if self.rating is None:
+            return "☆☆☆☆☆"  # Empty stars
+        return "⭐" * self.rating + "☆" * (5 - self.rating)
 
 
 class MealDatabase:
@@ -280,6 +315,40 @@ class MealDatabase:
             summary[meal.category] = summary.get(meal.category, 0) + 1
         return summary
 
+    def search_by_rating(self, min_rating: int) -> List[Meal]:
+        """
+        Search meals by minimum rating.
+        
+        Args:
+            min_rating: Minimum star rating (1-5)
+            
+        Returns:
+            List of meals with rating >= min_rating
+        """
+        return [
+            meal for meal in self.meals.values() 
+            if meal.rating is not None and meal.rating >= min_rating
+        ]
+    
+    def get_top_rated_meals(self, limit: int = 10) -> List[Meal]:
+        """
+        Get top rated meals.
+        
+        Args:
+            limit: Maximum number of meals to return
+            
+        Returns:
+            List of meals sorted by rating (highest first)
+        """
+        rated_meals = [m for m in self.meals.values() if m.rating is not None]
+        return sorted(rated_meals, key=lambda m: m.rating, reverse=True)[:limit]
+    
+    def get_average_rating(self) -> float:
+        """Get average rating across all rated meals."""
+        rated_meals = [m for m in self.meals.values() if m.rating is not None]
+        if not rated_meals:
+            return 0.0
+        return sum(m.rating for m in rated_meals) / len(rated_meals)
 
 @dataclass
 class Cookbook:
