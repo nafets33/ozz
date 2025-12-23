@@ -78,8 +78,8 @@ def cookbook_form(cookbook_db: CookbookDatabase, edit_cookbook: Optional[Cookboo
     with st.form("cookbook_form"):
         name = st.text_input("Cookbook Name", value=edit_cookbook.name if edit_cookbook else "")
         description = st.text_area("Description", value=edit_cookbook.description if edit_cookbook else "", height=100)
-        tags_text = st.text_input("Tags (comma separated)", 
-                                   value=", ".join(edit_cookbook.tags) if edit_cookbook else "")
+        tags_text = st.text_area("Tags (comma separated)", 
+                                   value=", ".join(edit_cookbook.tags) if edit_cookbook else "", height=89)
         
         col1, col2 = st.columns([1, 4])
         with col1:
@@ -549,7 +549,7 @@ def display_meals_grid(meals: List[Meal], columns: int = 2, meal_db: Optional[Me
                 st.rerun()
 
 
-def meal_search_sidebar(meal_db: MealDatabase, cookbook_db: Optional[CookbookDatabase] = None) -> List[Meal]:
+def meal_search_sidebar(meal_db: MealDatabase, cookbook_db: Optional[CookbookDatabase] = None, sidebar=False) -> List[Meal]:
     """
     Create a sidebar with search and filter options.
     
@@ -580,36 +580,41 @@ def meal_search_sidebar(meal_db: MealDatabase, cookbook_db: Optional[CookbookDat
     if 'top5_btn_' in st.session_state:
         default_expanded = False
 
-    with st.expander(f"🌟 Top Recipes: {top_5_names}", expanded=default_expanded):
-        st.write("**After you Click, Meal appears below!**")
-        # Move columns INSIDE the expander
-        cols = st.columns(len(top_5_meals))
+    # with st.expander(f"🌟 Top Recipes: {top_5_names}", expanded=default_expanded):
+    #     st.write("**After you Click, Meal appears below!**")
+    #     # Move columns INSIDE the expander
+    #     cols = st.columns(len(top_5_meals))
         
-        for idx, meal in enumerate(top_5_meals):
-            with cols[idx]:
-                image_path = meal.get_image_path()
-                button_key = f"top5_btn_{meal.meal_id}"
+    #     for idx, meal in enumerate(top_5_meals):
+    #         with cols[idx]:
+    #             image_path = meal.get_image_path()
+    #             button_key = f"top5_btn_{meal.meal_id}"
                 
-                if image_path and os.path.exists(image_path):
-                    # Convert to base64 data URL
-                    image_data_url = image_to_base64(image_path)
-                    button_ = cust_Button(image_data_url, hoverText=meal.name, key=button_key, default=False, height='80px')    
-                else:
-                    st.write(f"🍽️ {meal.name}")
-                    button_ = st.button(f"View - Please add Picture : )", key=button_key)
+    #             if image_path and os.path.exists(image_path):
+    #                 # Convert to base64 data URL
+    #                 image_data_url = image_to_base64(image_path)
+    #                 button_ = cust_Button(image_data_url, hoverText=meal.name, key=button_key, default=False, height='80px')    
+    #             else:
+    #                 st.write(f"🍽️ {meal.name}")
+    #                 button_ = st.button(f"View - Please add Picture : )", key=button_key)
                 
-                if button_:
-                    enabled_buttons.append(button_key)
-                    st.session_state[f"displayed_{meal.meal_id}"] = meal
+    #             if button_:
+    #                 enabled_buttons.append(button_key)
+    #                 st.session_state[f"displayed_{meal.meal_id}"] = meal
     
     list_of_keys = [k for k in st.session_state.keys() if k.startswith('displayed_')]
     if list_of_keys:
         for k in list_of_keys:
             # with st.expander(f"🔪 {st.session_state[k].name} Details", expanded=True):
             display_meal_card(st.session_state[k], show_full_details=True, meal_db=meal_db, expand=True)
-    with st.sidebar:
+    
+    context = st.sidebar if sidebar else st.container()
+    epanded = True if sidebar else False
+    with context:
         expander_title = f"Search & Filter"
-        with st.expander(expander_title, expanded=True):
+        # def search_and_filter():
+        
+        with st.expander(expander_title, expanded=epanded):
 
             # Cookbook filter (if cookbook_db is provided)
             selected_cookbook_id = None
@@ -638,18 +643,19 @@ def meal_search_sidebar(meal_db: MealDatabase, cookbook_db: Optional[CookbookDat
             # Search by ingredient
             search_ingredient = st.text_input("Search by ingredient")
 
-            st.write("**Rating Filter:**")
-            min_rating = st.select_slider(
-                "Minimum rating",
-                options=[0, 1, 2, 3, 4, 5],
-                value=0,
-                format_func=lambda x: "All" if x == 0 else "⭐" * x
-            )
+            # st.write("**Rating Filter:**")
+            min_rating = 0
+            # min_rating = st.select_slider(
+            #     "Minimum rating",
+            #     options=[0, 1, 2, 3, 4, 5],
+            #     value=0,
+            #     format_func=lambda x: "All" if x == 0 else "⭐" * x
+            # )
             
             st.write("**Sort By:**")
             sort_option = st.radio(
                 "Sort meals by:",
-                options=["Name (A-Z)", "Rating (High to Low)", "Rating (Low to High)", "Newest First"],
+                options=["Name (A-Z)", "Newest First"],
                 index=0,
                 label_visibility="collapsed"
             )
@@ -791,13 +797,15 @@ def meal_form(meal_db: MealDatabase, edit_meal: Optional[Meal] = None, cookbook_
         st.success(f"✅ Using downloaded image")
     
     with cols[0]:
+        uploader_key = f"image_uploader_{edit_meal.meal_id if edit_meal else ('scraped' if is_scraped else 'new')}"
         uploaded_file = st.file_uploader(
             "Upload new image" if current_image_filename else "Choose an image",
             type=['png', 'jpg', 'jpeg', 'gif'],
-            key=f"image_uploader_{edit_meal.meal_id if edit_meal else 'new'}"
+            key=uploader_key
         )
     
         # Preview uploaded image
+
         if uploaded_file is not None:
             st.image(uploaded_file, caption="New Image Preview", width=300)
     
@@ -822,12 +830,14 @@ def meal_form(meal_db: MealDatabase, edit_meal: Optional[Meal] = None, cookbook_
                 
                 # Pre-select current cookbooks
                 default_selections = [name for name, cb_id in cookbook_options.items() if cb_id in current_cookbooks]
-                
+                multiselect_key = f"cookbook_multiselect_{edit_meal.meal_id if edit_meal else ('scraped' if is_scraped else 'new')}"
+
                 selected_cookbook_names = st.multiselect(
                     "Add this meal to cookbooks:",
                     options=list(cookbook_options.keys()),
                     default=default_selections,
-                    help="You can add this meal to multiple cookbooks"
+                    help="You can add this meal to multiple cookbooks", 
+                    key=multiselect_key
                 )
                 
                 selected_cookbook_ids = [cookbook_options[name] for name in selected_cookbook_names]
@@ -871,10 +881,13 @@ def meal_form(meal_db: MealDatabase, edit_meal: Optional[Meal] = None, cookbook_
         default_tags = scraped_data.get('other_tags', [])
         # Add source domain tag
         if scraped_data.get('source_domain'):
-            default_tags.append(f"from-{scraped_data['source_domain']}")
-    
+            source_tag = f"from-{scraped_data['source_domain']}"
+            if source_tag not in default_tags:
+                default_tags.append(source_tag)
     # Form for meal details
-    with st.form("meal_form"):
+    form_key = f"meal_form_{edit_meal.meal_id if edit_meal else ('scraped' if is_scraped else 'new')}"
+
+    with st.form(form_key):
         # Basic info
         rating = st.slider(
         "⭐ Rating",
@@ -903,8 +916,8 @@ def meal_form(meal_db: MealDatabase, edit_meal: Optional[Meal] = None, cookbook_
                                         height=150)
         
         # Tags (comma separated)
-        tags_text = st.text_input("Tags (comma separated)", 
-                                   value=", ".join(default_tags))
+        tags_text = st.text_area("Tags (comma separated)", 
+                                   value=", ".join(default_tags), height=89)
 
         # Submit buttons
         col1, col2 = st.columns([1, 4])
