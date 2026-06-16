@@ -6,6 +6,7 @@ pip install requirements.txt
 streamlit run ozz_app.py
 python ozz_api.py
 
+See Component in Action -- Demo: divergent-thinker.com/stefan
 
 # setup .env
 cookie_name = <streamlit cookie>

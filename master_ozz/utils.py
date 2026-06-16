@@ -110,7 +110,7 @@ def init_clientUser_dbroot(client_username, force_db_root=False, queenKING=False
 
 def init_pollen_dbs(db_root, prod, queens_chess_pieces=['queen_king.json'], queenKING=False, init=True, db_return={}):
     # db_return = {f'{queens_chess_piece}': f'{queens_chess_piece}'}
-    print("INSTANCE SETUP")
+    # print("INSTANCE SETUP")
     if init:
         for queens_chess_piece in queens_chess_pieces:
             for PB_QUEEN_Pickle in [os.path.join(db_root, f'{queens_chess_piece}'), os.path.join(db_root, f'sandbox_{queens_chess_piece}')]:

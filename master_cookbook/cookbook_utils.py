@@ -655,8 +655,8 @@ def meal_search_sidebar(meal_db: MealDatabase, cookbook_db: Optional[CookbookDat
             st.write("**Sort By:**")
             sort_option = st.radio(
                 "Sort meals by:",
-                options=["Name (A-Z)", "Newest First"],
-                index=0,
+                options=["Name (A-Z)", "Newest - First"],
+                index=1,
                 label_visibility="collapsed"
             )
 
@@ -699,7 +699,8 @@ def meal_search_sidebar(meal_db: MealDatabase, cookbook_db: Optional[CookbookDat
     elif sort_option == "Rating (Low to High)":
         # Put meals with ratings first, sorted low to high, then unrated meals
         meals = sorted(meals, key=lambda m: (m.rating is None, m.rating or 0))
-    elif sort_option == "Newest First":
+    elif sort_option == "Newest - First":
+        st.write("Sorting by Newest - First")
         meals = sorted(meals, key=lambda m: m.created_date, reverse=True)
     else:  # Name (A-Z)
         meals = sorted(meals, key=lambda m: m.name.lower())
@@ -827,11 +828,15 @@ def meal_form(meal_db: MealDatabase, edit_meal: Optional[Meal] = None, cookbook_
                 
                 # Create multiselect for cookbooks
                 cookbook_options = {cb.name: cb.cookbook_id for cb in all_cookbooks}
+                options_list = list(cookbook_options.keys())
                 
                 # Pre-select current cookbooks
                 default_selections = [name for name, cb_id in cookbook_options.items() if cb_id in current_cookbooks]
                 multiselect_key = f"cookbook_multiselect_{edit_meal.meal_id if edit_meal else ('scraped' if is_scraped else 'new')}"
-
+                
+                if not default_selections and options_list:
+                    default_selections = [options_list[0]]
+                
                 selected_cookbook_names = st.multiselect(
                     "Add this meal to cookbooks:",
                     options=list(cookbook_options.keys()),
@@ -893,7 +898,7 @@ def meal_form(meal_db: MealDatabase, edit_meal: Optional[Meal] = None, cookbook_
         "⭐ Rating",
         min_value=1,
         max_value=5,
-        value=edit_meal.rating if (edit_meal and edit_meal.rating) else 3,
+        value=edit_meal.rating if (edit_meal and edit_meal.rating) else 4,
         help="Rate this meal from 1-5 stars")
         name = st.text_input("Meal Name", value=default_name)
         category = st.selectbox("Category", ['breakfast', 'lunch', 'dinner', 'snack', 'dessert'], 
@@ -1036,7 +1041,7 @@ def import_recipe_from_url(meal_db: MealDatabase, cookbook_db: Optional[Cookbook
         meal_db: MealDatabase instance
         cookbook_db: CookbookDatabase instance (optional, for cookbook assignment)
     """
-    st.subheader("Import Recipe from URL")
+    # st.subheader("Import Recipe from URL")
     
     url = st.text_input("Enter Recipe URL", placeholder="https://example.com/recipe")
     
@@ -1148,15 +1153,66 @@ def extract_recipe_from_image(meal_db: MealDatabase, cookbook_db: Optional[Cookb
         meal_form(meal_db, edit_meal=None, cookbook_db=cookbook_db, scraped_data=ocr_data)
 
 
+
+INGR_PATTERNS = [
+    re.compile(r'^\s*[-*•–—]\s*', re.I),  # bullet points
+    re.compile(r'^\s*\d+\s+[a-zA-Z]', re.I),  # "2 eggs"
+    re.compile(r'^\s*(\d+\/\d+|\d+(?:\.\d+)?)\s*(cup|cups|tbsp|tablespoon|tsp|teaspoon|oz|ounce|ounces|g|gram|grams|kg|ml|l|pound|lb|lbs)\b', re.I),
+    re.compile(r'\b(pinch|dash|handful|slice|slices|clove|cloves|package|can|jar)\b', re.I),
+    re.compile(r'\b(salt|pepper|oil|butter|garlic|onion|flour|sugar|milk|water|egg|eggs)\b', re.I),
+]
+
+TAG_LINE_HINTS = [
+    re.compile(r'^\s*tags?\s*:?\s*', re.I),
+    re.compile(r'(?:^|[\s,])#[\w-]+'),  # hashtags like #vegan
+]
+
+def is_ingredient_line(line: str) -> bool:
+    """Heuristic to detect an ingredient line."""
+    if len(line.strip()) < 3:
+        return False
+    lower = line.lower().strip()
+    # Avoid lines that look like section headers
+    if any(k in lower for k in ['instruction', 'direction', 'method', 'step', 'preparation']):
+        return False
+    return any(p.search(line) for p in INGR_PATTERNS)
+
+def extract_tags_from_lines(lines: list[str]) -> list[str]:
+    """Extract tags likely present at the bottom (hashtags or 'tags:' lines)."""
+    tags = []
+    # Inspect last 3-5 lines
+    tail = [l.strip() for l in lines[-5:] if l.strip()]
+    for l in tail:
+        ll = l.lower()
+        # Case 1: explicit 'tags:' prefix
+        if TAG_LINE_HINTS[0].search(ll):
+            after = TAG_LINE_HINTS[0].sub('', l).strip()
+            parts = [t.strip(' #').lower() for t in re.split(r'[,\|]', after) if t.strip()]
+            tags.extend(parts)
+            continue
+        # Case 2: hashtags anywhere
+        for m in re.finditer(r'#([\w-]+)', l):
+            tags.append(m.group(1).lower())
+        # Case 3: comma-separated short words in the very last line
+        if l == tail[-1] and ',' in l:
+            parts = [t.strip(' #').lower() for t in l.split(',')]
+            # Consider only if they look like tags (short tokens, no numbers)
+            shortish = [p for p in parts if 1 < len(p) <= 20 and not re.search(r'\d', p)]
+            if len(shortish) >= 2:
+                tags.extend(shortish)
+    # Deduplicate, keep order
+    seen = set()
+    uniq = []
+    for t in tags:
+        if t and t not in seen:
+            seen.add(t)
+            uniq.append(t)
+    return uniq
+
+
 def parse_recipe_text(text: str) -> dict:
     """
     Parse extracted OCR text into recipe components.
-    
-    Args:
-        text: Raw text extracted from image
-    
-    Returns:
-        Dictionary with parsed recipe data
     """
     lines = [line.strip() for line in text.split('\n') if line.strip()]
     
@@ -1173,76 +1229,99 @@ def parse_recipe_text(text: str) -> dict:
         'raw_text': text
     }
     
-    # Try to find recipe name (usually first line or has "Recipe:" prefix)
+    # Try to find recipe name (usually first non-ingredient line)
     if lines:
         first_line = lines[0]
         if len(first_line) < 100 and not any(keyword in first_line.lower() for keyword in ['ingredient', 'instruction', 'step']):
-            recipe_data['name'] = first_line.replace('Recipe:', '').replace('recipe:', '').strip()
-            lines = lines[1:]
+            # If first line looks like an ingredient, defer name detection
+            if not is_ingredient_line(first_line):
+                recipe_data['name'] = first_line.replace('Recipe:', '').replace('recipe:', '').strip()
+                lines = lines[1:]
+    
+    # Detect "ingredients-only" pages: if most lines look like ingredients
+    ingredient_like_count = sum(1 for l in lines if is_ingredient_line(l))
+    ingredient_ratio = (ingredient_like_count / max(1, len(lines)))
+    ingredients_only = ingredient_ratio >= 0.6  # threshold
     
     # Initialize sections
     current_section = None
     ingredients_section = []
     instructions_section = []
     
-    for line in lines:
-        line_lower = line.lower()
+    # If ingredients-only, collect all ingredient-like lines and skip section parsing
+    if ingredients_only:
+        for l in lines:
+            if is_ingredient_line(l):
+                ingredients_section.append(l.strip('•-*–— '))
+            else:
+                # First good non-ingredient line can serve as description or name fallback
+                if not recipe_data['description'] and 10 < len(l) < 200:
+                    recipe_data['description'] = l
+        # Extract tags from bottom
+        tags_bottom = extract_tags_from_lines(lines)
+        recipe_data['other_tags'].extend(t for t in tags_bottom if t not in recipe_data['other_tags'])
+    else:
+        for line in lines:
+            line_lower = line.lower()
+            
+            # Detect section headers
+            if any(keyword in line_lower for keyword in ['ingredient', 'what you need', 'you will need']):
+                current_section = 'ingredients'
+                continue
+            elif any(keyword in line_lower for keyword in ['instruction', 'direction', 'method', 'step', 'preparation', 'how to']):
+                current_section = 'instructions'
+                continue
+            elif any(keyword in line_lower for keyword in ['time:', 'prep time', 'cook time']):
+                time_match = re.search(r'(\d+)\s*(min|minute|hour|hr)', line_lower)
+                if time_match:
+                    time_value = int(time_match.group(1))
+                    time_unit = time_match.group(2)
+                    if 'hour' in time_unit or 'hr' in time_unit:
+                        time_value *= 60
+                    recipe_data['prep_time_minutes'] = time_value
+                continue
+            elif any(keyword in line_lower for keyword in ['serving', 'serves', 'yield']):
+                serving_match = re.search(r'(\d+)', line)
+                if serving_match:
+                    recipe_data['servings'] = int(serving_match.group(1))
+                continue
+            elif any(keyword in line_lower for keyword in ['calorie', 'kcal']):
+                cal_match = re.search(r'(\d+)', line)
+                if cal_match:
+                    recipe_data['calories'] = int(cal_match.group(1))
+                continue
+            
+            # Add content to appropriate section
+            if current_section == 'ingredients' or (current_section is None and is_ingredient_line(line)):
+                ingredient = line.strip('•-*–— ')
+                if ingredient and len(ingredient) > 2:
+                    ingredients_section.append(ingredient)
+            elif current_section == 'instructions':
+                instruction = line.strip('•-*–— ')
+                instruction = re.sub(r'^\d+[\.\)]\s*', '', instruction)  # Remove step numbers
+                if instruction and len(instruction) > 5:
+                    instructions_section.append(instruction)
+            elif not recipe_data['description'] and 20 < len(line) < 200 and not is_ingredient_line(line):
+                recipe_data['description'] = line
         
-        # Detect section headers
-        if any(keyword in line_lower for keyword in ['ingredient', 'what you need', 'you will need']):
-            current_section = 'ingredients'
-            continue
-        elif any(keyword in line_lower for keyword in ['instruction', 'direction', 'method', 'step', 'preparation', 'how to']):
-            current_section = 'instructions'
-            continue
-        elif any(keyword in line_lower for keyword in ['time:', 'prep time', 'cook time']):
-            # Try to extract time
-            time_match = re.search(r'(\d+)\s*(min|minute|hour|hr)', line_lower)
-            if time_match:
-                time_value = int(time_match.group(1))
-                time_unit = time_match.group(2)
-                if 'hour' in time_unit or 'hr' in time_unit:
-                    time_value *= 60
-                recipe_data['prep_time_minutes'] = time_value
-            continue
-        elif any(keyword in line_lower for keyword in ['serving', 'serves', 'yield']):
-            # Try to extract servings
-            serving_match = re.search(r'(\d+)', line)
-            if serving_match:
-                recipe_data['servings'] = int(serving_match.group(1))
-            continue
-        elif any(keyword in line_lower for keyword in ['calorie', 'kcal']):
-            # Try to extract calories
-            cal_match = re.search(r'(\d+)', line)
-            if cal_match:
-                recipe_data['calories'] = int(cal_match.group(1))
-            continue
-        
-        # Add content to appropriate section
-        if current_section == 'ingredients':
-            # Clean up ingredient line
-            ingredient = line.strip('•-*–— ')
-            if ingredient and len(ingredient) > 2:
-                ingredients_section.append(ingredient)
-        elif current_section == 'instructions':
-            # Clean up instruction line
-            instruction = line.strip('•-*–— ')
-            instruction = re.sub(r'^\d+[\.\)]\s*', '', instruction)  # Remove step numbers
-            if instruction and len(instruction) > 5:
-                instructions_section.append(instruction)
-        elif not recipe_data['description'] and len(line) > 20 and len(line) < 200:
-            # If we haven't found a description yet and this looks like one
-            recipe_data['description'] = line
-    
+        # Extract tags from bottom lines for non-ingredients-only case
+        tags_bottom = extract_tags_from_lines(lines)
+        recipe_data['other_tags'].extend(t for t in tags_bottom if t not in recipe_data['other_tags'])
+
     # Assign parsed data
     recipe_data['ingredients'] = ingredients_section if ingredients_section else ['No ingredients detected - please add manually']
-    recipe_data['prep_instructions'] = '\n\n'.join(instructions_section) if instructions_section else 'No instructions detected - please add manually'
+    recipe_data['prep_instructions'] = '\n\n'.join(instructions_section) if instructions_section else ''  # leave empty if none
     
-    # If no name was found, use placeholder
+    # If no name was found, try first non-ingredient medium-length line
+    if not recipe_data['name']:
+        for l in lines[:5]:
+            if not is_ingredient_line(l) and 5 < len(l) < 80 and not any(k in l.lower() for k in ['ingredient', 'instruction']):
+                recipe_data['name'] = l.strip()
+                break
     if not recipe_data['name']:
         recipe_data['name'] = 'Untitled Recipe (from image)'
     
-    # Try to detect category from text
+    # Detect category from text
     text_lower = text.lower()
     if any(word in text_lower for word in ['breakfast', 'pancake', 'waffle', 'eggs', 'bacon']):
         recipe_data['category'] = 'breakfast'
@@ -1253,6 +1332,8 @@ def parse_recipe_text(text: str) -> dict:
     elif any(word in text_lower for word in ['snack', 'appetizer']):
         recipe_data['category'] = 'snack'
     
+    # Deduplicate tags
+    recipe_data['other_tags'] = list(dict.fromkeys(recipe_data['other_tags']))
     return recipe_data
 
 

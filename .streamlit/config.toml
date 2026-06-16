@@ -29,6 +29,9 @@ displayEnabled = true
 # If set to False, an exception will result in a generic message being shown in the browser, and exceptions and tracebacks will be printed to the console only.
 # Default: true
 showErrorDetails = true
+# Hide the sidebar navigation for multipage apps
+# Default: true
+showSidebarNavigation = false
 [runner]
 # Allows you to type a variable or string by itself in a single line of Python code to write it to the app.
 # Default: true
@@ -116,12 +119,13 @@ showPyplotGlobalUse = true
 [theme]
 
 
-primaryColor = "#2d5161"
-backgroundColor = "#FFFFFF"
-secondaryBackgroundColor = "#E3F2FD"
+primaryColor = "#5f7d6bff"
+backgroundColor = "#fef6e4"
+secondaryBackgroundColor = "#c9dbcaff"
 
 # Color used for almost all text
-textColor = '#2952a3'
+textColor = '#485b48ff'
+
 
 # Font family for all text in the app, except code blocks
 # Accepted values (serif | sans serif | monospace) 

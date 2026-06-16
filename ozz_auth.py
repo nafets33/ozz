@@ -132,23 +132,30 @@ PollenQ
 
 def send_email(recipient='stefanstapinski@gmail.com', subject="you forgot to say something", body="this is my body and my blood"):
 
-    # Define email sender and receiver
-    pollenq_gmail = os.environ.get("pollenq_gmail")
-    pollenq_gmail_app_pw = os.environ.get("pollenq_gmail_app_pw")
+    try:
+        # Define email sender and receiver
+        pollenq_gmail = os.environ.get("pollenq_gmail")
+        pollenq_gmail_app_pw = os.environ.get("pollenq_gmail_app_pw")
 
-    em = EmailMessage()
-    em["From"] = pollenq_gmail
-    em["To"] = recipient
-    em["Subject"] = subject
-    em.set_content(body)
+        em = EmailMessage()
+        em["From"] = pollenq_gmail
+        em["To"] = recipient
+        em["Subject"] = subject
+        em.set_content(body)
 
-    # Add SSL layer of security
-    context = ssl.create_default_context()
+        # Add SSL layer of security
+        context = ssl.create_default_context()
 
-    # Log in and send the email
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as smtp:
-        smtp.login(pollenq_gmail, pollenq_gmail_app_pw)
-        smtp.sendmail(pollenq_gmail, recipient, em.as_string())
+        # Log in and send the email
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as smtp:
+            smtp.login(pollenq_gmail, pollenq_gmail_app_pw)
+            smtp.sendmail(pollenq_gmail, recipient, em.as_string())
+        
+        return True
+    except Exception as e:
+        print('ERROR SENDING EMAIL', e)
+        print_line_of_error()
+        return False
 
 def update_db(authenticator, con, cur, email, append_db=False):
     """Update a user's record, or add a new user"""

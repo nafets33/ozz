@@ -127,6 +127,7 @@ def main():
         manage_cookbooks_page(meal_db, cookbook_db)
     
     elif page == "Browse Meals":
+        import_recipe_from_url(meal_db, cookbook_db)
         filtered_meals = meal_search_sidebar(meal_db, cookbook_db)
 
         

@@ -48,21 +48,39 @@ family_video_dict = {
     'stefan_wants_to_ride_his_bike': 'https://youtu.be/kIZpWHVTP0g',
     'twins birthday Party': 'https://youtu.be/gNMc2g-6s70',
     'xmas babyStefan 3': 'https://youtu.be/12KeUykpbko',
+    'xmas_together': 'https://youtu.be/ApjlPLjFVac',
 
 }
 
 
 def display_family_videos():
-    """Display family videos with pagination"""
-    cols = st.columns((3,2))
+    if st.button("Christmas Special! 🎄🎅🎁", use_container_width=True):
+        st.snow()
+        st.video(family_video_dict['xmas_together'])
+        st.write(f'**Link:** [{family_video_dict["xmas_together"]}]({family_video_dict["xmas_together"]})')
+        
+    
+    st.divider()
+
+    cols = st.columns((2,2,2,2))
     with cols[0]:
-        st.subheader("Stapinski - Grabher Home Videos")
+        st.subheader("Stapinski")
+    with cols[2]:
+        st.subheader("Grabher")
     with cols[1]:
+        img = os.path.join(st.session_state['OZZ_db_images'],'stapinski.jpg')
+        if os.path.exists(img):
+            st.image(img, width=100)
+    with cols[3]:
         img = os.path.join(st.session_state['OZZ_db_images'],'grabher.png')
         if os.path.exists(img):
             st.image(img, width=100)
+    st.divider()
+    st.subheader("**Family Videos Collection**")
     video_titles = list(family_video_dict.keys())
     selected_video = st.selectbox("Select a specific video:", ["-- Browse all videos --"] + video_titles)
+
+    st.divider()
     
     if selected_video != "-- Browse all videos --":
         # Display selected video
@@ -72,6 +90,8 @@ def display_family_videos():
         st.video(url)
         st.write("-------------")
         return True
+
+
 
 
 
